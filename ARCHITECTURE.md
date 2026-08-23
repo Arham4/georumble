@@ -154,7 +154,7 @@ Close codes: `4001` hello timeout / room closed · `4002` capacity rejected · `
 
 ## Data: MapPacks
 
-Regions are pure data (`docs/mappack-contract.md`, types in `shared/mappack.ts`). A pack carries stable feature ids, display names, aliases, and projection metadata; the current pack (`us-states`) ships pre-projected Albers USA TopoJSON derived from public-domain `us-atlas`. The renderer plots coordinates directly — no reprojection — and pan/zoom covers small-region hit areas. Adding Europe or continents means adding a pack file and manifest entry; no engine changes. Scripts: `scripts/fetch-mappacks.mjs`, validated by `scripts/validate-mappack.mjs`.
+Regions are pure data (`docs/mappack-contract.md`, types in `shared/mappack.ts`). A pack carries stable feature ids, display names, aliases, and projection metadata; shipped packs are `us-states` (pre-projected Albers USA from public-domain `us-atlas`) and `europe` (39 countries, pre-projected conic conformal from public-domain Natural Earth data via `world-atlas`). The renderer plots coordinates directly — no reprojection — and pan/zoom plus auto-framing covers small-region hit areas. Adding a continent means adding a builder script's two artifacts and a manifest entry; no engine changes. Scripts: `scripts/fetch-mappacks.mjs`, `scripts/build-europe.mjs` (shared math in `scripts/lib/topo-utils.mjs`), validated by `scripts/validate-mappack.mjs` (`npm run packs:validate`).
 
 ## Versus mode (future)
 
