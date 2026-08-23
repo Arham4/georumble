@@ -38,7 +38,7 @@ export type GameState = {
   elapsedSeconds: number;
   correct: number;
   misses: number;
-  /** Misses accumulated per region before it was found; drives fill-color tiers. */
+  /** Wrong attempts it took to find each region; drives fill-color tiers. */
   missesByRegion: Record<string, number>;
   hintActive: boolean;
   ticker: TickerEntry[];
@@ -72,7 +72,8 @@ export class GameClient {
   private roundKey: number | null = null;
   private lastOrderIndex: number | null = null;
   private missesByTarget = new Map<string, number>();
-  private missesByRegion = new Map<string, number>();
+  /** Wrong attempts it took to find each region, frozen at the moment of finding. */
+  private foundHeat = new Map<string, number>();
   private missedRegions = new Set<string>();
   private tallies = new Map<string, PlayerTally>();
   private ticker: TickerEntry[] = [];
@@ -256,7 +257,7 @@ export class GameClient {
     this.roundGuesses = 0;
     this.lastOrderIndex = null;
     this.missesByTarget.clear();
-    this.missesByRegion.clear();
+    this.foundHeat.clear();
     this.missedRegions.clear();
     this.tallies.clear();
     this.ticker = [];
@@ -305,6 +306,8 @@ export class GameClient {
     if (outcome.correct) {
       this.correct += 1;
       tally.correct += 1;
+      const target = snapshot?.target ?? outcome.featureId;
+      this.foundHeat.set(outcome.featureId, this.missesByTarget.get(target) ?? 0);
       if (snapshot) {
         this.snapshot = { ...snapshot, found: [...snapshot.found, outcome.featureId] };
       }
@@ -316,10 +319,6 @@ export class GameClient {
       if (target !== null) {
         this.missesByTarget.set(target, (this.missesByTarget.get(target) ?? 0) + 1);
       }
-      this.missesByRegion.set(
-        outcome.featureId,
-        (this.missesByRegion.get(outcome.featureId) ?? 0) + 1,
-      );
     }
     this.tallies.set(outcome.byPlayer, tally);
 
@@ -406,7 +405,7 @@ export class GameClient {
       elapsedSeconds: this.elapsedSeconds(),
       correct: this.correct,
       misses: this.misses,
-      missesByRegion: Object.fromEntries(this.missesByRegion),
+      missesByRegion: Object.fromEntries(this.foundHeat),
       hintActive:
         target !== null && (this.missesByTarget.get(target) ?? 0) >= HINT_AFTER_MISSES,
       ticker: this.ticker,
