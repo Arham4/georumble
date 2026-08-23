@@ -137,7 +137,9 @@ Wire format: bare JSON, one `ClientMessage` upstream / `ServerMessage` downstrea
 | S→C | `rejected {reason}` | Invalid action, not-host, capacity, malformed input |
 | S→C | `pong` | Auto-response twin |
 
-Close codes: `4001` hello timeout / room closed · `4002` capacity rejected · `4003` room full (>30 participants) · `4004` room id is not a live activity instance of this app.
+Close codes: `4001` hello timeout / room closed · `4002` capacity rejected · `4003` room full (>30 participants) · `4004` room id not admissible (unknown instance, disabled scheme, or malformed).
+
+**Room-id schemes** (`worker/src/roomIds.ts`): ids are namespaced by origin so paths cannot reach each other. Raw ids are Discord activity instances and pass bot-token verification; `open:<CODE>` ids are human-typable codes for browser play, admitted **only** when the `OPEN_ROOMS` variable is set — unset in production makes code rooms nonexistent server-side regardless of client support. Both schemes share the broker capacity gate.
 
 **Instance verification**: when `DISCORD_BOT_TOKEN` is configured, every `/api/room/{id}` upgrade is checked against Discord's `GET /applications/{id}/activity-instances/{instance_id}` before admission (`worker/src/instances.ts`), so a crafted client cannot hop into a private room by guessing ids. Definitive negatives (404) fail closed; indeterminate errors fail open, and positive results cache 60 s. Unconfigured (local dev) skips the check.
 
@@ -170,6 +172,7 @@ The wire was shaped so versus is a scoring-policy layer, not a redesign: add `mo
 | Solo fallback, swappable transport | `Connection` in `client/src/net/connection.ts` |
 | roomId = activity instanceId | client connection setup; `GameRoom` named-DO addressing |
 | Instance verification (anti room-hopping) | `worker/src/instances.ts`, gate in `worker/src/index.ts` |
+| Opt-in open room codes, scheme-namespaced ids | `shared/roomCodes.ts`, `worker/src/roomIds.ts`, client boot mode choice |
 
 ## Open questions
 
