@@ -104,9 +104,6 @@ export class MapView {
       region.setAttribute("d", d);
       region.setAttribute("data-region-id", id);
       region.classList.add("region");
-      const label = createElement("title");
-      label.textContent = this.namesById.get(id) ?? "";
-      region.append(label);
       regionLayer.append(region);
 
       let hit: SVGPathElement | null = null;
