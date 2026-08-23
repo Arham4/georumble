@@ -5,7 +5,6 @@ import type { GeometryCollection, Topology } from "topojson-specification";
 import type { MapPack } from "../../../shared/mappack";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-const FIT_PAD = 8;
 // Effective minimum click extent in viewBox units; smaller regions get an
 // invisible fat-stroke halo so micro-regions stay clickable without zooming,
 // and count as "tiny" for auto-framing helpers.
@@ -144,16 +143,12 @@ export class MapView {
     this.svg.setAttribute("viewBox", `0 0 ${this.width} ${this.height}`);
     this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-    // Pre-projected coordinates: fit them into the pack's canvas as-is, no reprojection.
+    // Pre-projected coordinates: the file already lives in the pack's canvas
+    // (0,0..width,height), so render with a plain identity transform. Refitting
+    // against the collection would rescale by its outlying geometry (Russia's
+    // far east, the Canaries) and shrink the actual continent.
     const collection = extractLargestCollection(topo);
-    const projection = geoIdentity().fitExtent(
-      [
-        [FIT_PAD, FIT_PAD],
-        [this.width - FIT_PAD, this.height - FIT_PAD],
-      ],
-      collection,
-    );
-    const path = geoPath(projection);
+    const path = geoPath(geoIdentity());
 
     const hitLayer = createElement("g");
     const regionLayer = createElement("g");
