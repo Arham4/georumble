@@ -1,0 +1,578 @@
+{
+  "packId": "us-states",
+  "displayName": "US States",
+  "projection": {
+    "kind": "albers-usa-preprojected",
+    "width": 1015,
+    "height": 594
+  },
+  "source": {
+    "name": "us-atlas states-albers-10m.json",
+    "url": "https://github.com/topojson/us-atlas",
+    "license": "Public domain (US Census Bureau cartographic boundary data)"
+  },
+  "features": [
+    {
+      "id": "01",
+      "name": "Alabama",
+      "aliases": [
+        "AL"
+      ],
+      "centroidHint": {
+        "x": 672,
+        "y": 432
+      }
+    },
+    {
+      "id": "02",
+      "name": "Alaska",
+      "aliases": [
+        "AK"
+      ],
+      "centroidHint": {
+        "x": 102,
+        "y": 521
+      }
+    },
+    {
+      "id": "04",
+      "name": "Arizona",
+      "aliases": [
+        "AZ"
+      ],
+      "centroidHint": {
+        "x": 208,
+        "y": 382
+      }
+    },
+    {
+      "id": "05",
+      "name": "Arkansas",
+      "aliases": [
+        "AR"
+      ],
+      "centroidHint": {
+        "x": 564,
+        "y": 391
+      }
+    },
+    {
+      "id": "06",
+      "name": "California",
+      "aliases": [
+        "CA"
+      ],
+      "centroidHint": {
+        "x": 82,
+        "y": 288
+      }
+    },
+    {
+      "id": "08",
+      "name": "Colorado",
+      "aliases": [
+        "CO"
+      ],
+      "centroidHint": {
+        "x": 332,
+        "y": 290
+      }
+    },
+    {
+      "id": "09",
+      "name": "Connecticut",
+      "aliases": [
+        "CT"
+      ],
+      "centroidHint": {
+        "x": 886,
+        "y": 190
+      }
+    },
+    {
+      "id": "10",
+      "name": "Delaware",
+      "aliases": [
+        "DE"
+      ],
+      "centroidHint": {
+        "x": 853,
+        "y": 260
+      }
+    },
+    {
+      "id": "11",
+      "name": "District of Columbia",
+      "aliases": [
+        "DC",
+        "Washington DC"
+      ],
+      "centroidHint": {
+        "x": 828,
+        "y": 267
+      }
+    },
+    {
+      "id": "12",
+      "name": "Florida",
+      "aliases": [
+        "FL"
+      ],
+      "centroidHint": {
+        "x": 767,
+        "y": 515
+      }
+    },
+    {
+      "id": "13",
+      "name": "Georgia",
+      "aliases": [
+        "GA"
+      ],
+      "centroidHint": {
+        "x": 736,
+        "y": 428
+      }
+    },
+    {
+      "id": "15",
+      "name": "Hawaii",
+      "aliases": [
+        "HI"
+      ],
+      "centroidHint": {
+        "x": 317,
+        "y": 588
+      }
+    },
+    {
+      "id": "16",
+      "name": "Idaho",
+      "aliases": [
+        "ID"
+      ],
+      "centroidHint": {
+        "x": 199,
+        "y": 147
+      }
+    },
+    {
+      "id": "17",
+      "name": "Illinois",
+      "aliases": [
+        "IL"
+      ],
+      "centroidHint": {
+        "x": 615,
+        "y": 270
+      }
+    },
+    {
+      "id": "18",
+      "name": "Indiana",
+      "aliases": [
+        "IN"
+      ],
+      "centroidHint": {
+        "x": 665,
+        "y": 269
+      }
+    },
+    {
+      "id": "19",
+      "name": "Iowa",
+      "aliases": [
+        "IA"
+      ],
+      "centroidHint": {
+        "x": 540,
+        "y": 227
+      }
+    },
+    {
+      "id": "20",
+      "name": "Kansas",
+      "aliases": [
+        "KS"
+      ],
+      "centroidHint": {
+        "x": 456,
+        "y": 309
+      }
+    },
+    {
+      "id": "21",
+      "name": "Kentucky",
+      "aliases": [
+        "KY"
+      ],
+      "centroidHint": {
+        "x": 688,
+        "y": 321
+      }
+    },
+    {
+      "id": "22",
+      "name": "Louisiana",
+      "aliases": [
+        "LA"
+      ],
+      "centroidHint": {
+        "x": 576,
+        "y": 478
+      }
+    },
+    {
+      "id": "23",
+      "name": "Maine",
+      "aliases": [
+        "ME"
+      ],
+      "centroidHint": {
+        "x": 919,
+        "y": 94
+      }
+    },
+    {
+      "id": "24",
+      "name": "Maryland",
+      "aliases": [
+        "MD"
+      ],
+      "centroidHint": {
+        "x": 832,
+        "y": 263
+      }
+    },
+    {
+      "id": "25",
+      "name": "Massachusetts",
+      "aliases": [
+        "MA"
+      ],
+      "centroidHint": {
+        "x": 897,
+        "y": 172
+      }
+    },
+    {
+      "id": "26",
+      "name": "Michigan",
+      "aliases": [
+        "MI"
+      ],
+      "centroidHint": {
+        "x": 684,
+        "y": 185
+      }
+    },
+    {
+      "id": "27",
+      "name": "Minnesota",
+      "aliases": [
+        "MN"
+      ],
+      "centroidHint": {
+        "x": 525,
+        "y": 132
+      }
+    },
+    {
+      "id": "28",
+      "name": "Mississippi",
+      "aliases": [
+        "MS"
+      ],
+      "centroidHint": {
+        "x": 618,
+        "y": 438
+      }
+    },
+    {
+      "id": "29",
+      "name": "Missouri",
+      "aliases": [
+        "MO"
+      ],
+      "centroidHint": {
+        "x": 560,
+        "y": 312
+      }
+    },
+    {
+      "id": "30",
+      "name": "Montana",
+      "aliases": [
+        "MT"
+      ],
+      "centroidHint": {
+        "x": 287,
+        "y": 100
+      }
+    },
+    {
+      "id": "31",
+      "name": "Nebraska",
+      "aliases": [
+        "NE"
+      ],
+      "centroidHint": {
+        "x": 434,
+        "y": 239
+      }
+    },
+    {
+      "id": "32",
+      "name": "Nevada",
+      "aliases": [
+        "NV"
+      ],
+      "centroidHint": {
+        "x": 142,
+        "y": 252
+      }
+    },
+    {
+      "id": "33",
+      "name": "New Hampshire",
+      "aliases": [
+        "NH"
+      ],
+      "centroidHint": {
+        "x": 893,
+        "y": 140
+      }
+    },
+    {
+      "id": "34",
+      "name": "New Jersey",
+      "aliases": [
+        "NJ"
+      ],
+      "centroidHint": {
+        "x": 862,
+        "y": 230
+      }
+    },
+    {
+      "id": "35",
+      "name": "New Mexico",
+      "aliases": [
+        "NM"
+      ],
+      "centroidHint": {
+        "x": 311,
+        "y": 393
+      }
+    },
+    {
+      "id": "36",
+      "name": "New York",
+      "aliases": [
+        "NY"
+      ],
+      "centroidHint": {
+        "x": 834,
+        "y": 172
+      }
+    },
+    {
+      "id": "37",
+      "name": "North Carolina",
+      "aliases": [
+        "NC"
+      ],
+      "centroidHint": {
+        "x": 801,
+        "y": 351
+      }
+    },
+    {
+      "id": "38",
+      "name": "North Dakota",
+      "aliases": [
+        "ND"
+      ],
+      "centroidHint": {
+        "x": 429,
+        "y": 104
+      }
+    },
+    {
+      "id": "39",
+      "name": "Ohio",
+      "aliases": [
+        "OH"
+      ],
+      "centroidHint": {
+        "x": 724,
+        "y": 253
+      }
+    },
+    {
+      "id": "40",
+      "name": "Oklahoma",
+      "aliases": [
+        "OK"
+      ],
+      "centroidHint": {
+        "x": 471,
+        "y": 376
+      }
+    },
+    {
+      "id": "41",
+      "name": "Oregon",
+      "aliases": [
+        "OR"
+      ],
+      "centroidHint": {
+        "x": 103,
+        "y": 134
+      }
+    },
+    {
+      "id": "42",
+      "name": "Pennsylvania",
+      "aliases": [
+        "PA"
+      ],
+      "centroidHint": {
+        "x": 806,
+        "y": 226
+      }
+    },
+    {
+      "id": "44",
+      "name": "Rhode Island",
+      "aliases": [
+        "RI"
+      ],
+      "centroidHint": {
+        "x": 904,
+        "y": 184
+      }
+    },
+    {
+      "id": "45",
+      "name": "South Carolina",
+      "aliases": [
+        "SC"
+      ],
+      "centroidHint": {
+        "x": 779,
+        "y": 392
+      }
+    },
+    {
+      "id": "46",
+      "name": "South Dakota",
+      "aliases": [
+        "SD"
+      ],
+      "centroidHint": {
+        "x": 430,
+        "y": 172
+      }
+    },
+    {
+      "id": "47",
+      "name": "Tennessee",
+      "aliases": [
+        "TN"
+      ],
+      "centroidHint": {
+        "x": 674,
+        "y": 361
+      }
+    },
+    {
+      "id": "48",
+      "name": "Texas",
+      "aliases": [
+        "TX"
+      ],
+      "centroidHint": {
+        "x": 434,
+        "y": 469
+      }
+    },
+    {
+      "id": "49",
+      "name": "Utah",
+      "aliases": [
+        "UT"
+      ],
+      "centroidHint": {
+        "x": 227,
+        "y": 269
+      }
+    },
+    {
+      "id": "50",
+      "name": "Vermont",
+      "aliases": [
+        "VT"
+      ],
+      "centroidHint": {
+        "x": 873,
+        "y": 136
+      }
+    },
+    {
+      "id": "51",
+      "name": "Virginia",
+      "aliases": [
+        "VA"
+      ],
+      "centroidHint": {
+        "x": 801,
+        "y": 305
+      }
+    },
+    {
+      "id": "53",
+      "name": "Washington",
+      "aliases": [
+        "WA"
+      ],
+      "centroidHint": {
+        "x": 124,
+        "y": 59
+      }
+    },
+    {
+      "id": "54",
+      "name": "West Virginia",
+      "aliases": [
+        "WV"
+      ],
+      "centroidHint": {
+        "x": 767,
+        "y": 285
+      }
+    },
+    {
+      "id": "55",
+      "name": "Wisconsin",
+      "aliases": [
+        "WI"
+      ],
+      "centroidHint": {
+        "x": 595,
+        "y": 167
+      }
+    },
+    {
+      "id": "56",
+      "name": "Wyoming",
+      "aliases": [
+        "WY"
+      ],
+      "centroidHint": {
+        "x": 308,
+        "y": 195
+      }
+    }
+  ]
+}
