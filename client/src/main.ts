@@ -5,6 +5,7 @@ import { PackStore, type LoadedPack } from "./game/packs";
 import { MapView } from "./map/mapView";
 import type { ConnectionHandlers } from "./net/connection";
 import { LocalConnection } from "./net/localConnection";
+import { newRoomCode, normalizeJoinCode } from "./net/openRooms";
 import { SocketConnection } from "./net/socketConnection";
 import { el, type Screen } from "./ui/dom";
 import { createLobbyScreen } from "./ui/lobbyScreen";
@@ -105,7 +106,11 @@ async function boot(): Promise<void> {
   let currentScreen: Screen | null = null;
   let lastState: GameState | null = null;
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
-  let mode: "socket" | "local" = identity.instanceId ? "socket" : "local";
+  // Discord instances own the room decision outright; browser sessions may opt
+  // into an online room only via a well-formed code in the URL.
+  const joinCode = identity.instanceId ? null : normalizeJoinCode(new URLSearchParams(window.location.search).get("room"));
+  const startOnline = identity.instanceId !== null || joinCode !== null;
+  let mode: "socket" | "local" = startOnline ? "socket" : "local";
 
   const showToast = (state: GameState): void => {
     toastHolder.replaceChildren();
@@ -245,9 +250,7 @@ async function boot(): Promise<void> {
     identity.name,
   );
 
-  function openSocketRoom(): void {
-    const params = new URLSearchParams(window.location.search);
-    const roomId = identity.instanceId ?? params.get("room") ?? crypto.randomUUID();
+  function openSocketRoom(roomId: string): void {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const url = `${protocol}//${window.location.host}/api/room/${encodeURIComponent(roomId)}?player=${encodeURIComponent(identity.userId)}`;
     client.connect(new SocketConnection(url, handlers));
@@ -257,14 +260,44 @@ async function boot(): Promise<void> {
     client.connect(new LocalConnection(handlers, identity.name));
   }
 
+  function createOnlineGame(): void {
+    const code = newRoomCode();
+    const url = new URL(window.location.href);
+    url.searchParams.set("room", code);
+    history.replaceState(null, "", url);
+    openSocketRoom(`open:${code}`);
+  }
+
+  function mountModeChoice(): void {
+    bootPanel.replaceChildren();
+    const title = el("div", "section-label");
+    title.textContent = "How do you want to play?";
+    const soloButton = el("button", "btn btn-ghost full");
+    soloButton.textContent = "Solo practice";
+    soloButton.onclick = () => {
+      bootPanel.remove();
+      openLocalRoom();
+    };
+    const onlineButton = el("button", "btn full");
+    onlineButton.textContent = "Create online game";
+    onlineButton.onclick = () => {
+      bootPanel.remove();
+      createOnlineGame();
+    };
+    bootPanel.append(title, onlineButton, soloButton);
+  }
+
   const bootPanel = el("div", "panel boot-panel");
   bootPanel.textContent = "Connecting…";
 
   mapView.onGuess((featureId) => client.guess(featureId));
-  if (mode === "socket") {
-    openSocketRoom();
+  if (identity.instanceId) {
+    openSocketRoom(identity.instanceId);
+  } else if (joinCode) {
+    openSocketRoom(`open:${joinCode}`);
   } else {
-    openLocalRoom();
+    screenHolder.append(bootPanel);
+    mountModeChoice();
   }
 }
 

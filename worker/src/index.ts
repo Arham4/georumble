@@ -1,6 +1,6 @@
 import { BROKER_SINGLETON } from "./broker";
 import { CLOSE_CAPACITY, CLOSE_UNVERIFIED } from "../../shared/protocol";
-import { verifyInstance } from "./instances";
+import { admitRoomId } from "./roomIds";
 import { exchangeCode } from "./token";
 import { rejectUpgrade } from "./upgrade";
 import type { Env } from "./env";
@@ -34,8 +34,9 @@ export default {
 } satisfies ExportedHandler<Env>;
 
 async function enterRoom(roomId: string, request: Request, env: Env): Promise<Response> {
-  if (!(await verifyInstance(roomId, env))) {
-    return rejectUpgrade("unknown-instance", CLOSE_UNVERIFIED);
+  const admissible = await admitRoomId(roomId, env);
+  if (!admissible.ok) {
+    return rejectUpgrade(admissible.reason, CLOSE_UNVERIFIED);
   }
   const admitted = await admit(roomId, env);
   if (!admitted.ok) {
