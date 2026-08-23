@@ -1,6 +1,13 @@
 import { defineConfig } from "vite";
 
+// Baked into the bundle at build time so a loaded tab can prove which build
+// it runs (logged at boot; see main.ts).
+const buildId = Date.now().toString(36);
+
 export default defineConfig({
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId),
+  },
   // Shared asset root: pack artifacts live at /mappacks/*, brand at /brand/*.
   publicDir: "../assets",
   server: {

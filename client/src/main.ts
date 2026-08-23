@@ -104,6 +104,7 @@ async function resolveIdentity(): Promise<Identity> {
 }
 
 async function boot(): Promise<void> {
+  console.log(`[georumble] build ${__BUILD_ID__}`);
   const app = document.querySelector<HTMLDivElement>("#app");
   if (!app) {
     throw new Error("#app mount point missing");

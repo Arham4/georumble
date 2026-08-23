@@ -71,6 +71,7 @@ export class MapView {
   private tweenRaf: number | null = null;
   private drag: { pointerId: number; lastX: number; lastY: number; moved: boolean } | null = null;
   private lastPointer: { x: number; y: number } | null = null;
+  private debug = false;
   private guessHandler: (featureId: string) => void = () => {};
   private cursorHandler: (x: number, y: number) => void = () => {};
 
@@ -88,6 +89,7 @@ export class MapView {
     this.svg.addEventListener("wheel", this.onWheel, { passive: false });
 
     host.append(this.svg);
+    this.debug = new URLSearchParams(window.location.search).has("debug");
   }
 
   onGuess(handler: (featureId: string) => void): void {
@@ -451,7 +453,7 @@ export class MapView {
     }
     if (this.interactive) {
       this.lastPointer = { x: event.clientX, y: event.clientY };
-      this.refreshHover();
+      this.refreshHover("pointer");
       this.maybeSendCursor(event.clientX, event.clientY);
     }
   };
@@ -461,11 +463,20 @@ export class MapView {
    * moves AND camera changes — zooming or tweening slides regions under a
    * still cursor without firing any pointer events.
    */
-  private refreshHover(): void {
+  private refreshHover(source: "pointer" | "camera"): void {
     if (!this.interactive || this.drag || this.lastPointer === null) {
       return;
     }
-    this.setHovered(regionIdAtPoint(this.lastPointer.x, this.lastPointer.y));
+    const id = regionIdAtPoint(this.lastPointer.x, this.lastPointer.y);
+    if (this.debug) {
+      const el = document.elementFromPoint(this.lastPointer.x, this.lastPointer.y);
+      console.log(
+        `[hover] src=${source} point=(${this.lastPointer.x},${this.lastPointer.y}) ` +
+          `element=${el?.tagName ?? "null"}#${el?.getAttribute?.("data-region-id") ?? "-"} ` +
+          `-> ${id ?? "null"} k=${this.k.toFixed(2)}`,
+      );
+    }
+    this.setHovered(id);
   }
 
   private maybeSendCursor(clientX: number, clientY: number): void {
@@ -553,7 +564,7 @@ export class MapView {
 
   private applyTransform(): void {
     this.viewport.setAttribute("transform", `translate(${this.tx} ${this.ty}) scale(${this.k})`);
-    this.refreshHover();
+    this.refreshHover("camera");
   }
 
   private viewScale(): number {
