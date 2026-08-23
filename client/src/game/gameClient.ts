@@ -15,12 +15,21 @@ export type TickerEntry = {
   correct: boolean;
 };
 
+export type ScoreRow = {
+  id: string;
+  name: string;
+  avatar: string | null;
+  isYou: boolean;
+  correct: number;
+  misses: number;
+};
+
 export type GameState = {
   phase: "boot" | "lobby" | "playing" | "victory";
   connectionKind: Connection["kind"] | null;
   you: string | null;
   name: string;
-  players: { id: string; name: string; isHost: boolean; isYou: boolean }[];
+  players: { id: string; name: string; avatar: string | null; isHost: boolean; isYou: boolean }[];
   isHost: boolean;
   packId: string | null;
   orderLength: number;
@@ -29,17 +38,23 @@ export type GameState = {
   elapsedSeconds: number;
   correct: number;
   misses: number;
+  /** Misses accumulated per region before it was found; drives fill-color tiers. */
+  missesByRegion: Record<string, number>;
   hintActive: boolean;
   ticker: TickerEntry[];
   win: { seconds: number; guesses: number } | null;
+  scoreboard: ScoreRow[];
   notice: { text: string; kind: "info" | "error" } | null;
 };
 
 export type GameEvents = {
   onState: (state: GameState) => void;
   onVerdict: (outcome: GuessOutcome) => void;
-  onNeedFallback: () => void;
+  onLinkLost: (info: CloseInfo) => void;
+  onPeerCursor: (byPlayer: string, x: number, y: number) => void;
 };
+
+type PlayerTally = { correct: number; misses: number };
 
 /**
  * Client-side room brain. Renders ServerMessages into UI state and, while
@@ -55,7 +70,11 @@ export class GameClient {
   private misses = 0;
   private roundGuesses = 0;
   private roundKey: number | null = null;
+  private lastOrderIndex: number | null = null;
   private missesByTarget = new Map<string, number>();
+  private missesByRegion = new Map<string, number>();
+  private missedRegions = new Set<string>();
+  private tallies = new Map<string, PlayerTally>();
   private ticker: TickerEntry[] = [];
   private win: GameState["win"] = null;
   private notice: GameState["notice"] = null;
@@ -65,6 +84,7 @@ export class GameClient {
   constructor(
     private readonly events: GameEvents,
     private name: string,
+    private readonly avatar: string | null = null,
   ) {
     setInterval(() => this.onTick(), TICK_MS);
   }
@@ -77,11 +97,15 @@ export class GameClient {
     return this.name;
   }
 
+  get playerAvatar(): string | null {
+    return this.avatar;
+  }
+
   connect(connection: Connection): void {
     this.resetRound();
     this.connection = connection;
     this.connected = true;
-    connection.send({ t: "hello", name: this.name });
+    connection.send({ t: "hello", name: this.name, avatar: this.avatar });
     this.emit();
   }
 
@@ -97,17 +121,31 @@ export class GameClient {
       case "snapshot":
         this.applySnapshot(message.snapshot);
         break;
-      case "host":
+      case "host": {
+        const previous = this.snapshot?.hostId ?? null;
         if (this.snapshot) {
           this.snapshot = { ...this.snapshot, hostId: message.hostId };
         }
+        if (previous !== null && previous !== message.hostId) {
+          const name =
+            this.snapshot?.players.find((player) => player.id === message.hostId)?.name ??
+            "Someone";
+          this.setNotice(
+            message.hostId === this.you ? "You are now the host" : `${name} is now the host`,
+            "info",
+          );
+        }
         break;
+      }
       case "guess":
         this.roundGuesses += 1;
         this.adjudicate(message.byPlayer, message.featureId);
         break;
       case "verdict":
         this.absorbVerdict(message.outcome);
+        break;
+      case "cursor":
+        this.events.onPeerCursor(message.byPlayer, message.x, message.y);
         break;
       case "win":
         this.win = { seconds: message.seconds, guesses: message.guesses };
@@ -124,18 +162,33 @@ export class GameClient {
     this.emit();
   };
 
+  /**
+   * Transport failure. State stays mounted so a quick reconnect resumes
+   * invisibly; the caller decides between retrying and degrading to solo.
+   */
   onClose = (info: CloseInfo): void => {
     if (this.disposed || this.connection === null) {
       return;
     }
     this.connection = null;
     this.connected = false;
-    this.you = null;
-    const detail = info.reason || (info.code > 0 ? `code ${info.code}` : "unreachable");
-    this.setNotice(`Live room lost (${detail}) — continuing in a solo room`, "info");
-    this.events.onNeedFallback();
+    this.events.onLinkLost(info);
     this.emit();
   };
+
+  /** Mid-reconnect limbo: keep the last known room rendered under a notice. */
+  pauseForReconnect(attempt: number, max: number): void {
+    this.setNotice(`Connection lost — reconnecting (${attempt}/${max})…`, "error");
+    this.emit();
+  }
+
+  /** Retries exhausted: give up the seat honestly before the solo room opens. */
+  degradeToSolo(detail: string): void {
+    this.connected = false;
+    this.you = null;
+    this.setNotice(`Couldn't stay in the room (${detail}) — playing solo`, "info");
+    this.emit();
+  }
 
   rename(rawName: string): void {
     const name = rawName.trim().slice(0, MAX_NAME_LENGTH);
@@ -151,8 +204,8 @@ export class GameClient {
     if (!this.isHost()) {
       return;
     }
-    // Seeded Fisher-Yates keeps the shuffle reproducible from its seed while
-    // every client receives the same explicit order on the wire.
+    // Seeded Fisher-Yates; the explicit order travels on the wire so every
+    // client derives identical prompts without trusting local RNG mid-round.
     const order = seededShuffle(
       pack.features.map((feature) => feature.id),
       randomSeed(),
@@ -160,12 +213,23 @@ export class GameClient {
     this.send({ t: "start", packId: pack.packId, order });
   }
 
-  guess(featureId: string): void {
+  /** False means the click was swallowed locally and needs its own feedback. */
+  guess(featureId: string): boolean {
     const snapshot = this.snapshot;
-    if (!snapshot || snapshot.phase !== "playing" || snapshot.found.includes(featureId)) {
-      return;
+    if (!snapshot || snapshot.phase !== "playing") {
+      return false;
+    }
+    // Repeat-clicking a region already ruled out for this target must not
+    // flood the relay or tank accuracy; the caller flashes feedback instead.
+    if (snapshot.found.includes(featureId) || this.missedRegions.has(featureId)) {
+      return false;
     }
     this.send({ t: "guess", featureId });
+    return true;
+  }
+
+  sendCursor(x: number, y: number): void {
+    this.connection?.send({ t: "cursor", x, y });
   }
 
   dispose(): void {
@@ -179,7 +243,10 @@ export class GameClient {
     if (snapshot.startedAt !== this.roundKey) {
       this.resetRound();
       this.roundKey = snapshot.startedAt;
+    } else if (snapshot.orderIndex !== this.lastOrderIndex) {
+      this.missedRegions.clear();
     }
+    this.lastOrderIndex = snapshot.orderIndex;
     this.snapshot = snapshot;
   }
 
@@ -187,7 +254,11 @@ export class GameClient {
     this.correct = 0;
     this.misses = 0;
     this.roundGuesses = 0;
+    this.lastOrderIndex = null;
     this.missesByTarget.clear();
+    this.missesByRegion.clear();
+    this.missedRegions.clear();
+    this.tallies.clear();
     this.ticker = [];
     this.win = null;
     this.roundKey = null;
@@ -219,31 +290,55 @@ export class GameClient {
   }
 
   private absorbVerdict(outcome: GuessOutcome): void {
+    const snapshot = this.snapshot;
+    const alreadyFound = snapshot?.found.includes(outcome.featureId) ?? false;
+    if (alreadyFound) {
+      if (outcome.correct) {
+        // Duplicate ruling from racing clicks: score stays with the first
+        // finder, but the late clicker still gets their green flash.
+        this.events.onVerdict(outcome);
+      }
+      return;
+    }
+
+    const tally = this.tallies.get(outcome.byPlayer) ?? { correct: 0, misses: 0 };
     if (outcome.correct) {
       this.correct += 1;
+      tally.correct += 1;
+      if (snapshot) {
+        this.snapshot = { ...snapshot, found: [...snapshot.found, outcome.featureId] };
+      }
     } else {
       this.misses += 1;
+      tally.misses += 1;
+      this.missedRegions.add(outcome.featureId);
+      const target = snapshot?.target ?? null;
+      if (target !== null) {
+        this.missesByTarget.set(target, (this.missesByTarget.get(target) ?? 0) + 1);
+      }
+      this.missesByRegion.set(
+        outcome.featureId,
+        (this.missesByRegion.get(outcome.featureId) ?? 0) + 1,
+      );
     }
-    const target = this.snapshot?.target ?? null;
-    if (!outcome.correct && target !== null) {
-      this.missesByTarget.set(target, (this.missesByTarget.get(target) ?? 0) + 1);
-    }
+    this.tallies.set(outcome.byPlayer, tally);
+
     this.ticker = [
       { byPlayer: outcome.byPlayer, featureId: outcome.featureId, correct: outcome.correct },
       ...this.ticker,
     ].slice(0, TICKER_SIZE);
     this.events.onVerdict(outcome);
 
-    const snapshot = this.snapshot;
-    if (this.isHost() && snapshot && snapshot.phase === "playing" && outcome.correct) {
-      if (outcome.remaining === 0) {
+    const next = this.snapshot;
+    if (this.isHost() && next && next.phase === "playing" && outcome.correct) {
+      if (next.found.length >= next.order.length) {
         this.send({
           t: "win",
           seconds: this.elapsedSeconds(),
           guesses: Math.max(1, this.roundGuesses),
         });
       } else {
-        this.send({ t: "advance", index: (snapshot.orderIndex ?? -1) + 1 });
+        this.send({ t: "advance", index: (next.orderIndex ?? -1) + 1 });
       }
     }
   }
@@ -299,6 +394,7 @@ export class GameClient {
       players: (snapshot?.players ?? []).map((player) => ({
         id: player.id,
         name: player.name,
+        avatar: player.avatar ?? null,
         isHost: player.id === snapshot?.hostId,
         isYou: player.id === this.you,
       })),
@@ -310,10 +406,22 @@ export class GameClient {
       elapsedSeconds: this.elapsedSeconds(),
       correct: this.correct,
       misses: this.misses,
+      missesByRegion: Object.fromEntries(this.missesByRegion),
       hintActive:
         target !== null && (this.missesByTarget.get(target) ?? 0) >= HINT_AFTER_MISSES,
       ticker: this.ticker,
       win: this.win,
+      scoreboard: (snapshot?.players ?? []).map((player) => {
+        const tally = this.tallies.get(player.id) ?? { correct: 0, misses: 0 };
+        return {
+          id: player.id,
+          name: player.name,
+          avatar: player.avatar ?? null,
+          isYou: player.id === this.you,
+          correct: tally.correct,
+          misses: tally.misses,
+        };
+      }),
       notice: this.notice,
     });
   }

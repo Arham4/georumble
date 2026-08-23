@@ -7,7 +7,8 @@ import type { MapPack } from "../../../shared/mappack";
 const SVG_NS = "http://www.w3.org/2000/svg";
 const FIT_PAD = 8;
 // Effective minimum click extent in viewBox units; smaller regions get an
-// invisible fat-stroke halo so micro-regions stay clickable without zooming.
+// invisible fat-stroke halo so micro-regions stay clickable without zooming,
+// and count as "tiny" for auto-framing helpers.
 const HIT_MIN_UNITS = 26;
 const MAX_ZOOM = 12;
 const WHEEL_SENSITIVITY = 0.0016;
@@ -15,31 +16,61 @@ const LINE_DELTA_PX = 33;
 const DRAG_SLOP_PX = 4;
 const MISS_FLASH_MS = 700;
 const POP_MS = 420;
+const PRESS_MS = 260;
+const ZOOM_TWEEN_MS = 480;
+const CURSOR_SEND_MS = 50;
+const CURSOR_SEND_MIN_UNITS = 1.5;
+const CURSOR_LERP = 0.28;
+const CURSOR_STALE_MS = 4000;
 
 type RegionParts = {
   path: SVGPathElement;
   hit: SVGPathElement | null;
 };
 
+type RegionGeo = {
+  bounds: [[number, number], [number, number]];
+  minDim: number;
+};
+
+type PeerCursor = {
+  group: SVGGElement;
+  x: number;
+  y: number;
+  renderX: number;
+  renderY: number;
+  seenAt: number;
+};
+
 export class MapView {
   readonly svg: SVGSVGElement;
 
   private readonly viewport: SVGGElement;
+  private cursorLayer: SVGGElement | null = null;
+  private hintRing: SVGCircleElement | null = null;
   private readonly regions = new Map<string, RegionParts>();
+  private readonly geoById = new Map<string, RegionGeo>();
   private readonly effectTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly namesById = new Map<string, string>();
+  private readonly peers = new Map<string, PeerCursor>();
+  private peerRaf: number | null = null;
+  private lastCursorSentAt = 0;
+  private lastCursorSentPoint: [number, number] = [NaN, NaN];
   private foundIds = new Set<string>();
   private hoveredId: string | null = null;
   private targetId: string | null = null;
   private hintOn = false;
   private interactive = false;
+  private userZoomed = false;
   private width = 0;
   private height = 0;
   private k = 1;
   private tx = 0;
   private ty = 0;
+  private tweenRaf: number | null = null;
   private drag: { pointerId: number; lastX: number; lastY: number; moved: boolean } | null = null;
   private guessHandler: (featureId: string) => void = () => {};
+  private cursorHandler: (x: number, y: number) => void = () => {};
 
   constructor(host: HTMLElement) {
     this.svg = createElement<SVGSVGElement>("svg");
@@ -62,11 +93,37 @@ export class MapView {
     this.guessHandler = handler;
   }
 
+  /** Throttled pointer positions in pack coordinates, emitted while playing. */
+  onLocalCursor(handler: (x: number, y: number) => void): void {
+    this.cursorHandler = handler;
+  }
+
+  updatePeerCursor(playerId: string, name: string, avatarUrl: string | null, x: number, y: number): void {
+    let peer = this.peers.get(playerId);
+    if (!peer || peer.group.dataset.name !== name || peer.group.dataset.avatar !== (avatarUrl ?? "")) {
+      peer?.group.remove();
+      const group = buildCursorChip(playerId, name, avatarUrl);
+      this.cursorLayer?.append(group);
+      peer = { group, x, y, renderX: x, renderY: y, seenAt: Date.now() };
+      this.peers.set(playerId, peer);
+      this.startPeerLoop();
+    }
+    peer.x = x;
+    peer.y = y;
+    peer.seenAt = Date.now();
+  }
+
+  dropPeerCursor(playerId: string): void {
+    this.peers.get(playerId)?.group.remove();
+    this.peers.delete(playerId);
+  }
+
   loadPack(pack: MapPack, topo: unknown): void {
     this.destroyRegions();
     this.foundIds = new Set();
     this.targetId = null;
     this.hintOn = false;
+    this.userZoomed = false;
     this.resetView();
 
     this.width = pack.projection.width;
@@ -118,8 +175,12 @@ export class MapView {
         hitLayer.append(hit);
       }
       this.regions.set(id, { path: region, hit });
+      this.geoById.set(id, { bounds, minDim });
     }
-    this.viewport.replaceChildren(hitLayer, regionLayer);
+    const cursors = createElement<SVGGElement>("g");
+    cursors.classList.add("cursor-layer");
+    this.cursorLayer = cursors;
+    this.viewport.replaceChildren(hitLayer, regionLayer, cursors);
   }
 
   destroy(): void {
@@ -127,15 +188,25 @@ export class MapView {
       clearTimeout(timer);
     }
     this.effectTimers.clear();
+    if (this.peerRaf !== null) {
+      cancelAnimationFrame(this.peerRaf);
+    }
+    if (this.tweenRaf !== null) {
+      cancelAnimationFrame(this.tweenRaf);
+    }
     this.svg.remove();
   }
 
-  setFound(ids: readonly string[]): void {
+  setFound(ids: readonly string[], missesByRegion: Record<string, number> = {}): void {
     const next = new Set(ids);
     for (const [id, parts] of this.regions) {
       const isFound = next.has(id);
       if (isFound !== this.foundIds.has(id)) {
         parts.path.classList.toggle("found", isFound);
+      }
+      const tier = heatTier(missesByRegion[id] ?? 0);
+      for (const cls of ["heat-clean", "heat-warm", "heat-hard"]) {
+        parts.path.classList.toggle(cls, isFound && cls === tier);
       }
     }
     this.foundIds = next;
@@ -143,13 +214,24 @@ export class MapView {
   }
 
   setTarget(id: string | null): void {
+    const previous = this.targetId;
     this.targetId = id;
     this.syncHint();
+    this.placeHintRing();
+    // Gently frame a fresh tiny target so players can see the neighborhood it
+    // lives in without giving away the exact spot — unless they took the wheel.
+    if (id !== null && id !== previous && this.isTiny(id) && !this.userZoomed) {
+      this.zoomToRegion(id, 7);
+    }
   }
 
   setHint(on: boolean): void {
     this.hintOn = on;
     this.syncHint();
+    this.placeHintRing();
+    if (on && this.targetId !== null && this.isTiny(this.targetId) && !this.userZoomed) {
+      this.zoomToRegion(this.targetId, 3);
+    }
   }
 
   setInteractive(on: boolean): void {
@@ -161,14 +243,13 @@ export class MapView {
   }
 
   zoomStep(factor: number): void {
+    this.userZoomed = true;
     this.zoomAt(factor, this.width / 2, this.height / 2);
   }
 
   resetView(): void {
-    this.k = 1;
-    this.tx = 0;
-    this.ty = 0;
-    this.applyTransform();
+    this.userZoomed = false;
+    this.tweenView({ k: 1, tx: 0, ty: 0 }, 0);
   }
 
   flashCorrect(id: string): void {
@@ -177,6 +258,91 @@ export class MapView {
 
   flashMiss(id: string): void {
     this.flash(id, "miss", MISS_FLASH_MS);
+  }
+
+  /** Instant neutral ack that a click was received, before any verdict. */
+  pressFeedback(id: string): void {
+    this.flash(id, "pressed", PRESS_MS);
+  }
+
+  private isTiny(id: string): boolean {
+    return (this.geoById.get(id)?.minDim ?? Infinity) < HIT_MIN_UNITS;
+  }
+
+  private placeHintRing(): void {
+    this.hintRing?.remove();
+    this.hintRing = null;
+    if (!this.hintOn || this.targetId === null) {
+      return;
+    }
+    const id = this.targetId;
+    const geo = this.geoById.get(id);
+    if (!geo) {
+      return;
+    }
+    const [min, max] = geo.bounds;
+    const cx = (min[0] + max[0]) / 2;
+    const cy = (min[1] + max[1]) / 2;
+    const maxDim = Math.max(max[0] - min[0], max[1] - min[1]);
+    const ring = createElement<SVGCircleElement>("circle");
+    ring.classList.add("hint-ring");
+    ring.setAttribute("cx", String(cx));
+    ring.setAttribute("cy", String(cy));
+    ring.setAttribute("r", String(Math.min(46, Math.max(10, maxDim * 0.75))));
+    this.viewport.append(ring);
+    this.hintRing = ring;
+  }
+
+  private zoomToRegion(id: string, inflate: number): void {
+    const geo = this.geoById.get(id);
+    if (!geo) {
+      return;
+    }
+    const [min, max] = geo.bounds;
+    const span = Math.max(max[0] - min[0], max[1] - min[1]) * inflate;
+    const k = Math.min(MAX_ZOOM, Math.max(1, (Math.min(this.width, this.height) * 0.85) / span));
+    const cx = (min[0] + max[0]) / 2;
+    const cy = (min[1] + max[1]) / 2;
+    this.tweenView(
+      {
+        k,
+        tx: cx - this.width / (2 * k),
+        ty: cy - this.height / (2 * k),
+      },
+      ZOOM_TWEEN_MS,
+    );
+  }
+
+  private tweenView(target: { k: number; tx: number; ty: number }, durationMs: number): void {
+    if (this.tweenRaf !== null) {
+      cancelAnimationFrame(this.tweenRaf);
+      this.tweenRaf = null;
+    }
+    const from = { k: this.k, tx: this.tx, ty: this.ty };
+    if (durationMs <= 0) {
+      this.k = target.k;
+      this.tx = target.tx;
+      this.ty = target.ty;
+      this.clampPan();
+      this.applyTransform();
+      return;
+    }
+    const startedAt = performance.now();
+    const step = (now: number): void => {
+      const progress = Math.min(1, (now - startedAt) / durationMs);
+      const eased = easeInOut(progress);
+      this.k = from.k + (target.k - from.k) * eased;
+      this.tx = from.tx + (target.tx - from.tx) * eased;
+      this.ty = from.ty + (target.ty - from.ty) * eased;
+      this.clampPan();
+      this.applyTransform();
+      if (progress < 1) {
+        this.tweenRaf = requestAnimationFrame(step);
+      } else {
+        this.tweenRaf = null;
+      }
+    };
+    this.tweenRaf = requestAnimationFrame(step);
   }
 
   private flash(id: string, className: string, durationMs: number): void {
@@ -223,6 +389,27 @@ export class MapView {
     }
   }
 
+  private startPeerLoop(): void {
+    if (this.peerRaf !== null) {
+      return;
+    }
+    const step = (): void => {
+      const now = Date.now();
+      for (const [playerId, peer] of this.peers) {
+        if (now - peer.seenAt > CURSOR_STALE_MS) {
+          peer.group.remove();
+          this.peers.delete(playerId);
+          continue;
+        }
+        peer.renderX += (peer.x - peer.renderX) * CURSOR_LERP;
+        peer.renderY += (peer.y - peer.renderY) * CURSOR_LERP;
+        peer.group.setAttribute("transform", `translate(${peer.renderX} ${peer.renderY})`);
+      }
+      this.peerRaf = this.peers.size > 0 ? requestAnimationFrame(step) : null;
+    };
+    this.peerRaf = requestAnimationFrame(step);
+  }
+
   private onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0) {
       return;
@@ -234,25 +421,45 @@ export class MapView {
 
   private onPointerMove = (event: PointerEvent): void => {
     const drag = this.drag;
-    if (!drag || event.pointerId !== drag.pointerId) {
+    if (drag && event.pointerId === drag.pointerId) {
+      const dx = event.clientX - drag.lastX;
+      const dy = event.clientY - drag.lastY;
+      if (!drag.moved && Math.hypot(dx, dy) > DRAG_SLOP_PX) {
+        drag.moved = true;
+      }
+      if (drag.moved) {
+        const scale = this.viewScale();
+        this.tx += dx / scale;
+        this.ty += dy / scale;
+        drag.lastX = event.clientX;
+        drag.lastY = event.clientY;
+        this.clampPan();
+        this.applyTransform();
+      }
       return;
     }
-    const dx = event.clientX - drag.lastX;
-    const dy = event.clientY - drag.lastY;
-    if (!drag.moved && Math.hypot(dx, dy) > DRAG_SLOP_PX) {
-      drag.moved = true;
+    if (this.interactive) {
+      this.maybeSendCursor(event.clientX, event.clientY);
     }
-    if (!drag.moved) {
-      return;
-    }
-    const scale = this.viewScale();
-    this.tx += dx / scale;
-    this.ty += dy / scale;
-    drag.lastX = event.clientX;
-    drag.lastY = event.clientY;
-    this.clampPan();
-    this.applyTransform();
   };
+
+  private maybeSendCursor(clientX: number, clientY: number): void {
+    const now = performance.now();
+    if (now - this.lastCursorSentAt < CURSOR_SEND_MS) {
+      return;
+    }
+    const [x, y] = this.clientToView(clientX, clientY);
+    const [lastX, lastY] = this.lastCursorSentPoint;
+    if (
+      Number.isFinite(lastX) &&
+      Math.hypot(x - lastX, y - lastY) < CURSOR_SEND_MIN_UNITS
+    ) {
+      return;
+    }
+    this.lastCursorSentAt = now;
+    this.lastCursorSentPoint = [x, y];
+    this.cursorHandler(x, y);
+  }
 
   private onPointerUp = (event: PointerEvent): void => {
     const drag = this.drag;
@@ -303,6 +510,7 @@ export class MapView {
     event.preventDefault();
     const delta = event.deltaY * (event.deltaMode === 1 ? LINE_DELTA_PX : 1);
     const [cx, cy] = this.clientToView(event.clientX, event.clientY);
+    this.userZoomed = true;
     this.zoomAt(Math.exp(-delta * WHEEL_SENSITIVITY), cx, cy);
   };
 
@@ -353,8 +561,90 @@ export class MapView {
     }
     this.effectTimers.clear();
     this.regions.clear();
+    this.geoById.clear();
+    for (const peer of this.peers.values()) {
+      peer.group.remove();
+    }
+    this.peers.clear();
+    this.hintRing = null;
+    this.cursorLayer = null;
     this.viewport.replaceChildren();
   }
+}
+
+function heatTier(misses: number): string {
+  if (misses >= 3) {
+    return "heat-hard";
+  }
+  if (misses >= 1) {
+    return "heat-warm";
+  }
+  return "heat-clean";
+}
+
+function easeInOut(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+}
+
+function buildCursorChip(playerId: string, name: string, avatarUrl: string | null): SVGGElement {
+  const group = createElement<SVGGElement>("g");
+  group.classList.add("cursor-chip");
+  group.dataset.playerId = playerId;
+  group.dataset.name = name;
+  group.dataset.avatar = avatarUrl ?? "";
+
+  const dotRadius = 11;
+  const clipId = `cursor-clip-${sanitizeClipId(playerId)}`;
+  if (avatarUrl) {
+    const clip = createElement<SVGClipPathElement>("clipPath");
+    clip.setAttribute("id", clipId);
+    const shape = createElement<SVGCircleElement>("circle");
+    shape.setAttribute("r", String(dotRadius));
+    clip.append(shape);
+    const defs = createElement<SVGElement>("defs");
+    defs.append(clip);
+    group.append(defs);
+
+    const image = createElement<SVGImageElement>("image");
+    image.setAttribute("href", avatarUrl);
+    image.setAttribute("x", String(-dotRadius));
+    image.setAttribute("y", String(-dotRadius));
+    image.setAttribute("width", String(dotRadius * 2));
+    image.setAttribute("height", String(dotRadius * 2));
+    image.setAttribute("clip-path", `url(#${clipId})`);
+    image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    group.append(image);
+
+    const rim = createElement<SVGCircleElement>("circle");
+    rim.classList.add("cursor-rim");
+    rim.setAttribute("r", String(dotRadius));
+    group.append(rim);
+  } else {
+    const dot = createElement<SVGCircleElement>("circle");
+    dot.classList.add("cursor-dot");
+    dot.setAttribute("r", String(dotRadius));
+    group.append(dot);
+
+    const initial = createElement<SVGTextElement>("text");
+    initial.classList.add("cursor-initial");
+    initial.setAttribute("text-anchor", "middle");
+    initial.setAttribute("dominant-baseline", "central");
+    initial.setAttribute("y", "1");
+    initial.textContent = (name.trim()[0] ?? "?").toUpperCase();
+    group.append(initial);
+  }
+
+  const label = createElement<SVGTextElement>("text");
+  label.classList.add("cursor-name");
+  label.setAttribute("x", String(dotRadius + 5));
+  label.setAttribute("y", String(-dotRadius - 2));
+  label.textContent = name;
+  group.append(label);
+  return group;
+}
+
+function sanitizeClipId(playerId: string): string {
+  return playerId.replace(/[^A-Za-z0-9_-]/g, "") || "anon";
 }
 
 function extractLargestCollection(topo: unknown): FeatureCollection<GeometryObject> {

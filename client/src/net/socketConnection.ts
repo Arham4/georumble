@@ -29,11 +29,11 @@ export class SocketConnection implements Connection {
     this.socket.addEventListener("close", (event) => {
       this.stopPing();
       if (!this.closed) {
-        this.handlers.onClose({ code: event.code, reason: event.reason });
+        this.reportClosed({ code: event.code, reason: event.reason });
       }
     });
     this.socket.addEventListener("error", () => {
-      this.handlers.onClose({ code: 0, reason: "socket-error" });
+      this.reportClosed({ code: 0, reason: "socket-error" });
     });
     // The relay answers these via its auto-response pair without waking hibernation.
     this.pingTimer = setInterval(() => this.send({ t: "ping" }), PING_INTERVAL_MS);
@@ -52,6 +52,17 @@ export class SocketConnection implements Connection {
     this.stopPing();
     this.outbox = [];
     this.socket.close();
+  }
+
+  // Browsers fire error before close on abnormal failure; downstream fallback
+  // logic must run exactly once per socket.
+  private reportClosed(info: CloseInfo): void {
+    if (this.closed) {
+      return;
+    }
+    this.closed = true;
+    this.stopPing();
+    this.handlers.onClose(info);
   }
 
   private stopPing(): void {

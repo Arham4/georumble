@@ -93,6 +93,16 @@ body {
   fill: var(--correct);
 }
 
+/* Seterra-style heat: how many misses it took before the region was found.
+   Tiers differ in lightness as well as hue so they never rely on color alone. */
+.region.found.heat-warm {
+  fill: #8f7d2c;
+}
+
+.region.found.heat-hard {
+  fill: #a34f42;
+}
+
 .region.miss {
   fill: var(--wrong);
   stroke: #ffffff;
@@ -108,11 +118,23 @@ body {
   animation: region-pop 360ms ease-out;
 }
 
+.region.pressed {
+  fill: var(--accent-light);
+}
+
 .region.hint {
-  fill: var(--map-hover);
   stroke: var(--accent-light);
   stroke-width: 2.4;
   stroke-dasharray: 7 5;
+  animation: hint-pulse 1.4s ease-in-out infinite;
+}
+
+.hint-ring {
+  fill: transparent;
+  stroke: var(--accent-light);
+  stroke-width: 2;
+  stroke-dasharray: 8 5;
+  pointer-events: none;
   animation: hint-pulse 1.4s ease-in-out infinite;
 }
 
@@ -120,6 +142,62 @@ body {
   fill: none;
   stroke: transparent;
   pointer-events: stroke;
+}
+
+/* --- Live peer cursors --------------------------------------------------- */
+
+.cursor-layer {
+  pointer-events: none;
+}
+
+.cursor-dot {
+  fill: var(--accent);
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 1.5;
+}
+
+.cursor-rim {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.cursor-initial {
+  font-size: 11px;
+  font-weight: 800;
+  fill: #ffffff;
+}
+
+.cursor-name {
+  font-size: 14px;
+  font-weight: 700;
+  fill: #ffffff;
+  stroke: rgb(0 0 0 / 0.75);
+  stroke-width: 3px;
+  paint-order: stroke;
+  stroke-linejoin: round;
+}
+
+.click-label {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgb(35 39 42 / 0.85);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.click-label.visible {
+  opacity: 1;
 }
 
 @keyframes region-shake {
@@ -215,6 +293,76 @@ body {
 }
 
 .player-row .crown {
+  color: var(--accent-light);
+}
+
+.player-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.player-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.identity-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: rgb(88 101 242 / 0.14);
+  border: 1px solid rgb(88 101 242 / 0.35);
+  margin-top: 8px;
+}
+
+.identity-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.identity-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.identity-name {
+  font-weight: 700;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.identity-tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--accent-light);
 }
 
@@ -351,7 +499,7 @@ body {
 }
 
 .hud-top {
-  pointer-events: auto;
+  pointer-events: none;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -359,6 +507,12 @@ body {
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   border-bottom: 1px solid rgb(255 255 255 / 0.08);
   backdrop-filter: blur(6px);
+}
+
+/* Only interactive chrome captures the pointer; the strip must not eat map
+   clicks along the top of the canvas. */
+.hud-top :is(button, input, select, a) {
+  pointer-events: auto;
 }
 
 .prompt {
@@ -495,6 +649,80 @@ body {
   text-align: center;
 }
 
+.score-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 0.04);
+  font-size: 15px;
+  text-align: left;
+}
+
+.score-row.you {
+  background: rgb(88 101 242 / 0.18);
+}
+
+.score-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.score-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.score-avatar.initial {
+  color: #ffffff;
+}
+
+.score-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.score-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.score-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.score-accuracy {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-light);
+}
+
 .victory-title {
   margin: 0;
   font-size: 34px;
@@ -597,7 +825,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .region.miss,
   .region.pop,
-  .region.hint {
+  .region.hint,
+  .hint-ring {
     animation: none;
   }
 }

@@ -5,6 +5,8 @@ import { el, setText, type Screen } from "./dom";
 export type LobbyDeps = {
   client: GameClient;
   store: PackStore;
+  /** True inside Discord: your name is your Discord identity, not editable. */
+  identityLocked?: boolean;
 };
 
 type PackCardRefs = {
@@ -36,6 +38,28 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   nameInput.addEventListener("change", () => deps.client.rename(nameInput.value));
   const nameField = el("div", "name-field");
   nameField.append(nameInput);
+
+  // Inside Discord the seat IS your Discord account: show it, don't offer edits.
+  const identityRow = el("div", "identity-row");
+  const identityAvatar = el("span", "identity-avatar");
+  const identityName = el("span", "identity-name");
+  const identityTag = el("span", "identity-tag", "via Discord");
+  identityRow.append(identityAvatar, identityName, identityTag);
+  const avatarUrl = deps.client.playerAvatar;
+  if (avatarUrl) {
+    const image = document.createElement("img");
+    image.src = avatarUrl;
+    image.alt = "";
+    image.referrerPolicy = "no-referrer";
+    identityAvatar.append(image);
+  } else {
+    identityAvatar.textContent = (deps.client.playerName.trim()[0] ?? "?").toUpperCase();
+    identityAvatar.classList.add("initial");
+  }
+  identityName.textContent = deps.client.playerName;
+  const nameSection: HTMLElement[] = deps.identityLocked
+    ? [identityRow]
+    : [nameLabel, nameField];
 
   const playersLabel = el("div", "section-label", "In this room");
   const playerList = el("ul", "player-list");
@@ -91,8 +115,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
 
   panel.append(
     heading,
-    nameLabel,
-    nameField,
+    ...nameSection,
     playersLabel,
     playerList,
     packsLabel,
@@ -112,7 +135,18 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
         if (player.isHost) {
           row.append(el("span", "crown", "♛"));
         }
-        row.append(el("span", undefined, player.name));
+        const avatar = el("span", "player-avatar");
+        if (player.avatar) {
+          const image = document.createElement("img");
+          image.src = player.avatar;
+          image.alt = "";
+          image.referrerPolicy = "no-referrer";
+          avatar.append(image);
+        } else {
+          avatar.textContent = (player.name.trim()[0] ?? "?").toUpperCase();
+          avatar.classList.add("initial");
+        }
+        row.append(avatar, el("span", undefined, player.name));
         if (player.isYou) {
           row.append(el("span", "you-tag", "YOU"));
         }
@@ -138,7 +172,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       chip.classList.toggle("live", !solo && state.phase !== "boot");
       setText(chip, solo ? "Solo room" : "Live room");
       renderPlayers(state);
-      if (document.activeElement !== nameInput) {
+      if (!deps.identityLocked && document.activeElement !== nameInput) {
         nameInput.value = deps.client.playerName;
       }
       updateStartButton(state);

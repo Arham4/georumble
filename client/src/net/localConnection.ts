@@ -62,6 +62,9 @@ export class LocalConnection implements Connection {
           this.enqueue({ t: "guess", featureId: message.featureId, byPlayer: this.playerId });
         }
         break;
+      // Solo play has nobody to show a pointer to.
+      case "cursor":
+        break;
       case "verdict":
         this.verdict(message.outcome);
         break;
@@ -155,12 +158,14 @@ export class LocalConnection implements Connection {
     }
     const room = this.room!;
     const current = room.orderIndex ?? -1;
-    if (
-      typeof index !== "number" ||
-      !Number.isInteger(index) ||
-      index <= current ||
-      index >= room.order.length
-    ) {
+    if (typeof index !== "number" || !Number.isInteger(index)) {
+      this.reject("invalid advance");
+      return;
+    }
+    if (index <= current) {
+      return;
+    }
+    if (index >= room.order.length) {
       this.reject("invalid advance");
       return;
     }

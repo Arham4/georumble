@@ -6,9 +6,38 @@ export type VictoryDeps = {
   restart(): Promise<void>;
 };
 
+function scoreRow(state: GameState, index: number): HTMLElement {
+  const row = state.scoreboard[index];
+  const rowEl = el("li", "score-row");
+  if (row.isYou) {
+    rowEl.classList.add("you");
+  }
+  const avatar = el("span", "score-avatar");
+  if (row.avatar) {
+    const image = document.createElement("img");
+    image.src = row.avatar;
+    image.alt = "";
+    image.referrerPolicy = "no-referrer";
+    avatar.append(image);
+  } else {
+    avatar.textContent = (row.name.trim()[0] ?? "?").toUpperCase();
+    avatar.classList.add("initial");
+  }
+  const name = el("span", "score-name", `${row.name}${row.isYou ? " (you)" : ""}`);
+  const stats = el("span", "score-stats");
+  const total = row.correct + row.misses;
+  stats.append(
+    el("span", "score-detail", `${row.correct}/${total} found`),
+    el("span", "score-accuracy", accuracyPercent(row.correct, total)),
+  );
+  rowEl.append(avatar, name, stats);
+  return rowEl;
+}
+
 /**
  * Victory: the genre's two headline numbers (time + accuracy) plus total
- * guesses, with a host-only play-again that reshuffles the same pack.
+ * guesses, a per-player scoreboard, and a host-only play-again that
+ * reshuffles the same pack.
  */
 export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): Screen {
   const panel = el("div", "panel victory-panel");
@@ -26,6 +55,9 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
   const accuracyCell = el("div", "stat-cell");
   accuracyCell.append(accuracyValue, el("div", "label", "Accuracy"));
   grid.append(timeCell, guessCell, accuracyCell);
+
+  const scoreboardLabel = el("div", "section-label", "Who carried");
+  const scoreList = el("ul", "score-list");
 
   let restarting = false;
   const againButton = el("button", "btn full");
@@ -47,7 +79,7 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
   const waitingNote = el("p", "waiting-note hidden");
   waitingNote.textContent = "Ask the host to run it back.";
 
-  panel.append(title, sub, grid, againButton, waitingNote);
+  panel.append(title, sub, grid, scoreboardLabel, scoreList, againButton, waitingNote);
   container.append(panel);
 
   return {
@@ -66,6 +98,18 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
           ? "Solo run complete. Try beating this time."
           : `${state.players.map((player) => player.name).join(", ")} cleared it together.`,
       );
+      const ranked = state.scoreboard
+        .map((row, index) => ({ row, index }))
+        .filter(({ row }) => row.correct + row.misses > 0)
+        .sort(
+          (a, b) =>
+            b.row.correct / (b.row.correct + b.row.misses) -
+              a.row.correct / (a.row.correct + a.row.misses) ||
+            b.row.correct - a.row.correct,
+        );
+      scoreList.replaceChildren(...ranked.map(({ index }) => scoreRow(state, index)));
+      scoreboardLabel.classList.toggle("hidden", solo || ranked.length === 0);
+      scoreList.classList.toggle("hidden", solo || ranked.length === 0);
       againButton.classList.toggle("hidden", !state.isHost);
       waitingNote.classList.toggle("hidden", state.isHost);
     },
