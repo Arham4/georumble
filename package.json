@@ -1,0 +1,8 @@
+{
+  "name": "georumble",
+  "private": true,
+  "scripts": {
+    "dev": "docker compose up --build",
+    "install:all": "npm --prefix client install && npm --prefix worker install"
+  }
+}
