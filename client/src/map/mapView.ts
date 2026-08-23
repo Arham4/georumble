@@ -52,6 +52,7 @@ export class MapView {
   private readonly geoById = new Map<string, RegionGeo>();
   private readonly effectTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly namesById = new Map<string, string>();
+  private readonly centroidById = new Map<string, [number, number]>();
   private readonly peers = new Map<string, PeerCursor>();
   private peerRaf: number | null = null;
   private lastCursorSentAt = 0;
@@ -129,8 +130,12 @@ export class MapView {
     this.width = pack.projection.width;
     this.height = pack.projection.height;
     this.namesById.clear();
+    this.centroidById.clear();
     for (const item of pack.features) {
       this.namesById.set(item.id, item.name);
+      if (item.centroidHint) {
+        this.centroidById.set(item.id, [item.centroidHint.x, item.centroidHint.y]);
+      }
     }
     this.svg.setAttribute("viewBox", `0 0 ${this.width} ${this.height}`);
     this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
@@ -281,8 +286,11 @@ export class MapView {
       return;
     }
     const [min, max] = geo.bounds;
-    const cx = (min[0] + max[0]) / 2;
-    const cy = (min[1] + max[1]) / 2;
+    // The pack's centroidHint marks the visual mass (bbox centers betray
+    // Norway-shaped regions and multi-island countries); fall back to it.
+    const hint = this.centroidById.get(id);
+    const cx = hint ? hint[0] : (min[0] + max[0]) / 2;
+    const cy = hint ? hint[1] : (min[1] + max[1]) / 2;
     const maxDim = Math.max(max[0] - min[0], max[1] - min[1]);
     const ring = createElement<SVGCircleElement>("circle");
     ring.classList.add("hint-ring");
@@ -562,6 +570,7 @@ export class MapView {
     this.effectTimers.clear();
     this.regions.clear();
     this.geoById.clear();
+    this.centroidById.clear();
     for (const peer of this.peers.values()) {
       peer.group.remove();
     }
