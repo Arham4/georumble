@@ -1,0 +1,351 @@
+{
+  "packId": "europe",
+  "displayName": "Europe",
+  "projection": {
+    "kind": "conic-conformal-preprojected",
+    "width": 1015,
+    "height": 640
+  },
+  "source": {
+    "name": "world-atlas countries-50m.json (Natural Earth 1:50m)",
+    "url": "https://github.com/topojson/world-atlas",
+    "license": "Public domain (Natural Earth data)"
+  },
+  "features": [
+    {
+      "id": "AL",
+      "name": "Albania",
+      "centroidHint": {
+        "x": 584,
+        "y": 505
+      }
+    },
+    {
+      "id": "AT",
+      "name": "Austria",
+      "centroidHint": {
+        "x": 515,
+        "y": 419
+      }
+    },
+    {
+      "id": "BY",
+      "name": "Belarus",
+      "centroidHint": {
+        "x": 626,
+        "y": 317
+      }
+    },
+    {
+      "id": "BE",
+      "name": "Belgium",
+      "centroidHint": {
+        "x": 427,
+        "y": 375
+      }
+    },
+    {
+      "id": "BA",
+      "name": "Bosnia and Herzegovina",
+      "aliases": [
+        "Bosnia"
+      ],
+      "centroidHint": {
+        "x": 555,
+        "y": 465
+      }
+    },
+    {
+      "id": "BG",
+      "name": "Bulgaria",
+      "centroidHint": {
+        "x": 635,
+        "y": 473
+      }
+    },
+    {
+      "id": "HR",
+      "name": "Croatia",
+      "centroidHint": {
+        "x": 540,
+        "y": 452
+      }
+    },
+    {
+      "id": "CZ",
+      "name": "Czechia",
+      "aliases": [
+        "Czech Republic"
+      ],
+      "centroidHint": {
+        "x": 524,
+        "y": 388
+      }
+    },
+    {
+      "id": "DK",
+      "name": "Denmark",
+      "centroidHint": {
+        "x": 470,
+        "y": 297
+      }
+    },
+    {
+      "id": "EE",
+      "name": "Estonia",
+      "centroidHint": {
+        "x": 593,
+        "y": 249
+      }
+    },
+    {
+      "id": "FI",
+      "name": "Finland",
+      "centroidHint": {
+        "x": 578,
+        "y": 168
+      }
+    },
+    {
+      "id": "FR",
+      "name": "France",
+      "centroidHint": {
+        "x": 401,
+        "y": 431
+      }
+    },
+    {
+      "id": "DE",
+      "name": "Germany",
+      "centroidHint": {
+        "x": 478,
+        "y": 371
+      }
+    },
+    {
+      "id": "GR",
+      "name": "Greece",
+      "aliases": [
+        "Hellas"
+      ],
+      "centroidHint": {
+        "x": 615,
+        "y": 525
+      }
+    },
+    {
+      "id": "HU",
+      "name": "Hungary",
+      "centroidHint": {
+        "x": 566,
+        "y": 421
+      }
+    },
+    {
+      "id": "IS",
+      "name": "Iceland",
+      "centroidHint": {
+        "x": 301,
+        "y": 136
+      }
+    },
+    {
+      "id": "IE",
+      "name": "Ireland",
+      "centroidHint": {
+        "x": 321,
+        "y": 322
+      }
+    },
+    {
+      "id": "IT",
+      "name": "Italy",
+      "centroidHint": {
+        "x": 499,
+        "y": 479
+      }
+    },
+    {
+      "id": "LV",
+      "name": "Latvia",
+      "centroidHint": {
+        "x": 591,
+        "y": 276
+      }
+    },
+    {
+      "id": "LT",
+      "name": "Lithuania",
+      "centroidHint": {
+        "x": 588,
+        "y": 299
+      }
+    },
+    {
+      "id": "LU",
+      "name": "Luxembourg",
+      "centroidHint": {
+        "x": 439,
+        "y": 388
+      }
+    },
+    {
+      "id": "MT",
+      "name": "Malta",
+      "centroidHint": {
+        "x": 528,
+        "y": 588
+      }
+    },
+    {
+      "id": "MD",
+      "name": "Moldova",
+      "centroidHint": {
+        "x": 653,
+        "y": 404
+      }
+    },
+    {
+      "id": "NL",
+      "name": "Netherlands",
+      "aliases": [
+        "Holland"
+      ],
+      "centroidHint": {
+        "x": 437,
+        "y": 352
+      }
+    },
+    {
+      "id": "MK",
+      "name": "North Macedonia",
+      "aliases": [
+        "Macedonia"
+      ],
+      "centroidHint": {
+        "x": 601,
+        "y": 496
+      }
+    },
+    {
+      "id": "NO",
+      "name": "Norway",
+      "centroidHint": {
+        "x": 491,
+        "y": 184
+      }
+    },
+    {
+      "id": "PL",
+      "name": "Poland",
+      "centroidHint": {
+        "x": 557,
+        "y": 350
+      }
+    },
+    {
+      "id": "PT",
+      "name": "Portugal",
+      "centroidHint": {
+        "x": 276,
+        "y": 510
+      }
+    },
+    {
+      "id": "RO",
+      "name": "Romania",
+      "centroidHint": {
+        "x": 623,
+        "y": 430
+      }
+    },
+    {
+      "id": "RU",
+      "name": "Russia",
+      "centroidHint": {
+        "x": 891,
+        "y": -115
+      }
+    },
+    {
+      "id": "RS",
+      "name": "Serbia",
+      "centroidHint": {
+        "x": 586,
+        "y": 461
+      }
+    },
+    {
+      "id": "SK",
+      "name": "Slovakia",
+      "centroidHint": {
+        "x": 564,
+        "y": 399
+      }
+    },
+    {
+      "id": "SI",
+      "name": "Slovenia",
+      "centroidHint": {
+        "x": 523,
+        "y": 440
+      }
+    },
+    {
+      "id": "ES",
+      "name": "Spain",
+      "centroidHint": {
+        "x": 326,
+        "y": 511
+      }
+    },
+    {
+      "id": "SE",
+      "name": "Sweden",
+      "centroidHint": {
+        "x": 518,
+        "y": 204
+      }
+    },
+    {
+      "id": "CH",
+      "name": "Switzerland",
+      "centroidHint": {
+        "x": 458,
+        "y": 431
+      }
+    },
+    {
+      "id": "TR",
+      "name": "Turkey",
+      "aliases": [
+        "Turkiye"
+      ],
+      "centroidHint": {
+        "x": 756,
+        "y": 494
+      }
+    },
+    {
+      "id": "UA",
+      "name": "Ukraine",
+      "centroidHint": {
+        "x": 671,
+        "y": 369
+      }
+    },
+    {
+      "id": "GB",
+      "name": "United Kingdom",
+      "aliases": [
+        "UK",
+        "Britain",
+        "Great Britain"
+      ],
+      "centroidHint": {
+        "x": 371,
+        "y": 322
+      }
+    }
+  ]
+}

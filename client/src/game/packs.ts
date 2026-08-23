@@ -20,6 +20,13 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     mappackUrl: "/mappacks/us-states.mappack.json",
     topoUrl: "/mappacks/us-states.topojson",
   },
+  {
+    packId: "europe",
+    displayName: "Europe",
+    blurb: "39 countries from Portugal to Russia, microstates spared",
+    mappackUrl: "/mappacks/europe.mappack.json",
+    topoUrl: "/mappacks/europe.topojson",
+  },
 ];
 
 export type LoadedPack = {

@@ -5,7 +5,11 @@
 import { readFile } from "node:fs/promises";
 
 const PACK_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const KNOWN_PROJECTIONS = new Set(["albers-usa-preprojected", "equirectangular-geo"]);
+const KNOWN_PROJECTIONS = new Set([
+  "albers-usa-preprojected",
+  "conic-conformal-preprojected",
+  "equirectangular-geo",
+]);
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;

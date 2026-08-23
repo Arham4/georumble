@@ -13,7 +13,11 @@ Protocol tie-in (`shared/protocol.ts`): `RoomSnapshot.packId` selects the pack,
 | --- | --- |
 | `assets/mappacks/us-states.topojson` | Raw TopoJSON geometry (`objects.states`), pre-projected with d3 `geoAlbersUsa`. Render source; committed. |
 | `assets/mappacks/us-states.mappack.json` | Contract-shaped metadata pack derived by `scripts/fetch-mappacks.mjs`. |
-| `scripts/fetch-mappacks.mjs` | Downloads us-atlas, writes both files above. |
+| `assets/mappacks/europe.topojson` | European countries pre-projected with a conic conformal projection, built by `scripts/build-europe.mjs`. |
+| `assets/mappacks/europe.mappack.json` | Europe metadata pack (39 countries, ISO alpha-2 ids). |
+| `scripts/fetch-mappacks.mjs` | Downloads us-atlas, writes the us-states files above. |
+| `scripts/build-europe.mjs` | Downloads world-atlas, selects and pre-projects Europe, writes the europe files above. |
+| `scripts/lib/topo-utils.mjs` | TopoJSON decode/centroid/bounds/encode math shared by every builder. |
 | `scripts/validate-mappack.mjs` | Checks any `*.mappack.json` against this contract; nonzero exit on violation. |
 
 ## Type definitions
@@ -21,7 +25,10 @@ Protocol tie-in (`shared/protocol.ts`): `RoomSnapshot.packId` selects the pack,
 These are the exact types the future `shared/mappack.ts` should declare:
 
 ```ts
-export type ProjectionKind = "albers-usa-preprojected" | "equirectangular-geo";
+export type ProjectionKind =
+  | "albers-usa-preprojected"
+  | "conic-conformal-preprojected"
+  | "equirectangular-geo";
 
 export type CentroidHint = {
   x: number;
@@ -63,9 +70,10 @@ export type MapPack = {
 
 ## Field semantics
 
-- **`projection.kind`** — `"albers-usa-preprojected"` means coordinates (TopoJSON arcs and
-  `centroidHint`) are already projected pixels inside a `width`×`height` canvas; render with
-  `d3.geoIdentity().fitExtent(...)`, no reprojection needed. `"equirectangular-geo"` means
+- **`projection.kind`** — `"albers-usa-preprojected"` and `"conic-conformal-preprojected"` mean
+  coordinates (TopoJSON arcs and `centroidHint`) are already projected pixels inside a
+  `width`×`height` canvas; render with `d3.geoIdentity().fitExtent(...)`, no reprojection needed.
+  The kind string documents which projection produced the pixels. `"equirectangular-geo"` means
   coordinates are lon/lat degrees and `centroidHint` is `{ x: lon, y: lat }`.
 - **`id`** — the join key to TopoJSON geometries and the value sent as `featureId` on the wire.
   Never renumber; new packs should adopt their source atlas's native id convention.
@@ -109,5 +117,12 @@ Enforced by `scripts/validate-mappack.mjs`:
   The fetched snapshot contains 51 features: 50 states + District of Columbia. Puerto Rico
   is absent because `geoAlbersUsa` does not project it; add a separate pack if PR gameplay
   is wanted.
+- Europe: [world-atlas](https://github.com/topojson/world-atlas) `countries-50m.json` (v2),
+  built from Natural Earth 1:50m data — **public domain**. 39 countries with ISO alpha-2
+  ids, pre-projected with `geoConicConformal` (parallels 35/65, rotated to 10°E) fitted to
+  26°W–52°E / 33°N–72°N. Microstates (Andorra, Liechtenstein, Monaco, San Marino, Vatican)
+  and Kosovo (unstable `-99` id in the source) are excluded; adding them later is safe under
+  the same `packId`. Outlying territory (far-east Russia, Canaries, French Guiana) extends
+  past the canvas and clips at the render edge.
 - Only public-domain map data may be committed here. All artwork in `assets/brand/` is
   original to GeoRumble.

@@ -4,6 +4,12 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  bounds,
+  decodeArcs,
+  mainRingCentroid,
+  ringPoints,
+} from "./lib/topo-utils.mjs";
 
 const PACK_ID = "us-states";
 const DISPLAY_NAME = "US States";
@@ -50,86 +56,6 @@ async function fetchTopology() {
     }
   }
   throw new Error(`All sources failed:\n  ${failures.join("\n  ")}`);
-}
-
-function decodeArcs(topology) {
-  const [sx, sy] = topology.transform.scale;
-  const [tx, ty] = topology.transform.translate;
-  const cache = new Map();
-  return (index) => {
-    if (!cache.has(index)) {
-      let x = 0;
-      let y = 0;
-      cache.set(
-        index,
-        topology.arcs[index].map(([dx, dy]) => {
-          x += dx;
-          y += dy;
-          return [x * sx + tx, y * sy + ty];
-        }),
-      );
-    }
-    return cache.get(index);
-  };
-}
-
-function ringPoints(topology, arcIndexes, arcAt) {
-  const points = [];
-  for (const index of arcIndexes) {
-    const segment = index < 0 ? [...arcAt(~index)].reverse() : arcAt(index);
-    points.push(...(points.length ? segment.slice(1) : segment));
-  }
-  return points;
-}
-
-function areaAndCentroid(points) {
-  let twiceArea = 0;
-  let sumX = 0;
-  let sumY = 0;
-  for (let i = 0; i < points.length; i++) {
-    const [x1, y1] = points[i];
-    const [x2, y2] = points[(i + 1) % points.length];
-    const cross = x1 * y2 - x2 * y1;
-    twiceArea += cross;
-    sumX += (x1 + x2) * cross;
-    sumY += (y1 + y2) * cross;
-  }
-  if (twiceArea === 0) return null;
-  return { absArea: Math.abs(twiceArea) / 2, x: sumX / (3 * twiceArea), y: sumY / (3 * twiceArea) };
-}
-
-function mainRingCentroid(topology, geometry, arcAt) {
-  const polygons =
-    geometry.type === "Polygon" ? [geometry.arcs]
-    : geometry.type === "MultiPolygon" ? geometry.arcs
-    : [];
-  let best = null;
-  for (const polygon of polygons) {
-    const candidate = areaAndCentroid(ringPoints(topology, polygon[0], arcAt));
-    if (candidate && (!best || candidate.absArea > best.absArea)) best = candidate;
-  }
-  return best;
-}
-
-function bounds(topology, geometries, arcAt) {
-  const xs = [];
-  const ys = [];
-  for (const geometry of geometries) {
-    const rings =
-      geometry.type === "Polygon" ? [geometry.arcs.flat()]
-      : geometry.type === "MultiPolygon" ? geometry.arcs.flat()
-      : [];
-    for (const ring of rings) {
-      for (const [x, y] of ringPoints(topology, ring, arcAt)) {
-        xs.push(x);
-        ys.push(y);
-      }
-    }
-  }
-  return {
-    width: Math.ceil(Math.max(...xs) - Math.min(...xs)),
-    height: Math.ceil(Math.max(...ys) - Math.min(...ys)),
-  };
 }
 
 function buildPack(topology) {
