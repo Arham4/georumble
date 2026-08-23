@@ -70,6 +70,7 @@ export class MapView {
   private ty = 0;
   private tweenRaf: number | null = null;
   private drag: { pointerId: number; lastX: number; lastY: number; moved: boolean } | null = null;
+  private lastPointer: { x: number; y: number } | null = null;
   private guessHandler: (featureId: string) => void = () => {};
   private cursorHandler: (x: number, y: number) => void = () => {};
 
@@ -449,13 +450,23 @@ export class MapView {
       return;
     }
     if (this.interactive) {
-      // Recompute hover from the true pointer position every move: relying on
-      // pointerover alone lets highlights go stale when the camera tweens
-      // under a still cursor or a boundary event is missed.
-      this.setHovered(regionIdAtPoint(event.clientX, event.clientY));
+      this.lastPointer = { x: event.clientX, y: event.clientY };
+      this.refreshHover();
       this.maybeSendCursor(event.clientX, event.clientY);
     }
   };
+
+  /**
+   * Hover must track the true pointer position, recomputed on both pointer
+   * moves AND camera changes — zooming or tweening slides regions under a
+   * still cursor without firing any pointer events.
+   */
+  private refreshHover(): void {
+    if (!this.interactive || this.drag || this.lastPointer === null) {
+      return;
+    }
+    this.setHovered(regionIdAtPoint(this.lastPointer.x, this.lastPointer.y));
+  }
 
   private maybeSendCursor(clientX: number, clientY: number): void {
     const now = performance.now();
@@ -542,6 +553,7 @@ export class MapView {
 
   private applyTransform(): void {
     this.viewport.setAttribute("transform", `translate(${this.tx} ${this.ty}) scale(${this.k})`);
+    this.refreshHover();
   }
 
   private viewScale(): number {
