@@ -53,6 +53,8 @@ export class MapView {
   private readonly effectTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly namesById = new Map<string, string>();
   private readonly centroidById = new Map<string, [number, number]>();
+  private readonly halos: SVGPathElement[] = [];
+  private debugDot: SVGCircleElement | null = null;
   private readonly peers = new Map<string, PeerCursor>();
   private peerRaf: number | null = null;
   private lastCursorSentAt = 0;
@@ -178,7 +180,9 @@ export class MapView {
         hit.setAttribute("d", d);
         hit.setAttribute("data-region-id", id);
         hit.classList.add("hit-area");
+        hit.dataset.baseStroke = String((HIT_MIN_UNITS - minDim) * 1.5 + 6);
         hit.setAttribute("stroke-width", String((HIT_MIN_UNITS - minDim) * 1.5 + 6));
+        this.halos.push(hit);
         hitLayer.append(hit);
       }
       this.regions.set(id, { path: region, hit });
@@ -188,6 +192,14 @@ export class MapView {
     cursors.classList.add("cursor-layer");
     this.cursorLayer = cursors;
     this.viewport.replaceChildren(hitLayer, regionLayer, cursors);
+    if (this.debug) {
+      const dot = createElement<SVGCircleElement>("circle");
+      dot.classList.add("debug-dot");
+      dot.setAttribute("r", "4");
+      dot.setAttribute("opacity", "0");
+      this.viewport.append(dot);
+      this.debugDot = dot;
+    }
   }
 
   destroy(): void {
@@ -453,6 +465,12 @@ export class MapView {
     }
     if (this.interactive) {
       this.lastPointer = { x: event.clientX, y: event.clientY };
+      if (this.debugDot) {
+        const [vx, vy] = this.clientToView(event.clientX, event.clientY);
+        this.debugDot.setAttribute("cx", String(vx));
+        this.debugDot.setAttribute("cy", String(vy));
+        this.debugDot.setAttribute("opacity", "0.9");
+      }
       this.refreshHover("pointer");
       this.maybeSendCursor(event.clientX, event.clientY);
     }
@@ -470,9 +488,10 @@ export class MapView {
     const id = regionIdAtPoint(this.lastPointer.x, this.lastPointer.y);
     if (this.debug) {
       const el = document.elementFromPoint(this.lastPointer.x, this.lastPointer.y);
+      const kind = el?.classList.contains("hit-area") ? "[halo]" : "";
       console.log(
         `[hover] src=${source} point=(${this.lastPointer.x},${this.lastPointer.y}) ` +
-          `element=${el?.tagName ?? "null"}#${el?.getAttribute?.("data-region-id") ?? "-"} ` +
+          `element=${el?.tagName ?? "null"}${kind}#${el?.getAttribute?.("data-region-id") ?? "-"} ` +
           `-> ${id ?? "null"} k=${this.k.toFixed(2)}`,
       );
     }
@@ -564,6 +583,15 @@ export class MapView {
 
   private applyTransform(): void {
     this.viewport.setAttribute("transform", `translate(${this.tx} ${this.ty}) scale(${this.k})`);
+    // Click halos are sized in canvas units for the unzoomed map; rescale them
+    // so the on-screen assist stays constant instead of ballooning with zoom.
+    for (const halo of this.halos) {
+      const base = Number(halo.dataset.baseStroke ?? 0);
+      if (base > 0) {
+        halo.setAttribute("stroke-width", String(base / this.k));
+      }
+    }
+    this.debugDot?.setAttribute("r", String(4 / this.k));
     this.refreshHover("camera");
   }
 
@@ -592,6 +620,8 @@ export class MapView {
     this.regions.clear();
     this.geoById.clear();
     this.centroidById.clear();
+    this.halos.length = 0;
+    this.debugDot = null;
     for (const peer of this.peers.values()) {
       peer.group.remove();
     }

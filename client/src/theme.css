@@ -200,6 +200,13 @@ body {
   opacity: 1;
 }
 
+.debug-dot {
+  fill: #ffcc00;
+  stroke: #000000;
+  stroke-width: 1;
+  pointer-events: none;
+}
+
 @keyframes region-shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-4px); }
