@@ -1,6 +1,8 @@
 export type Player = {
   id: string;
   name: string;
+  /** Discord avatar hash when the seat is authenticated; absent for guests. */
+  avatar?: string | null;
 };
 
 export type Phase = "lobby" | "playing" | "victory";
@@ -29,13 +31,15 @@ export type GuessOutcome = {
 };
 
 export type ClientMessage =
-  | { t: "hello"; name: string }
+  | { t: "hello"; name: string; avatar?: string | null }
   | { t: "ping" }
   | { t: "start"; packId: string; order: string[] }
   | { t: "guess"; featureId: string }
   | { t: "verdict"; outcome: GuessOutcome }
   | { t: "advance"; index: number }
-  | { t: "win"; seconds: number; guesses: number };
+  | { t: "win"; seconds: number; guesses: number }
+  /** Pointer position in pack coordinates; relayed live, never stored. */
+  | { t: "cursor"; x: number; y: number };
 
 export type ServerMessage =
   | { t: "welcome"; you: string; snapshot: RoomSnapshot }
@@ -44,6 +48,7 @@ export type ServerMessage =
   | { t: "guess"; featureId: string; byPlayer: string }
   | { t: "verdict"; outcome: GuessOutcome }
   | { t: "win"; seconds: number; guesses: number }
+  | { t: "cursor"; byPlayer: string; x: number; y: number }
   | { t: "rejected"; reason: string }
   | { t: "pong" };
 

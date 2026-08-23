@@ -15,12 +15,15 @@ import { rejectUpgrade } from "./upgrade";
 // Matches the design-patterns guidance that voice channels are the real ceiling.
 const MAX_PARTICIPANTS = 30;
 const MAX_NAME_LENGTH = 32;
+const MAX_AVATAR_LENGTH = 64;
 const HELLO_TIMEOUT_MS = 30_000;
 const ALARM_INTERVAL_MS = 5 * 60_000;
+const CURSOR_MIN_INTERVAL_MS = 33;
 
 type StoredPlayer = {
   id: string;
   name: string;
+  avatar?: string | null;
   joinedAt: number;
 };
 
@@ -32,6 +35,10 @@ type StoredPlayer = {
 type PersistedRoom = {
   players: StoredPlayer[];
   hostId: string | null;
+  /** Most recent handoff donor, so a refresh can reclaim an idle crown. */
+  lastHostId: string | null;
+  /** Host that started the current round, so a mid-round refresh can reclaim. */
+  roundHostId: string | null;
   phase: Phase;
   packId: string | null;
   order: string[];
@@ -47,6 +54,7 @@ export class GameRoom extends DurableObject<Env> {
   private room: PersistedRoom | null = null;
   private sockets = new Map<string, WebSocket>();
   private pending = new Map<WebSocket, number>();
+  private lastCursorAt = new Map<string, number>();
   private ready: Promise<void> | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -70,6 +78,8 @@ export class GameRoom extends DurableObject<Env> {
       this.room = {
         players: [],
         hostId: null,
+        lastHostId: null,
+        roundHostId: null,
         phase: "lobby",
         packId: null,
         order: [],
@@ -120,7 +130,7 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     if (message.t === "hello") {
-      await this.join(ws, playerId, message.name);
+      await this.join(ws, playerId, message.name, message.avatar);
       return;
     }
     if (!this.room?.players.some((p) => p.id === playerId)) {
@@ -130,7 +140,14 @@ export class GameRoom extends DurableObject<Env> {
 
     switch (message.t) {
       case "guess":
+        if (typeof message.featureId !== "string" || !message.featureId || message.featureId.length > 64) {
+          this.sendTo(ws, { t: "rejected", reason: "invalid guess" });
+          break;
+        }
         this.broadcast({ t: "guess", featureId: message.featureId, byPlayer: playerId });
+        break;
+      case "cursor":
+        this.relayCursor(ws, playerId, message.x, message.y);
         break;
       case "start":
         await this.start(playerId, message.packId, message.order);
@@ -146,6 +163,29 @@ export class GameRoom extends DurableObject<Env> {
         break;
       default:
         this.sendTo(ws, { t: "rejected", reason: "unknown message" });
+    }
+  }
+
+  /** Live pointer positions are pure relay traffic: no storage, sender excluded. */
+  private relayCursor(sender: WebSocket, playerId: string, x: unknown, y: unknown): void {
+    if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) {
+      return;
+    }
+    const now = Date.now();
+    if (now - (this.lastCursorAt.get(playerId) ?? 0) < CURSOR_MIN_INTERVAL_MS) {
+      return;
+    }
+    this.lastCursorAt.set(playerId, now);
+    const encoded = JSON.stringify({
+      t: "cursor",
+      byPlayer: playerId,
+      x,
+      y,
+    } satisfies ServerMessage);
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws !== sender && ws.readyState === WebSocket.READY_STATE_OPEN) {
+        ws.send(encoded);
+      }
     }
   }
 
@@ -167,6 +207,7 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     if (this.room.hostId === playerId) {
+      this.room.lastHostId = playerId;
       this.room.hostId = this.room.players[0].id;
       this.broadcast({ t: "host", hostId: this.room.hostId });
     }
@@ -194,13 +235,16 @@ export class GameRoom extends DurableObject<Env> {
     await this.scheduleAlarm();
   }
 
-  private async join(ws: WebSocket, playerId: string, rawName: string): Promise<void> {
+  private async join(ws: WebSocket, playerId: string, rawName: string, rawAvatar: unknown): Promise<void> {
     const room = this.room;
     if (!room) {
       return;
     }
     this.pending.delete(ws);
     const name = (rawName || "").trim().slice(0, MAX_NAME_LENGTH) || "Player";
+    const avatar = typeof rawAvatar === "string" && rawAvatar.length > 0 && rawAvatar.length <= MAX_AVATAR_LENGTH
+      ? rawAvatar.replace(/[^A-Za-z0-9_-]/g, "")
+      : null;
     let player = room.players.find((p) => p.id === playerId);
     if (!player) {
       player = { id: playerId, name, joinedAt: Date.now() };
@@ -208,15 +252,22 @@ export class GameRoom extends DurableObject<Env> {
     } else {
       player.name = name;
     }
+    player.avatar = avatar;
     this.sockets.set(playerId, ws);
 
     const electedHost = room.hostId === null;
-    if (electedHost) {
+    // A page refresh can close the old socket before the new hello arrives,
+    // which hands the crown away; the refresher takes it back so Start never
+    // wanders away from the room's owner.
+    const reclaimable =
+      !electedHost && room.hostId !== playerId &&
+      (room.phase === "lobby" ? room.lastHostId === playerId : room.roundHostId === playerId);
+    if (electedHost || reclaimable) {
       room.hostId = playerId;
     }
     await this.persist();
     this.sendTo(ws, { t: "welcome", you: playerId, snapshot: this.snapshot(room) });
-    if (electedHost) {
+    if (electedHost || reclaimable) {
       this.broadcast({ t: "host", hostId: playerId });
     }
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
@@ -251,6 +302,7 @@ export class GameRoom extends DurableObject<Env> {
     room.orderIndex = 0;
     room.found = [];
     room.startedAt = Date.now();
+    room.roundHostId = hostId;
     await this.persist();
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }
@@ -299,12 +351,16 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     const current = room.orderIndex ?? -1;
-    if (
-      typeof index !== "number" ||
-      !Number.isInteger(index) ||
-      index <= current ||
-      index >= room.order.length
-    ) {
+    if (typeof index !== "number" || !Number.isInteger(index)) {
+      this.denyHost(hostId, "invalid advance");
+      return;
+    }
+    if (index <= current) {
+      // Racing verdicts can advance twice from a stale index; a redundant
+      // advance is benign, so absorb it silently instead of toasting an error.
+      return;
+    }
+    if (index >= room.order.length) {
       this.denyHost(hostId, "invalid advance");
       return;
     }
@@ -373,7 +429,11 @@ export class GameRoom extends DurableObject<Env> {
   private snapshot(room: PersistedRoom): RoomSnapshot {
     return {
       hostId: room.hostId,
-      players: room.players.map(({ id, name }) => ({ id, name })),
+      players: room.players.map(({ id, name, avatar }) => ({
+        id,
+        name,
+        ...(avatar ? { avatar } : {}),
+      })),
       phase: room.phase,
       packId: room.packId,
       order: room.order,

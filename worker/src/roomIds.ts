@@ -27,16 +27,20 @@ export function parseRoomId(raw: string): RoomReferral | null {
 export async function admitRoomId(
   raw: string,
   env: Env,
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<{ ok: true; roomId: string } | { ok: false; reason: string }> {
   const referral = parseRoomId(raw);
   if (referral === null) {
     return { ok: false, reason: "invalid-room" };
   }
   if (referral.kind === "discord-instance") {
     return (await verifyInstance(referral.id, env))
-      ? { ok: true }
+      ? { ok: true, roomId: referral.id }
       : { ok: false, reason: "unknown-instance" };
   }
   const enabled = /^(1|true|yes)$/i.test(env.OPEN_ROOMS ?? "");
-  return enabled ? { ok: true } : { ok: false, reason: "open-rooms-disabled" };
+  // Canonicalize so every casing of a code lands in the same DO.
+  const canonical = `${OPEN_PREFIX}${referral.code}`;
+  return enabled
+    ? { ok: true, roomId: canonical }
+    : { ok: false, reason: "open-rooms-disabled" };
 }
