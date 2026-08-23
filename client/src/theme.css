@@ -474,6 +474,14 @@ body {
   border-color: var(--accent-light);
 }
 
+.name-field input.invalid {
+  border-color: var(--wrong);
+}
+
+.name-field .btn {
+  padding: 10px 18px;
+}
+
 .lobby-footer {
   margin-top: 14px;
   font-size: 12px;

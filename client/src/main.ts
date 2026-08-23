@@ -380,7 +380,41 @@ async function boot(): Promise<void> {
       bootPanel.remove();
       createOnlineGame();
     };
-    bootPanel.append(title, onlineButton, soloButton);
+
+    const joinLabel = el("div", "section-label", "Or join with a code");
+    const joinInput = document.createElement("input");
+    joinInput.type = "text";
+    joinInput.maxLength = 8;
+    joinInput.placeholder = "6-character code";
+    joinInput.autocomplete = "off";
+    joinInput.spellcheck = false;
+    const joinButton = el("button", "btn", "Join");
+    joinButton.type = "button";
+    const attemptJoin = (): void => {
+      const code = normalizeJoinCode(joinInput.value);
+      if (!code) {
+        joinInput.classList.add("invalid");
+        joinInput.placeholder = "Looks like ABC234";
+        joinInput.value = "";
+        return;
+      }
+      bootPanel.remove();
+      const url = new URL(window.location.href);
+      url.searchParams.set("room", code);
+      history.replaceState(null, "", url);
+      openSocketRoom(`open:${code}`);
+    };
+    joinButton.addEventListener("click", attemptJoin);
+    joinInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        attemptJoin();
+      }
+    });
+    joinInput.addEventListener("input", () => joinInput.classList.remove("invalid"));
+    const joinField = el("div", "name-field");
+    joinField.append(joinInput, joinButton);
+
+    bootPanel.append(title, onlineButton, joinLabel, joinField, soloButton);
   }
 
   const bootPanel = el("div", "panel boot-panel");
