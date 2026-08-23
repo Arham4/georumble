@@ -46,7 +46,9 @@ Collaborative Seterra-style geography quiz running as a [Discord Activity](https
 
 ## Identity and transport
 
-- **roomId = Discord activity instance id.** Every participant in one voice-channel session shares it, so room lifecycle matches session lifecycle with no extra coordination. Outside Discord the client mints a `crypto.randomUUID()` instead.
+- **roomId = Discord activity instance id.** Every participant in one voice-channel session shares it, so room lifecycle matches session lifecycle with no extra coordination. Outside Discord, browser sessions either play solo against the in-page loopback or join a human-typable `open:<CODE>` room.
+- **Identity is self-asserted within a room, by design.** The `?player=` id and display name come from the client unauthenticated (Discord ids when embedded, random UUIDs otherwise); snapshots broadcast member ids. The trust boundary is the voice channel — everyone in an instance's session is mutually trusted, and instance verification guards the room boundary, not the player boundary. Hardening player identity (signed tokens minted at `/api/token`) is future work if rooms ever outlive that trust model.
+- **Discord identity enrichment**: the `identify` scope supplies display name and avatar hash; the hash rides `hello{avatar}` onto the seat, and every client renders Discord avatars in the roster, live cursors, and victory scoreboard. Embedded sessions lock the name to the Discord identity (no rename UI); browser guests may rename.
 - **All traffic goes through Discord's proxy** (`*.discordsays.com` fronts the configured URL mapping target). WebSockets are supported and must be `wss`; there is no WebRTC. The app must never send frame-ancestors/X-Frame-Options headers that exclude Discord domains.
 - **Lobby roster** comes from the SDK (`getInstanceConnectedParticipants()` / instance-participant events), not from the relay; the relay only knows who has joined the *game*.
 - OAuth: SDK `authorize()` returns a code client-side → client POSTs to `/api/token` → Worker exchanges it with `DISCORD_CLIENT_SECRET` → client calls `authenticate()`.
@@ -68,14 +70,14 @@ client                     worker                      RoomBroker        GameRoo
 
 Hibernation: the DO accepts sockets with `ctx.acceptWebSocket(server, tags)` where tags encode `player:{id}` and `room:{id}`, and registers an auto-response pair so `{t:"ping"}` is answered by the runtime with `{t:"pong"}` without waking the isolate. Idle rooms cost nothing between messages; identity survives eviction via serialized attachments, rehydrated in `ensureReady()` alongside persisted room state.
 
-An alarm every 5 minutes (a) closes sockets that never sent `hello` within 30 s, (b) tears the room down when no sockets remain, and (c) heartbeats the broker so its registry reflects liveness.
+An alarm every 5 minutes (a) closes sockets that never sent `hello` (the 30 s intent is enforced at alarm granularity, so effectively ≤5 min — per-connection timers would defeat hibernation), (b) tears the room down when no sockets remain, and (c) heartbeats the broker so its registry reflects liveness.
 
 ## Room state machine
 
 `lobby → playing → victory`, torn down when the last socket leaves.
 
 - **Host election**: first player to `hello` becomes host (`hostId === null` → elect). Host authority means only the host's `start` / `verdict` / `advance` / `win` mutate shared progress; invalid attempts get `{t:"rejected", reason}` back, unprivileged ones get `reason:"not-host"`.
-- **Host handoff**: on disconnect the earliest-joined remaining player inherits hostship and everyone receives `{t:"host", hostId}`.
+- **Host handoff**: on disconnect the earliest-joined remaining player inherits hostship and everyone receives `{t:"host", hostId}`. The donor is remembered (`lastHostId`/`roundHostId`), so a page refresh that closes the old socket before the new hello reclaims the crown instead of losing Start to a bystander.
 - **Deterministic rounds**: the host generates the shuffled target order once and sends it in `start{packId, order[]}`; every client derives the current prompt from `snapshot.order[snapshot.orderIndex]`, so no per-client RNG divergence exists. The relay validates that order entries are unique non-empty strings.
 - **Relay-owned clock**: `startedAt` is stamped by the DO on `start`; on `win` the finish time is re-derived from it rather than trusted from the hosting client. Guess counts stay client-reported.
 - **Win integrity**: `win` is rejected unless phase is `playing` and `found.length >= order.length`.
@@ -88,9 +90,12 @@ start :  host ─► start{packId, order[]} ─► DO validates, phase=playing, 
 guess :  any ─► guess{featureId} ─► broadcast guess (pure echo, no judgment)
 verdict:  host ─► verdict{outcome{featureId,byPlayer,correct}} ─► DO appends to found[]
                   if correct, recomputes remaining ─► broadcast verified outcome
-advance:  host ─► advance{index} ─► DO enforces forward-only movement ─► broadcast snapshot
+advance:  host ─► advance{index} ─► DO enforces forward-only movement
+                  (a redundant index is absorbed silently — racing verdicts) ─► broadcast snapshot
 win   :  host ─► win{seconds,guesses} ─► DO verifies completion, re-stamps seconds,
                                           phase=victory ─► broadcast win
+cursor:  any ─► cursor{x,y in pack coords} ─► relayed to peers only (sender excluded),
+                  never stored, throttled ~30/s per player
 ```
 
 ## Capacity gate
@@ -121,12 +126,13 @@ Wire format: bare JSON, one `ClientMessage` upstream / `ServerMessage` downstrea
 
 | Direction | Message | Meaning |
 | --- | --- | --- |
-| C→S | `hello {name}` | Join/claim seat; required within 30 s of connect |
+| C→S | `hello {name, avatar?}` | Join/claim seat; optional Discord avatar hash; required soon after connect |
 | C→S | `start {packId, order[]}` | Host begins a round with a fixed shuffled sequence |
 | C→S | `guess {featureId}` | Player clicked a region (echoed to all) |
 | C→S | `verdict {outcome}` | Host's ruling on a guess |
 | C→S | `advance {index}` | Host moves the shared prompt forward |
 | C→S | `win {seconds, guesses}` | Host declares completion (relay verifies) |
+| C→S | `cursor {x, y}` | Pointer position in pack coordinates; relayed to peers, never stored |
 | C→S | `ping` | Answered by runtime auto-response, never wakes the DO |
 | S→C | `welcome {you, snapshot}` | Your seat + full room state |
 | S→C | `snapshot {snapshot}` | Authoritative room state broadcast |
@@ -134,12 +140,15 @@ Wire format: bare JSON, one `ClientMessage` upstream / `ServerMessage` downstrea
 | S→C | `guess {featureId, byPlayer}` | Relay echo |
 | S→C | `verdict {outcome}` | Verified outcome incl. misses (`correct:false`) |
 | S→C | `win {seconds, guesses}` | Victory, seconds relay-stamped |
+| S→C | `cursor {byPlayer, x, y}` | Peer pointer relay (sender excluded) |
 | S→C | `rejected {reason}` | Invalid action, not-host, capacity, malformed input |
 | S→C | `pong` | Auto-response twin |
 
+`Player` carries an optional `avatar` hash; clients render `cdn.discordapp.com` avatars where present and initials circles otherwise. Duplicate correct verdicts for an already-found region still broadcast (the late clicker gets their green flash) but never double-append `found` — scoring stays with the first finder.
+
 Close codes: `4001` hello timeout / room closed · `4002` capacity rejected · `4003` room full (>30 participants) · `4004` room id not admissible (unknown instance, disabled scheme, or malformed).
 
-**Room-id schemes** (`worker/src/roomIds.ts`): ids are namespaced by origin so paths cannot reach each other. Raw ids are Discord activity instances and pass bot-token verification; `open:<CODE>` ids are human-typable codes for browser play, admitted **only** when the `OPEN_ROOMS` variable is set — unset in production makes code rooms nonexistent server-side regardless of client support. Both schemes share the broker capacity gate.
+**Room-id schemes** (`worker/src/roomIds.ts`): ids are namespaced by origin so paths cannot reach each other. Raw ids are Discord activity instances and pass bot-token verification; `open:<CODE>` ids are human-typable codes for browser play, admitted **only** when the `OPEN_ROOMS` variable is set — unset in production makes code rooms nonexistent server-side regardless of client support. Admission returns the canonical id (codes upper-cased) so every casing of a code lands in one Durable Object and one capacity slot. Both schemes share the broker capacity gate.
 
 **Instance verification**: when `DISCORD_BOT_TOKEN` is configured, every `/api/room/{id}` upgrade is checked against Discord's `GET /applications/{id}/activity-instances/{instance_id}` before admission (`worker/src/instances.ts`), so a crafted client cannot hop into a private room by guessing ids. Definitive negatives (404) fail closed; indeterminate errors fail open, and positive results cache 60 s. Unconfigured (local dev) skips the check.
 
@@ -155,7 +164,7 @@ The wire was shaped so versus is a scoring-policy layer, not a redesign: add `mo
 
 - **Dev**: `docker compose up --build` runs the built client behind `wrangler dev` on `:8787` plus a `cloudflared` quick-tunnel sidecar; put the printed `trycloudflare.com` hostname under Activities → URL Mappings (prefix `/`) in the Developer Portal. Quick-tunnel hostnames rotate on recreation, so update the mapping after stack recreates.
 - **Native WSL alternative**: `npm --prefix client run build && npm --prefix worker run dev`.
-- **Deploy**: `cd worker && wrangler deploy`. Required secrets/bindings: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`; optional `LIMITS_KV` + `CF_ACCOUNT_ID`/`CF_API_TOKEN` enable the dynamic ceiling (otherwise unlimited).
+- **Deploy**: `cd worker && wrangler deploy`. Required secrets/bindings: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`; optional `DISCORD_BOT_TOKEN` enables instance verification (without it the anti-room-hop gate passes everything — dev posture), `LIMITS_KV` + `CF_ACCOUNT_ID`/`CF_API_TOKEN` enable the dynamic ceiling (otherwise unlimited), `OPEN_ROOMS=1` enables browser code rooms (leave unset for Discord-only).
 - Both DO classes ship via the `v1` SQLite-backed migration in `worker/wrangler.jsonc`.
 
 ## Decision → code map
@@ -173,6 +182,11 @@ The wire was shaped so versus is a scoring-policy layer, not a redesign: add `mo
 | roomId = activity instanceId | client connection setup; `GameRoom` named-DO addressing |
 | Instance verification (anti room-hopping) | `worker/src/instances.ts`, gate in `worker/src/index.ts` |
 | Opt-in open room codes, scheme-namespaced ids | `shared/roomCodes.ts`, `worker/src/roomIds.ts`, client boot mode choice |
+| Reconnect-with-backoff before solo degrade | `main.ts` reconnect policy + `GameClient.pauseForReconnect/degradeToSolo` |
+| Miro-style presence cursors | `cursor` messages (`shared/protocol.ts`), `GameRoom.relayCursor`, `MapView` cursor layer |
+| Seterra helpers: heat tiers, name reveal, tiny-region framing | `MapView.setFound/pressFeedback/zoomToRegion`, `GameClient.missesByRegion`, `main.ts` click label |
+| Per-player victory scoreboard with Discord avatars | `GameClient.tallies`, `victoryScreen` score list |
+| Legal pages for the Discord portal | `client/public/privacy.html`, `terms.html`, `/privacy` + `/terms` routes in `worker/src/index.ts` |
 
 ## Open questions
 
