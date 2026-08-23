@@ -20,6 +20,7 @@ type Identity = {
   userId: string;
   name: string;
   instanceId: string | null;
+  embedded: boolean;
 };
 
 type DiscordUser = {
@@ -42,6 +43,7 @@ function guestIdentity(): Identity {
     userId,
     name: localStorage.getItem(NAME_STORAGE_KEY) ?? "",
     instanceId: null,
+    embedded: window.self !== window.top,
   };
 }
 
@@ -80,6 +82,7 @@ async function resolveIdentity(): Promise<Identity> {
       userId: auth.user.id,
       name: auth.user.global_name ?? auth.user.username,
       instanceId: sdk.instanceId,
+      embedded: true,
     };
   } catch {
     return fallback;
@@ -107,8 +110,13 @@ async function boot(): Promise<void> {
   let lastState: GameState | null = null;
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   // Discord instances own the room decision outright; browser sessions may opt
-  // into an online room only via a well-formed code in the URL.
-  const joinCode = identity.instanceId ? null : normalizeJoinCode(new URLSearchParams(window.location.search).get("room"));
+  // into an online room only via a well-formed code in the URL. An embedded
+  // frame with no instance (auth failure) stays solo rather than showing
+  // browser-only UI inside someone's voice channel.
+  const joinCode =
+    !identity.instanceId && !identity.embedded
+      ? normalizeJoinCode(new URLSearchParams(window.location.search).get("room"))
+      : null;
   const startOnline = identity.instanceId !== null || joinCode !== null;
   let mode: "socket" | "local" = startOnline ? "socket" : "local";
 
