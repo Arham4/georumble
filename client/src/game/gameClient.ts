@@ -275,7 +275,22 @@ export class GameClient {
       return;
     }
     const target = snapshot.target;
-    if (!target || snapshot.found.includes(featureId)) {
+    if (!target) {
+      return;
+    }
+    if (snapshot.found.includes(featureId)) {
+      // Fast-finger race: the region was solved between this click and its
+      // echo. Acknowledge green without touching anyone's score — the relay
+      // dedupes found[] and every client treats repeat-corrects as flash-only.
+      this.send({
+        t: "verdict",
+        outcome: {
+          featureId,
+          byPlayer,
+          correct: true,
+          remaining: Math.max(0, snapshot.order.length - snapshot.found.length),
+        },
+      });
       return;
     }
     const correct = featureId === target;
