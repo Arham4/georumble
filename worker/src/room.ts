@@ -66,6 +66,19 @@ export class GameRoom extends DurableObject<Env> {
       return Response.json({ error: "websocket required" }, { status: 426 });
     }
     await this.ensureReady();
+    if (this.room === null) {
+      this.room = {
+        players: [],
+        hostId: null,
+        phase: "lobby",
+        packId: null,
+        order: [],
+        orderIndex: null,
+        found: [],
+        startedAt: null,
+      };
+      await this.persist();
+    }
 
     const url = new URL(request.url);
     const playerId = url.searchParams.get("player") || crypto.randomUUID();
@@ -76,7 +89,6 @@ export class GameRoom extends DurableObject<Env> {
 
     const pair = new WebSocketPair();
     const server = pair[1];
-    server.accept();
     server.serializeAttachment({ playerId } satisfies SocketAttachment);
     this.ctx.acceptWebSocket(server, [`player:${playerId}`, `room:${this.roomId}`]);
     this.pending.set(server, Date.now());
