@@ -1,8 +1,11 @@
 #!/usr/bin/env node
-// Validates MapPack JSON files against docs/mappack-contract.md.
+// Validates MapPack JSON files against docs/mappack-contract.md, and when a
+// sibling <packId>.topojson exists, cross-checks the geometry join so an
+// id mismatch can never ship as a blank map.
 // Usage: node scripts/validate-mappack.mjs <pack.json> [more.json ...]
 
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 const PACK_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const KNOWN_PROJECTIONS = new Set([
@@ -110,6 +113,34 @@ function validate(packPath, pack) {
   return violations;
 }
 
+/** Feature ids must join 1:1 onto the sibling TopoJSON's geometry ids. */
+async function validateGeometryJoin(packPath, pack) {
+  const topoPath = path.join(path.dirname(packPath), `${pack.packId}.topojson`);
+  let topology;
+  try {
+    topology = JSON.parse(await readFile(topoPath, "utf8"));
+  } catch {
+    return []; // No sibling geometry to check; the JSON contract stands alone.
+  }
+  const collection = topology.objects?.[Object.keys(topology.objects ?? {})[0]];
+  const geometryIds = new Set(
+    (collection?.geometries ?? []).map((geometry) => String(geometry.id)),
+  );
+  const violations = [];
+  for (const feature of pack.features) {
+    if (!geometryIds.has(feature.id)) {
+      violations.push(`feature id "${feature.id}" has no TopoJSON geometry — would render blank`);
+    }
+  }
+  const featureIds = new Set(pack.features.map((feature) => feature.id));
+  for (const geometryId of geometryIds) {
+    if (!featureIds.has(geometryId)) {
+      violations.push(`TopoJSON geometry "${geometryId}" has no pack feature — would render unnamed`);
+    }
+  }
+  return violations;
+}
+
 async function main() {
   const packPaths = process.argv.slice(2);
   if (packPaths.length === 0) {
@@ -131,6 +162,9 @@ async function main() {
     }
 
     const violations = validate(packPath, pack);
+    if (violations.length === 0) {
+      violations.push(...(await validateGeometryJoin(packPath, pack)));
+    }
     if (violations.length > 0) {
       failed = true;
       console.error(`${packPath}: INVALID (${violations.length} violation${violations.length === 1 ? "" : "s"})`);
