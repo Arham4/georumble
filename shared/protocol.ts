@@ -56,3 +56,4 @@ export type ServerMessage =
 export const CLOSE_CAPACITY = 4002;
 export const CLOSE_ROOM_FULL = 4003;
 export const CLOSE_HELLO_TIMEOUT = 4001;
+export const CLOSE_UNVERIFIED = 4004;
