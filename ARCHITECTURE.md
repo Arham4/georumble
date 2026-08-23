@@ -184,7 +184,7 @@ The wire was shaped so versus is a scoring-policy layer, not a redesign: add `mo
 | Opt-in open room codes, scheme-namespaced ids | `shared/roomCodes.ts`, `worker/src/roomIds.ts`, client boot mode choice |
 | Reconnect-with-backoff before solo degrade | `main.ts` reconnect policy + `GameClient.pauseForReconnect/degradeToSolo` |
 | Miro-style presence cursors | `cursor` messages (`shared/protocol.ts`), `GameRoom.relayCursor`, `MapView` cursor layer |
-| Seterra helpers: heat tiers, name reveal, tiny-region framing | `MapView.setFound/pressFeedback/zoomToRegion`, `GameClient.foundHeat` (wrong attempts to find each region), `main.ts` click label |
+| Seterra helpers: heat tiers, name reveal, earned tiny-region hint framing | `MapView.setFound/pressFeedback/zoomToRegion` (hint-time only, gentle cap), `GameClient.foundHeat` (wrong attempts to find each region), `main.ts` click label |
 | Per-player victory scoreboard with Discord avatars | `GameClient.tallies`, `victoryScreen` score list |
 | Legal pages for the Discord portal | `client/public/privacy.html`, `terms.html`, `/privacy` + `/terms` routes in `worker/src/index.ts` |
 

@@ -228,23 +228,19 @@ export class MapView {
   }
 
   setTarget(id: string | null): void {
-    const previous = this.targetId;
     this.targetId = id;
     this.syncHint();
     this.placeHintRing();
-    // Gently frame a fresh tiny target so players can see the neighborhood it
-    // lives in without giving away the exact spot — unless they took the wheel.
-    if (id !== null && id !== previous && this.isTiny(id) && !this.userZoomed) {
-      this.zoomToRegion(id, 7);
-    }
   }
 
   setHint(on: boolean): void {
     this.hintOn = on;
     this.syncHint();
     this.placeHintRing();
+    // Earned help only: after repeated misses the camera may drift toward a
+    // tiny target, but gently — never a round-start slam that gives it away.
     if (on && this.targetId !== null && this.isTiny(this.targetId) && !this.userZoomed) {
-      this.zoomToRegion(this.targetId, 3);
+      this.zoomToRegion(this.targetId, 3, 5);
     }
   }
 
@@ -310,14 +306,14 @@ export class MapView {
     this.hintRing = ring;
   }
 
-  private zoomToRegion(id: string, inflate: number): void {
+  private zoomToRegion(id: string, inflate: number, maxK: number = MAX_ZOOM): void {
     const geo = this.geoById.get(id);
     if (!geo) {
       return;
     }
     const [min, max] = geo.bounds;
     const span = Math.max(max[0] - min[0], max[1] - min[1]) * inflate;
-    const k = Math.min(MAX_ZOOM, Math.max(1, (Math.min(this.width, this.height) * 0.85) / span));
+    const k = Math.min(maxK, Math.max(1, (Math.min(this.width, this.height) * 0.85) / span));
     // Center on the visual mass (overseas territories skew raw bbox centers —
     // France's includes French Guiana), clamped into the canvas.
     const hint = this.centroidById.get(id);
