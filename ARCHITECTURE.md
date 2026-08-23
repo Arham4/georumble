@@ -137,7 +137,9 @@ Wire format: bare JSON, one `ClientMessage` upstream / `ServerMessage` downstrea
 | S→C | `rejected {reason}` | Invalid action, not-host, capacity, malformed input |
 | S→C | `pong` | Auto-response twin |
 
-Close codes: `4001` hello timeout / room closed · `4002` capacity rejected · `4003` room full (>30 participants).
+Close codes: `4001` hello timeout / room closed · `4002` capacity rejected · `4003` room full (>30 participants) · `4004` room id is not a live activity instance of this app.
+
+**Instance verification**: when `DISCORD_BOT_TOKEN` is configured, every `/api/room/{id}` upgrade is checked against Discord's `GET /applications/{id}/activity-instances/{instance_id}` before admission (`worker/src/instances.ts`), so a crafted client cannot hop into a private room by guessing ids. Definitive negatives (404) fail closed; indeterminate errors fail open, and positive results cache 60 s. Unconfigured (local dev) skips the check.
 
 ## Data: MapPacks
 
@@ -167,6 +169,7 @@ The wire was shaped so versus is a scoring-policy layer, not a redesign: add `mo
 | New-room-only gating, finish-running-games | `RoomBroker.admit` existing-record short-circuit |
 | Solo fallback, swappable transport | `Connection` in `client/src/net/connection.ts` |
 | roomId = activity instanceId | client connection setup; `GameRoom` named-DO addressing |
+| Instance verification (anti room-hopping) | `worker/src/instances.ts`, gate in `worker/src/index.ts` |
 
 ## Open questions
 
