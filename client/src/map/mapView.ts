@@ -83,7 +83,6 @@ export class MapView {
     this.svg.addEventListener("pointermove", this.onPointerMove);
     this.svg.addEventListener("pointerup", this.onPointerUp);
     this.svg.addEventListener("pointercancel", this.onPointerCancel);
-    this.svg.addEventListener("pointerover", this.onPointerOver);
     this.svg.addEventListener("pointerout", this.onPointerOut);
     this.svg.addEventListener("wheel", this.onWheel, { passive: false });
 
@@ -450,6 +449,10 @@ export class MapView {
       return;
     }
     if (this.interactive) {
+      // Recompute hover from the true pointer position every move: relying on
+      // pointerover alone lets highlights go stale when the camera tweens
+      // under a still cursor or a boundary event is missed.
+      this.setHovered(regionIdAtPoint(event.clientX, event.clientY));
       this.maybeSendCursor(event.clientX, event.clientY);
     }
   };
@@ -502,14 +505,6 @@ export class MapView {
       this.svg.releasePointerCapture(pointerId);
     }
   }
-
-  private onPointerOver = (event: PointerEvent): void => {
-    if (!this.interactive || this.drag) {
-      return;
-    }
-    const target = event.target instanceof Element ? event.target : null;
-    this.setHovered(target?.closest("[data-region-id]")?.getAttribute("data-region-id") ?? null);
-  };
 
   private onPointerOut = (): void => {
     if (!this.drag) {
