@@ -277,7 +277,9 @@ export class MapView {
   private placeHintRing(): void {
     this.hintRing?.remove();
     this.hintRing = null;
-    if (!this.hintOn || this.targetId === null) {
+    // Normal-sized regions already pulse via their dashed outline; the ring
+    // exists for tiny regions whose outline is invisible without zooming.
+    if (!this.hintOn || this.targetId === null || !this.isTiny(this.targetId)) {
       return;
     }
     const id = this.targetId;
@@ -286,17 +288,15 @@ export class MapView {
       return;
     }
     const [min, max] = geo.bounds;
-    // The pack's centroidHint marks the visual mass (bbox centers betray
-    // Norway-shaped regions and multi-island countries); fall back to it.
     const hint = this.centroidById.get(id);
     const cx = hint ? hint[0] : (min[0] + max[0]) / 2;
     const cy = hint ? hint[1] : (min[1] + max[1]) / 2;
-    const maxDim = Math.max(max[0] - min[0], max[1] - min[1]);
+    const minDim = Math.min(max[0] - min[0], max[1] - min[1]);
     const ring = createElement<SVGCircleElement>("circle");
     ring.classList.add("hint-ring");
     ring.setAttribute("cx", String(cx));
     ring.setAttribute("cy", String(cy));
-    ring.setAttribute("r", String(Math.min(46, Math.max(10, maxDim * 0.75))));
+    ring.setAttribute("r", String(Math.min(30, Math.max(8, minDim * 0.45))));
     this.viewport.append(ring);
     this.hintRing = ring;
   }
@@ -309,13 +309,16 @@ export class MapView {
     const [min, max] = geo.bounds;
     const span = Math.max(max[0] - min[0], max[1] - min[1]) * inflate;
     const k = Math.min(MAX_ZOOM, Math.max(1, (Math.min(this.width, this.height) * 0.85) / span));
-    const cx = (min[0] + max[0]) / 2;
-    const cy = (min[1] + max[1]) / 2;
+    // Center on the visual mass (overseas territories skew raw bbox centers —
+    // France's includes French Guiana), clamped into the canvas.
+    const hint = this.centroidById.get(id);
+    const cx = Math.min(this.width, Math.max(0, hint ? hint[0] : (min[0] + max[0]) / 2));
+    const cy = Math.min(this.height, Math.max(0, hint ? hint[1] : (min[1] + max[1]) / 2));
     this.tweenView(
       {
         k,
-        tx: cx - this.width / (2 * k),
-        ty: cy - this.height / (2 * k),
+        tx: this.width / 2 - cx * k,
+        ty: this.height / 2 - cy * k,
       },
       ZOOM_TWEEN_MS,
     );
