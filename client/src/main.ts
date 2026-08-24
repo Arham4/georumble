@@ -28,8 +28,8 @@ type Identity = {
   avatar: string | null;
   instanceId: string | null;
   embedded: boolean;
-  /** True when an embedded Discord sign-in was attempted and failed. */
-  signInFailed?: boolean;
+  /** Why an embedded Discord sign-in failed; absent when it never ran or succeeded. */
+  signInFailed?: string;
 };
 
 type DiscordUser = {
@@ -76,7 +76,7 @@ async function resolveIdentity(): Promise<Identity> {
       console.warn(
         "[georumble] discord sign-in skipped: VITE_DISCORD_CLIENT_ID is not baked into this build",
       );
-      return { ...fallback, signInFailed: true };
+      return { ...fallback, signInFailed: "client id missing from build" };
     }
     return fallback;
   }
@@ -112,8 +112,11 @@ async function resolveIdentity(): Promise<Identity> {
       embedded: true,
     };
   } catch (error) {
+    // The reason rides into the lobby notice: inside the Discord webview the
+    // console is unreachable, and "guest" without a why is undiagnosable.
+    const reason = error instanceof Error ? error.message : String(error);
     console.warn("[georumble] discord sign-in failed", error);
-    return { ...fallback, signInFailed: true };
+    return { ...fallback, signInFailed: reason.slice(0, 140) };
   }
 }
 
@@ -179,7 +182,7 @@ async function boot(): Promise<void> {
           identityLocked: identity.instanceId !== null,
           signInNotice:
             identity.signInFailed && !identity.instanceId
-              ? "Discord sign-in failed — playing as a guest"
+              ? `Discord sign-in failed (${identity.signInFailed}) — playing as a guest`
               : undefined,
         });
         break;
