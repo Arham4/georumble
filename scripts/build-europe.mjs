@@ -16,6 +16,7 @@ const SELECTION = {
   "100": { iso2: "BG", name: "Bulgaria" },
   "191": { iso2: "HR", name: "Croatia" },
   "203": { iso2: "CZ", name: "Czechia", aliases: ["Czech Republic"] },
+  "196": { iso2: "CY", name: "Cyprus" },
   "208": { iso2: "DK", name: "Denmark" },
   "233": { iso2: "EE", name: "Estonia" },
   "246": { iso2: "FI", name: "Finland" },

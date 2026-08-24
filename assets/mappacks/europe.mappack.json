@@ -80,6 +80,14 @@
       }
     },
     {
+      "id": "CY",
+      "name": "Cyprus",
+      "centroidHint": {
+        "x": 749,
+        "y": 561
+      }
+    },
+    {
       "id": "CZ",
       "name": "Czechia",
       "aliases": [

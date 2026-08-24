@@ -85,14 +85,6 @@
       }
     },
     {
-      "id": "CY",
-      "name": "Cyprus",
-      "centroidHint": {
-        "x": 59,
-        "y": 590
-      }
-    },
-    {
       "id": "GE",
       "name": "Georgia",
       "centroidHint": {

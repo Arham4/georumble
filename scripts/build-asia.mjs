@@ -15,7 +15,6 @@ const SELECTION = {
   "96": { iso2: "BN", name: "Brunei" },
   "116": { iso2: "KH", name: "Cambodia" },
   "156": { iso2: "CN", name: "China" },
-  "196": { iso2: "CY", name: "Cyprus" },
   "268": { iso2: "GE", name: "Georgia" },
   "356": { iso2: "IN", name: "India" },
   "360": { iso2: "ID", name: "Indonesia" },
