@@ -35,6 +35,18 @@ body {
 #app {
   position: fixed;
   inset: 0;
+  /* Discord's mobile client floats its activity header OVER the iframe, so
+     the top strip of the layout viewport is occluded even though the page
+     cannot see or measure it. Where Discord reports safe-area insets those
+     win; otherwise embedded mobile sessions pad for the header outright.
+     Desktop embeds the activity in a panel, not under chrome, so no fallback. */
+  --chrome-top: 0px;
+}
+
+@media (pointer: coarse) {
+  #app.embedded {
+    --chrome-top: 48px;
+  }
 }
 
 .map-holder,
@@ -70,7 +82,7 @@ body {
 .toast-holder {
   position: absolute;
   left: 50%;
-  bottom: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -525,7 +537,7 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 16px;
+  padding: calc(10px + max(env(safe-area-inset-top, 0px), var(--chrome-top))) 16px 10px;
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   border-bottom: 1px solid rgb(255 255 255 / 0.08);
   backdrop-filter: blur(6px);
@@ -642,7 +654,7 @@ body {
   pointer-events: auto;
   position: absolute;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 6px;

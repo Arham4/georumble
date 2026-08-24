@@ -185,6 +185,8 @@ async function boot(): Promise<void> {
   app.replaceChildren(mapHolder, screenHolder, toastHolder);
 
   const identity = await resolveIdentity();
+  // Lets CSS pad for host chrome (Discord's mobile header overlays the iframe).
+  app.classList.toggle("embedded", identity.embedded);
   const store = new PackStore();
   const mapView = new MapView(mapHolder);
 
