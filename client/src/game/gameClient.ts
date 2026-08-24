@@ -80,6 +80,7 @@ export class GameClient {
   private win: GameState["win"] = null;
   private notice: GameState["notice"] = null;
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
+  private tickTimer: ReturnType<typeof setInterval>;
   private disposed = false;
 
   constructor(
@@ -87,7 +88,7 @@ export class GameClient {
     private name: string,
     private readonly avatar: string | null = null,
   ) {
-    setInterval(() => this.onTick(), TICK_MS);
+    this.tickTimer = setInterval(() => this.onTick(), TICK_MS);
   }
 
   get kind(): Connection["kind"] | null {
@@ -197,7 +198,9 @@ export class GameClient {
       return;
     }
     this.name = name;
-    this.connection?.send({ t: "hello", name });
+    // The avatar rides along because the relay treats hello as the full
+    // identity: omitting it would read as "no avatar" and wipe the seat's.
+    this.connection?.send({ t: "hello", name, avatar: this.avatar });
     this.emit();
   }
 
@@ -243,6 +246,7 @@ export class GameClient {
 
   dispose(): void {
     this.disposed = true;
+    clearInterval(this.tickTimer);
     this.clearNotice();
     this.connection?.close();
     this.connection = null;

@@ -210,16 +210,24 @@ async function boot(): Promise<void> {
   const clickLabel = el("div", "click-label");
   mapHolder.append(clickLabel);
 
+  // State emits land on every 500ms tick while playing; rebuilding an
+  // unchanged toast restarts its entrance animation, so swap only on change.
+  let shownNotice: GameState["notice"] = null;
   const showToast = (state: GameState): void => {
+    const notice = state.notice;
+    if (notice && shownNotice && notice.text === shownNotice.text && notice.kind === shownNotice.kind) {
+      return;
+    }
+    shownNotice = notice;
     toastHolder.replaceChildren();
     if (toastTimer !== null) {
       clearTimeout(toastTimer);
       toastTimer = null;
     }
-    if (!state.notice) {
+    if (!notice) {
       return;
     }
-    const toast = el("div", `toast ${state.notice.kind}`, state.notice.text);
+    const toast = el("div", `toast ${notice.kind}`, notice.text);
     toastHolder.append(toast);
     toastTimer = setTimeout(() => toast.remove(), 4200);
   };
