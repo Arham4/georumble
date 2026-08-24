@@ -1,0 +1,265 @@
+{
+  "packId": "north-america",
+  "displayName": "North America",
+  "projection": {
+    "kind": "conic-conformal-preprojected",
+    "width": 1000,
+    "height": 584
+  },
+  "source": {
+    "name": "world-atlas countries-50m.json (Natural Earth 1:50m)",
+    "url": "https://github.com/topojson/world-atlas",
+    "license": "Public domain (Natural Earth data)"
+  },
+  "features": [
+    {
+      "id": "AG",
+      "name": "Antigua and Barbuda",
+      "centroidHint": {
+        "x": 692,
+        "y": 450
+      }
+    },
+    {
+      "id": "BS",
+      "name": "Bahamas",
+      "centroidHint": {
+        "x": 585,
+        "y": 437
+      }
+    },
+    {
+      "id": "BB",
+      "name": "Barbados",
+      "centroidHint": {
+        "x": 716,
+        "y": 467
+      }
+    },
+    {
+      "id": "BZ",
+      "name": "Belize",
+      "centroidHint": {
+        "x": 532,
+        "y": 496
+      }
+    },
+    {
+      "id": "CA",
+      "name": "Canada",
+      "centroidHint": {
+        "x": 462,
+        "y": 245
+      }
+    },
+    {
+      "id": "CR",
+      "name": "Costa Rica",
+      "centroidHint": {
+        "x": 568,
+        "y": 539
+      }
+    },
+    {
+      "id": "CU",
+      "name": "Cuba",
+      "centroidHint": {
+        "x": 585,
+        "y": 457
+      }
+    },
+    {
+      "id": "DM",
+      "name": "Dominica",
+      "centroidHint": {
+        "x": 699,
+        "y": 458
+      }
+    },
+    {
+      "id": "DO",
+      "name": "Dominican Republic",
+      "centroidHint": {
+        "x": 638,
+        "y": 459
+      }
+    },
+    {
+      "id": "SV",
+      "name": "El Salvador",
+      "centroidHint": {
+        "x": 534,
+        "y": 518
+      }
+    },
+    {
+      "id": "GL",
+      "name": "Greenland",
+      "centroidHint": {
+        "x": 573,
+        "y": 99
+      }
+    },
+    {
+      "id": "GD",
+      "name": "Grenada",
+      "centroidHint": {
+        "x": 706,
+        "y": 479
+      }
+    },
+    {
+      "id": "GT",
+      "name": "Guatemala",
+      "centroidHint": {
+        "x": 523,
+        "y": 507
+      }
+    },
+    {
+      "id": "HT",
+      "name": "Haiti",
+      "centroidHint": {
+        "x": 625,
+        "y": 463
+      }
+    },
+    {
+      "id": "HN",
+      "name": "Honduras",
+      "centroidHint": {
+        "x": 547,
+        "y": 509
+      }
+    },
+    {
+      "id": "JM",
+      "name": "Jamaica",
+      "centroidHint": {
+        "x": 599,
+        "y": 476
+      }
+    },
+    {
+      "id": "MX",
+      "name": "Mexico",
+      "centroidHint": {
+        "x": 452,
+        "y": 458
+      }
+    },
+    {
+      "id": "NI",
+      "name": "Nicaragua",
+      "centroidHint": {
+        "x": 559,
+        "y": 521
+      }
+    },
+    {
+      "id": "PA",
+      "name": "Panama",
+      "centroidHint": {
+        "x": 597,
+        "y": 543
+      }
+    },
+    {
+      "id": "KN",
+      "name": "Saint Kitts and Nevis",
+      "centroidHint": {
+        "x": 686,
+        "y": 451
+      }
+    },
+    {
+      "id": "LC",
+      "name": "Saint Lucia",
+      "centroidHint": {
+        "x": 705,
+        "y": 466
+      }
+    },
+    {
+      "id": "VC",
+      "name": "Saint Vincent and the Grenadines",
+      "centroidHint": {
+        "x": 706,
+        "y": 471
+      }
+    },
+    {
+      "id": "TT",
+      "name": "Trinidad and Tobago",
+      "centroidHint": {
+        "x": 714,
+        "y": 488
+      }
+    },
+    {
+      "id": "US",
+      "name": "United States of America",
+      "aliases": [
+        "USA",
+        "US",
+        "America",
+        "United States"
+      ],
+      "centroidHint": {
+        "x": 467,
+        "y": 360
+      }
+    }
+  ],
+  "helpers": [
+    {
+      "id": "KN",
+      "anchor": {
+        "x": 677,
+        "y": 447
+      }
+    },
+    {
+      "id": "AG",
+      "anchor": {
+        "x": 699,
+        "y": 447
+      }
+    },
+    {
+      "id": "DM",
+      "anchor": {
+        "x": 683,
+        "y": 463
+      }
+    },
+    {
+      "id": "LC",
+      "anchor": {
+        "x": 695,
+        "y": 468
+      }
+    },
+    {
+      "id": "VC",
+      "anchor": {
+        "x": 696,
+        "y": 480
+      }
+    },
+    {
+      "id": "GD",
+      "anchor": {
+        "x": 685,
+        "y": 491
+      }
+    },
+    {
+      "id": "BB",
+      "anchor": {
+        "x": 729,
+        "y": 467
+      }
+    }
+  ]
+}

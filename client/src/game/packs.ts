@@ -62,6 +62,13 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     mappackUrl: "/mappacks/oceans.mappack.json",
     topoUrl: "/mappacks/oceans.topojson",
   },
+  {
+    packId: "north-america",
+    displayName: "North America",
+    blurb: "23 countries and Greenland, Arctic to Caribbean",
+    mappackUrl: "/mappacks/north-america.mappack.json",
+    topoUrl: "/mappacks/north-america.topojson",
+  },
 ];
 
 export type LoadedPack = {
