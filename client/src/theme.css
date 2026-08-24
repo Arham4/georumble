@@ -45,7 +45,7 @@ body {
 
 @media (pointer: coarse) {
   #app.embedded {
-    --chrome-top: 48px;
+    --chrome-top: 60px;
   }
 }
 

@@ -22,6 +22,11 @@ const RECONNECT_MAX_ATTEMPTS = 6;
 const FATAL_CLOSE_CODES = new Set([1000, 4002, 4003, 4004]);
 const NAME_REVEAL_MS = 1100;
 
+// Discord mobile hosts activities as a TOP-LEVEL WebView (native bridge, no
+// parent frame), so the frame check alone misses phones; Discord's WebView
+// user agent is the other tell.
+const DISCORD_UA = /discord/i.test(navigator.userAgent);
+
 type Identity = {
   userId: string;
   name: string;
@@ -113,13 +118,18 @@ async function resolveIdentity(): Promise<Identity> {
     }
     return fallback;
   }
-  if (!embedded) {
+  if (!embedded && !DISCORD_UA) {
     return fallback;
   }
   try {
     const { DiscordSDK } = await import("@discord/embedded-app-sdk");
     const sdk = new DiscordSDK(CLIENT_ID);
-    await sdk.ready();
+    // In a plain browser the bridge never answers; give up to guest quickly
+    // instead of hanging the boot screen on a session that will never come.
+    await Promise.race([
+      sdk.ready(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("sdk bridge timeout")), 4000)),
+    ]);
     const { code } = await sdk.commands.authorize({
       client_id: CLIENT_ID,
       scope: ["identify", "guilds.members.read"],
@@ -186,10 +196,9 @@ async function boot(): Promise<void> {
 
   const identity = await resolveIdentity();
   // Lets CSS pad for host chrome (Discord's mobile header overlays the app).
-  // Discord mobile hosts the activity as a TOP-LEVEL WebView — the SDK talks
-  // over a native bridge, so the frame check alone is false there; a real
-  // SDK session (instanceId) is the dependable Discord signal.
-  app.classList.toggle("embedded", identity.embedded || identity.instanceId !== null);
+  // The UA check covers guest sessions inside Discord, where there is no
+  // instanceId to vouch for the environment.
+  app.classList.toggle("embedded", identity.embedded || identity.instanceId !== null || DISCORD_UA);
   const store = new PackStore();
   const mapView = new MapView(mapHolder);
 
