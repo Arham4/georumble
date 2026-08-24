@@ -264,6 +264,14 @@
       }
     },
     {
+      "id": "PS",
+      "name": "Palestine",
+      "centroidHint": {
+        "x": 73,
+        "y": 613
+      }
+    },
+    {
       "id": "PH",
       "name": "Philippines",
       "centroidHint": {

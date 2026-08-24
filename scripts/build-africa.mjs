@@ -3,8 +3,8 @@
 // continent builder.
 import { buildContinentPack } from "./lib/continent-builder.mjs";
 
-// Excluded from v1 (additive later under the same packId): Western Sahara
-// (disputed territory; the atlas folds its land into Morocco's polygon).
+// Western Sahara is disputed but its atlas polygon is separate from
+// Morocco's, so it ships as its own clickable region for map completeness.
 const SELECTION = {
   "12": { iso2: "DZ", name: "Algeria" },
   "24": { iso2: "AO", name: "Angola" },
@@ -44,6 +44,7 @@ const SELECTION = {
   "478": { iso2: "MR", name: "Mauritania" },
   "480": { iso2: "MU", name: "Mauritius" },
   "504": { iso2: "MA", name: "Morocco" },
+  "732": { iso2: "EH", name: "Western Sahara", aliases: ["W. Sahara"] },
   "508": { iso2: "MZ", name: "Mozambique" },
   "516": { iso2: "NA", name: "Namibia" },
   "562": { iso2: "NE", name: "Niger" },
@@ -91,5 +92,8 @@ await buildContinentPack({
   parallels: [-20, 20],
   rotate: 20,
   selection: SELECTION,
+  // Somaliland ships in Natural Earth as a separate id-less (-99) geometry,
+  // reachable only by atlas name; SOL is a synthetic stable feature id.
+  nameSelection: { Somaliland: { iso2: "SOL", name: "Somaliland" } },
   helpers: HELPERS,
 });

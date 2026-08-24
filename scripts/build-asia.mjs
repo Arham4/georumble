@@ -3,8 +3,8 @@
 // continent builder. Reference implementation for the other continent packs.
 import { buildContinentPack } from "./lib/continent-builder.mjs";
 
-// Excluded from v1 (additive later under the same packId): Palestine
-// (unstable source id).
+// Excluded from v1 (additive later under the same packId): none — Palestine
+// joined once its source id proved stable across builds.
 const SELECTION = {
   "4": { iso2: "AF", name: "Afghanistan" },
   "51": { iso2: "AM", name: "Armenia" },
@@ -31,6 +31,7 @@ const SELECTION = {
   "422": { iso2: "LB", name: "Lebanon" },
   "458": { iso2: "MY", name: "Malaysia" },
   "462": { iso2: "MV", name: "Maldives" },
+  "275": { iso2: "PS", name: "Palestine" },
   "702": { iso2: "SG", name: "Singapore" },
   "496": { iso2: "MN", name: "Mongolia" },
   "104": { iso2: "MM", name: "Myanmar", aliases: ["Burma"] },

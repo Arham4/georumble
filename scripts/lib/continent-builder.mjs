@@ -108,6 +108,8 @@ function clipRingToRect(ring, clip) {
  *                               parallels unused for mercator
  *   selection                 — { "356": { iso2: "IN", name: "India", aliases?: [] } }
  *                               keyed by world-atlas ISO numeric id
+ *   nameSelection             — same shape, keyed by atlas properties.name, for
+ *                               id-less territories (Somaliland ships as -99)
  *   helpers                   — optional [{ id, at: [lon, lat] }] offshore circle anchors
  */
 export async function buildContinentPack(config) {
@@ -121,8 +123,11 @@ export async function buildContinentPack(config) {
   const { arcs, toArcIndexes } = encodeArcsFromRings();
 
   const numericId = (geometry) => String(Number(String(geometry.id)));
+  const nameSelection = config.nameSelection ?? {};
+  const metaFor = (geometry) =>
+    config.selection[numericId(geometry)] ?? nameSelection[geometry.properties?.name];
   const selected = topology.objects.countries.geometries.filter(
-    (geometry) => config.selection[numericId(geometry)] !== undefined,
+    (geometry) => metaFor(geometry) !== undefined,
   );
   const missing = Object.keys(config.selection).filter(
     (id) => !selected.some((geometry) => numericId(geometry) === id),
@@ -178,7 +183,7 @@ export async function buildContinentPack(config) {
     bottom: offY + box.height * k + 1,
   };
   for (const geometry of selected) {
-    const meta = config.selection[numericId(geometry)];
+    const meta = metaFor(geometry);
     const polygons = decodePolygons(geometry, arcAt)
       .map((polygon) =>
         polygon

@@ -392,6 +392,14 @@
       }
     },
     {
+      "id": "SOL",
+      "name": "Somaliland",
+      "centroidHint": {
+        "x": 790,
+        "y": 409
+      }
+    },
+    {
       "id": "ZA",
       "name": "South Africa",
       "centroidHint": {
@@ -445,6 +453,17 @@
       "centroidHint": {
         "x": 648,
         "y": 497
+      }
+    },
+    {
+      "id": "EH",
+      "name": "Western Sahara",
+      "aliases": [
+        "W. Sahara"
+      ],
+      "centroidHint": {
+        "x": 191,
+        "y": 253
       }
     },
     {
