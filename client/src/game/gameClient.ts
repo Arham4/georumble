@@ -76,6 +76,8 @@ export class GameClient {
   private foundHeat = new Map<string, number>();
   private missedRegions = new Set<string>();
   private tallies = new Map<string, PlayerTally>();
+  /** Relay-clock minus local-clock at the last snapshot, so elapsed time survives device clock skew. */
+  private clockOffset: number | null = null;
   private ticker: TickerEntry[] = [];
   private win: GameState["win"] = null;
   private notice: GameState["notice"] = null;
@@ -268,6 +270,9 @@ export class GameClient {
     if (snapshot.tallies) {
       this.tallies = new Map(Object.entries(snapshot.tallies));
     }
+    if (typeof snapshot.serverNow === "number") {
+      this.clockOffset = snapshot.serverNow - Date.now();
+    }
     this.snapshot = snapshot;
   }
 
@@ -383,9 +388,11 @@ export class GameClient {
 
   private elapsedSeconds(): number {
     const startedAt = this.snapshot?.startedAt;
-    return startedAt === null || startedAt === undefined
-      ? 0
-      : Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+    if (startedAt === null || startedAt === undefined) {
+      return 0;
+    }
+    const now = Date.now() + (this.clockOffset ?? 0);
+    return Math.max(0, Math.round((now - startedAt) / 1000));
   }
 
   private onTick(): void {

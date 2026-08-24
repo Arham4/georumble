@@ -499,6 +499,7 @@ export class GameRoom extends DurableObject<Env> {
       target:
         room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,
+      serverNow: Date.now(),
     };
   }
 

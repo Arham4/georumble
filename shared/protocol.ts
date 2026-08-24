@@ -24,6 +24,12 @@ export type RoomSnapshot = {
   /** Derived convenience: order[orderIndex], null when out of game. */
   target: string | null;
   startedAt: number | null;
+  /**
+   * Relay clock at snapshot time. startedAt lives on the relay's clock, so
+   * clients anchor an offset against this instead of assuming NTP-perfect
+   * devices; absent on pre-serverNow relays, which falls back to local time.
+   */
+  serverNow?: number;
 };
 
 export type GuessOutcome = {
