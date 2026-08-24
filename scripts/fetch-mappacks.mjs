@@ -127,7 +127,22 @@ async function main() {
   const topology = await fetchTopology();
   const geometries = topology.objects.states.geometries;
 
+  // The atlas's projected space starts left of and below the origin (the
+  // Aleutians cross the antimeridian), which clipped the west coast against a
+  // 0,0 viewBox. Rewriting transform.translate shifts every decoded
+  // coordinate so the canvas truly spans 0..width × 0..height.
+  const survey = decodeArcs(topology);
+  const { minX, minY } = bounds(topology, geometries, survey);
+  topology.transform.translate[0] -= minX;
+  topology.transform.translate[1] -= minY;
+
   const pack = buildPack(topology, await loadProjection());
+  for (const helper of pack.helpers ?? []) {
+    // Helper anchors were projected in the atlas's raw space; apply the same
+    // shift so they keep their offshore position relative to the land.
+    helper.anchor.x -= minX;
+    helper.anchor.y -= minY;
+  }
   await mkdir(OUT_DIR, { recursive: true });
   await writeFile(path.join(OUT_DIR, "us-states.topojson"), `${JSON.stringify(topology)}\n`);
   await writeFile(path.join(OUT_DIR, "us-states.mappack.json"), `${JSON.stringify(pack, null, 2)}\n`);

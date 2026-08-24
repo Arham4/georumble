@@ -63,7 +63,7 @@ export function mainRingCentroid(topology, geometry, arcAt) {
   return best;
 }
 
-/** Width/height of the pixel space spanned by the given geometries. */
+/** Extent of the pixel space spanned by the given geometries. */
 export function bounds(topology, geometries, arcAt) {
   const xs = [];
   const ys = [];
@@ -80,6 +80,8 @@ export function bounds(topology, geometries, arcAt) {
     }
   }
   return {
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
     width: Math.ceil(Math.max(...xs) - Math.min(...xs)),
     height: Math.ceil(Math.max(...ys) - Math.min(...ys)),
   };
