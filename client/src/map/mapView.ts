@@ -142,7 +142,13 @@ export class MapView {
         this.centroidById.set(item.id, [item.centroidHint.x, item.centroidHint.y]);
       }
     }
-    this.svg.setAttribute("viewBox", `0 0 ${this.width} ${this.height}`);
+    // A uniform margin around the canvas zooms the fit out slightly, so the
+    // map never touches the viewport edges — content would otherwise span the
+    // full limiting dimension edge-to-edge with zero breathing room.
+    const margin = 0.06;
+    const mx = this.width * margin;
+    const my = this.height * margin;
+    this.svg.setAttribute("viewBox", `${-mx} ${-my} ${this.width + 2 * mx} ${this.height + 2 * my}`);
     this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     // Pre-projected coordinates: the file already lives in the pack's canvas
