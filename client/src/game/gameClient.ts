@@ -214,6 +214,14 @@ export class GameClient {
     this.send({ t: "start", packId: pack.packId, order });
   }
 
+  /** Host-only: leave victory (or abort the round) and reopen the map picker. */
+  backToLobby(): void {
+    if (!this.isHost()) {
+      return;
+    }
+    this.send({ t: "lobby" });
+  }
+
   /** False means the click was swallowed locally and needs its own feedback. */
   guess(featureId: string): boolean {
     const snapshot = this.snapshot;

@@ -76,6 +76,9 @@ export class LocalConnection implements Connection {
       case "win":
         this.win(message.seconds, message.guesses);
         break;
+      case "lobby":
+        this.backToLobby();
+        break;
     }
   }
 
@@ -206,6 +209,24 @@ export class LocalConnection implements Connection {
     const stampedSeconds = Math.round((Date.now() - room.startedAt) / 1000);
     room.phase = "victory";
     this.enqueue({ t: "win", seconds: stampedSeconds, guesses });
+  }
+
+  /** Mirrors the relay: clear the round and reopen the map picker. */
+  private backToLobby(): void {
+    if (!this.requireHost()) {
+      return;
+    }
+    const room = this.room!;
+    if (room.phase === "lobby") {
+      return;
+    }
+    room.phase = "lobby";
+    room.orderIndex = null;
+    room.found = [];
+    room.heat = {};
+    room.tallies = {};
+    room.startedAt = null;
+    this.enqueue({ t: "snapshot", snapshot: this.snapshot() });
   }
 
   private requireHost(): boolean {

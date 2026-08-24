@@ -249,6 +249,7 @@ async function boot(): Promise<void> {
         currentScreen = createVictoryScreen(screenHolder, {
           client,
           restart: restartGame,
+          changeMap: () => client.backToLobby(),
         });
         break;
       case "boot":

@@ -42,6 +42,8 @@ export type ClientMessage =
   | { t: "verdict"; outcome: GuessOutcome }
   | { t: "advance"; index: number }
   | { t: "win"; seconds: number; guesses: number }
+  /** Host-only: leave victory (or abort a round) and reopen the map picker. */
+  | { t: "lobby" }
   /** Pointer position in pack coordinates; relayed live, never stored. */
   | { t: "cursor"; x: number; y: number };
 

@@ -169,6 +169,9 @@ export class GameRoom extends DurableObject<Env> {
       case "win":
         await this.win(playerId, message.seconds, message.guesses);
         break;
+      case "lobby":
+        await this.backToLobby(playerId);
+        break;
       default:
         this.sendTo(ws, { t: "rejected", reason: "unknown message" });
     }
@@ -421,6 +424,29 @@ export class GameRoom extends DurableObject<Env> {
     room.phase = "victory";
     await this.persist();
     this.broadcast({ t: "win", seconds: stampedSeconds, guesses });
+  }
+
+  /**
+   * Host-only: clear the round and reopen the map picker, so a finished room
+   * can change packs without tearing the activity down and rejoining.
+   */
+  private async backToLobby(hostId: string): Promise<void> {
+    if (!this.requireHost(hostId)) {
+      return;
+    }
+    const room = this.room;
+    if (!room || room.phase === "lobby") {
+      return;
+    }
+    room.phase = "lobby";
+    room.orderIndex = null;
+    room.found = [];
+    room.heat = {};
+    room.tallies = {};
+    room.startedAt = null;
+    room.roundHostId = null;
+    await this.persist();
+    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }
 
   private requireHost(senderId: string): boolean {

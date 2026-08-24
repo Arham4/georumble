@@ -4,6 +4,8 @@ import { accuracyPercent, el, formatClock, setText, type Screen } from "./dom";
 export type VictoryDeps = {
   client: GameClient;
   restart(): Promise<void>;
+  /** Host-only: return the room to the lobby so any pack can be picked. */
+  changeMap(): void;
 };
 
 function scoreRow(state: GameState, index: number): HTMLElement {
@@ -78,8 +80,21 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
   });
   const waitingNote = el("p", "waiting-note hidden");
   waitingNote.textContent = "Ask the host to run it back.";
+  const mapButton = el("button", "btn btn-ghost full");
+  mapButton.type = "button";
+  mapButton.textContent = "Change map";
+  mapButton.addEventListener("click", () => deps.changeMap());
 
-  panel.append(title, sub, grid, scoreboardLabel, scoreList, againButton, waitingNote);
+  panel.append(
+    title,
+    sub,
+    grid,
+    scoreboardLabel,
+    scoreList,
+    againButton,
+    mapButton,
+    waitingNote,
+  );
   container.append(panel);
 
   return {
@@ -111,6 +126,7 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
       scoreboardLabel.classList.toggle("hidden", solo || ranked.length === 0);
       scoreList.classList.toggle("hidden", solo || ranked.length === 0);
       againButton.classList.toggle("hidden", !state.isHost);
+      mapButton.classList.toggle("hidden", !state.isHost);
       waitingNote.classList.toggle("hidden", state.isHost);
     },
     destroy(): void {
