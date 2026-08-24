@@ -3,6 +3,9 @@
   "name": "georumble",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-01",
+  "vars": {
+    "DISCORD_CLIENT_ID": "1540906195752189952"
+  },
   "assets": {
     "directory": "../client/dist",
     "binding": "AppAssets",
