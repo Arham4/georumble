@@ -21,6 +21,7 @@ const CURSOR_SEND_MS = 50;
 const CURSOR_SEND_MIN_UNITS = 1.5;
 const CURSOR_LERP = 0.28;
 const CURSOR_STALE_MS = 4000;
+const HELPER_CIRCLE_PX = 18;
 
 type RegionParts = {
   path: SVGPathElement;
@@ -53,6 +54,7 @@ export class MapView {
   private readonly namesById = new Map<string, string>();
   private readonly centroidById = new Map<string, [number, number]>();
   private readonly halos: SVGPathElement[] = [];
+  private readonly helperCircles = new Map<string, SVGCircleElement>();
   private debugDot: SVGCircleElement | null = null;
   private readonly peers = new Map<string, PeerCursor>();
   private peerRaf: number | null = null;
@@ -187,6 +189,7 @@ export class MapView {
     cursors.classList.add("cursor-layer");
     this.cursorLayer = cursors;
     this.viewport.replaceChildren(hitLayer, regionLayer, cursors);
+    this.buildHelperCircles();
     if (this.debug) {
       const dot = createElement<SVGCircleElement>("circle");
       dot.classList.add("debug-dot");
@@ -222,6 +225,9 @@ export class MapView {
       for (const cls of ["heat-clean", "heat-warm", "heat-hard"]) {
         parts.path.classList.toggle(cls, isFound && cls === tier);
       }
+    }
+    for (const [id, circle] of this.helperCircles) {
+      circle.classList.toggle("found", next.has(id));
     }
     this.foundIds = next;
     this.syncHint();
@@ -277,25 +283,6 @@ export class MapView {
       .map(([id]) => id);
   }
 
-  /** Path data for a magnified mini-view of a region, or null if unknown. */
-  regionPathData(id: string): { d: string; minX: number; minY: number; w: number; h: number } | null {
-    const parts = this.regions.get(id);
-    const geo = this.geoById.get(id);
-    const d = parts?.path.getAttribute("d");
-    if (!parts || !geo || !d) {
-      return null;
-    }
-    const [min, max] = geo.bounds;
-    const pad = Math.max(0.5, Math.max(max[0] - min[0], max[1] - min[1]) * 0.08);
-    return {
-      d,
-      minX: min[0] - pad,
-      minY: min[1] - pad,
-      w: max[0] - min[0] + pad * 2,
-      h: max[1] - min[1] + pad * 2,
-    };
-  }
-
   /** Instant neutral ack that a click was received, before any verdict. */
   pressFeedback(id: string): void {
     this.flash(id, "pressed", PRESS_MS);
@@ -303,6 +290,38 @@ export class MapView {
 
   private isTiny(id: string): boolean {
     return (this.geoById.get(id)?.minDim ?? Infinity) < HIT_MIN_UNITS;
+  }
+
+  /**
+   * Seterra-style helpers: translucent clickable circles sitting at each tiny
+   * region's location, so specks like DC or Malta are clickable at any zoom.
+   * They carry data-region-id, so the regular hover/click pipeline just works.
+   */
+  private buildHelperCircles(): void {
+    this.helperCircles.clear();
+    for (const [id, geo] of this.geoById) {
+      if (geo.minDim >= HIT_MIN_UNITS) {
+        continue;
+      }
+      const [min, max] = geo.bounds;
+      const hint = this.centroidById.get(id);
+      const circle = createElement<SVGCircleElement>("circle");
+      circle.classList.add("helper-circle");
+      circle.setAttribute("data-region-id", id);
+      circle.setAttribute("cx", String(hint ? hint[0] : (min[0] + max[0]) / 2));
+      circle.setAttribute("cy", String(hint ? hint[1] : (min[1] + max[1]) / 2));
+      circle.setAttribute("vector-effect", "non-scaling-stroke");
+      this.viewport.append(circle);
+      this.helperCircles.set(id, circle);
+    }
+    this.rescaleHelperCircles();
+  }
+
+  private rescaleHelperCircles(): void {
+    const r = HELPER_CIRCLE_PX / this.k;
+    for (const circle of this.helperCircles.values()) {
+      circle.setAttribute("r", String(r));
+    }
   }
 
   private placeHintRing(): void {
@@ -608,6 +627,7 @@ export class MapView {
         halo.setAttribute("stroke-width", String(base / this.k));
       }
     }
+    this.rescaleHelperCircles();
     this.debugDot?.setAttribute("r", String(4 / this.k));
     this.refreshHover("camera");
   }
@@ -638,6 +658,7 @@ export class MapView {
     this.geoById.clear();
     this.centroidById.clear();
     this.halos.length = 0;
+    this.helperCircles.clear();
     this.debugDot = null;
     for (const peer of this.peers.values()) {
       peer.group.remove();

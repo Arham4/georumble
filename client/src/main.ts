@@ -112,8 +112,7 @@ async function boot(): Promise<void> {
   const mapHolder = el("div", "map-holder");
   const screenHolder = el("div", "screen-holder");
   const toastHolder = el("div", "toast-holder");
-  const helperHolder = el("div", "helper-strip hidden");
-  app.replaceChildren(mapHolder, screenHolder, toastHolder, helperHolder);
+  app.replaceChildren(mapHolder, screenHolder, toastHolder);
 
   const identity = await resolveIdentity();
   const store = new PackStore();
@@ -199,44 +198,12 @@ async function boot(): Promise<void> {
       currentPack = await store.load(packId);
       mapView.loadPack(currentPack.pack, currentPack.topo);
       packOfScreen = packId;
-      rebuildHelperStrip();
       currentScreen?.update(lastState ?? stateOf());
     } catch {
       currentPack = null;
       const failedToast = el("div", "toast error", "Map pack failed to load");
       toastHolder.append(failedToast);
       setTimeout(() => failedToast.remove(), 4200);
-    }
-  }
-
-  /** Seterra-style magnifier buttons for regions too tiny to click fairly. */
-  function rebuildHelperStrip(): void {
-    helperHolder.replaceChildren();
-    for (const id of mapView.tinyRegionIds()) {
-      const data = mapView.regionPathData(id);
-      if (!data) {
-        continue;
-      }
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "helper-btn";
-      button.dataset.regionId = id;
-      const mini = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      mini.setAttribute("viewBox", `${data.minX} ${data.minY} ${data.w} ${data.h}`);
-      mini.setAttribute("preserveAspectRatio", "xMidYMid meet");
-      const shape = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      shape.setAttribute("d", data.d);
-      shape.setAttribute("class", "helper-region");
-      mini.append(shape);
-      button.append(mini);
-      button.addEventListener("click", () => {
-        mapView.pressFeedback(id);
-        revealRegionName(id);
-        if (!client.guess(id)) {
-          mapView.flashMiss(id);
-        }
-      });
-      helperHolder.append(button);
     }
   }
 
@@ -300,10 +267,6 @@ async function boot(): Promise<void> {
       }
     }
     prevPlayerIds = nextIds;
-    helperHolder.classList.toggle("hidden", state.phase !== "playing");
-    for (const button of helperHolder.querySelectorAll<HTMLButtonElement>(".helper-btn")) {
-      button.classList.toggle("found", state.foundIds.includes(button.dataset.regionId ?? ""));
-    }
     if (state.phase === "playing" && currentPhase !== "playing") {
       // Each round starts framed on the whole map; zoom choices don't linger.
       mapView.resetView();
