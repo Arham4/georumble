@@ -55,6 +55,7 @@ export class MapView {
   private readonly centroidById = new Map<string, [number, number]>();
   private readonly halos: SVGPathElement[] = [];
   private readonly helpers = new Map<string, { group: SVGGElement; circle: SVGCircleElement }>();
+  private badgeLayer: SVGGElement | null = null;
   private debugDot: SVGCircleElement | null = null;
   private readonly peers = new Map<string, PeerCursor>();
   private peerRaf: number | null = null;
@@ -199,7 +200,10 @@ export class MapView {
     cursors.classList.add("cursor-layer");
     this.cursorLayer = cursors;
     const helperLayer = this.buildHelperLayer(pack);
-    this.viewport.replaceChildren(hitLayer, regionLayer, helperLayer, cursors);
+    const badges = createElement<SVGGElement>("g");
+    badges.classList.add("badge-layer");
+    this.badgeLayer = badges;
+    this.viewport.replaceChildren(hitLayer, regionLayer, helperLayer, badges, cursors);
     if (this.debug) {
       const dot = createElement<SVGCircleElement>("circle");
       dot.classList.add("debug-dot");
@@ -224,7 +228,12 @@ export class MapView {
     this.svg.remove();
   }
 
-  setFound(ids: readonly string[], missesByRegion: Record<string, number> = {}): void {
+  setFound(
+    ids: readonly string[],
+    missesByRegion: Record<string, number> = {},
+    foundBy: Record<string, string> = {},
+    players: ReadonlyMap<string, { name: string; avatar: string | null }> = new Map(),
+  ): void {
     const next = new Set(ids);
     for (const [id, parts] of this.regions) {
       const isFound = next.has(id);
@@ -240,7 +249,73 @@ export class MapView {
       helper.group.classList.toggle("found", next.has(id));
     }
     this.foundIds = next;
+    this.renderBadges(foundBy, players);
     this.syncHint();
+  }
+
+  /**
+   * Finder badges: the player's avatar drawn once per found region, at a
+   * FIXED size centered on the region's centroid and clipped to the region's
+   * own outline — never resized, so a big region shows the whole icon while a
+   * small one shows whatever sliver fits around the center.
+   */
+  private renderBadges(
+    foundBy: Record<string, string>,
+    players: ReadonlyMap<string, { name: string; avatar: string | null }>,
+  ): void {
+    const layer = this.badgeLayer;
+    if (!layer) {
+      return;
+    }
+    layer.replaceChildren();
+    const size = 30;
+    for (const id of this.foundIds) {
+      const player = foundBy[id] ? players.get(foundBy[id]) : undefined;
+      const d = this.regions.get(id)?.path.getAttribute("d");
+      const center = this.centroidById.get(id);
+      if (!player || !d || !center) {
+        continue;
+      }
+      const clipId = `badge-clip-${sanitizeClipId(id)}`;
+      const defs = createElement<SVGElement>("defs");
+      const clip = createElement<SVGClipPathElement>("clipPath");
+      clip.setAttribute("id", clipId);
+      const shape = createElement<SVGPathElement>("path");
+      shape.setAttribute("d", d);
+      clip.append(shape);
+      defs.append(clip);
+
+      const clipped = createElement<SVGGElement>("g");
+      clipped.setAttribute("clip-path", `url(#${clipId})`);
+      if (player.avatar) {
+        const image = createElement<SVGImageElement>("image");
+        image.setAttribute("href", player.avatar);
+        image.setAttribute("x", String(center[0] - size / 2));
+        image.setAttribute("y", String(center[1] - size / 2));
+        image.setAttribute("width", String(size));
+        image.setAttribute("height", String(size));
+        image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        clipped.append(image);
+      } else {
+        const dot = createElement<SVGCircleElement>("circle");
+        dot.classList.add("badge-dot");
+        dot.setAttribute("cx", String(center[0]));
+        dot.setAttribute("cy", String(center[1]));
+        dot.setAttribute("r", String(size / 2));
+        clipped.append(dot);
+        const initial = createElement<SVGTextElement>("text");
+        initial.classList.add("badge-initial");
+        initial.setAttribute("x", String(center[0]));
+        initial.setAttribute("y", String(center[1]));
+        initial.setAttribute("text-anchor", "middle");
+        initial.setAttribute("dominant-baseline", "central");
+        initial.textContent = (player.name.trim()[0] ?? "?").toUpperCase();
+        clipped.append(initial);
+      }
+      const group = createElement<SVGGElement>("g");
+      group.append(defs, clipped);
+      layer.append(group);
+    }
   }
 
   setTarget(id: string | null): void {
@@ -634,8 +709,18 @@ export class MapView {
   }
 
   private clampPan(): void {
-    this.tx = Math.min(0, Math.max(this.width * (1 - this.k), this.tx));
-    this.ty = Math.min(0, Math.max(this.height * (1 - this.k), this.ty));
+    // Draggable at every zoom — including fit zoom, so the map can be slid
+    // around freely — clamped only to keep a quarter of the canvas findable;
+    // the home button recovers the standard fit.
+    const minVisible = 0.25;
+    this.tx = Math.min(
+      this.width * (1 - minVisible),
+      Math.max(this.width * (minVisible - this.k), this.tx),
+    );
+    this.ty = Math.min(
+      this.height * (1 - minVisible),
+      Math.max(this.height * (minVisible - this.k), this.ty),
+    );
   }
 
   private applyTransform(): void {
@@ -697,6 +782,7 @@ export class MapView {
     this.centroidById.clear();
     this.halos.length = 0;
     this.helpers.clear();
+    this.badgeLayer = null;
     this.debugDot = null;
     for (const peer of this.peers.values()) {
       peer.group.remove();

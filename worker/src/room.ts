@@ -50,6 +50,8 @@ type PersistedRoom = {
   heat: Record<string, number>;
   /** Per-player round tallies, so rejoined clients recover the full score. */
   tallies: Record<string, { correct: number; misses: number }>;
+  /** Finder of each found region, by feature id — replayed as badges. */
+  foundBy: Record<string, string>;
   startedAt: number | null;
 };
 
@@ -93,6 +95,7 @@ export class GameRoom extends DurableObject<Env> {
         found: [],
         heat: {},
         tallies: {},
+        foundBy: {},
         startedAt: null,
       };
       await this.persist();
@@ -320,6 +323,7 @@ export class GameRoom extends DurableObject<Env> {
     room.found = [];
     room.heat = {};
     room.tallies = {};
+    room.foundBy = {};
     room.startedAt = Date.now();
     room.roundHostId = hostId;
     await this.persist();
@@ -355,6 +359,7 @@ export class GameRoom extends DurableObject<Env> {
       if (!room.found.includes(parsed.featureId)) {
         room.found.push(parsed.featureId);
         tally.correct += 1;
+        room.foundBy[parsed.featureId] = parsed.byPlayer;
       }
     } else {
       tally.misses += 1;
@@ -443,6 +448,7 @@ export class GameRoom extends DurableObject<Env> {
     room.found = [];
     room.heat = {};
     room.tallies = {};
+    room.foundBy = {};
     room.startedAt = null;
     room.roundHostId = null;
     await this.persist();
@@ -496,6 +502,7 @@ export class GameRoom extends DurableObject<Env> {
       found: room.found,
       heat: room.heat,
       tallies: room.tallies,
+      foundBy: room.foundBy,
       target:
         room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,

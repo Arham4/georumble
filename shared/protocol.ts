@@ -21,6 +21,8 @@ export type RoomSnapshot = {
   heat?: Record<string, number>;
   /** Per-player round tallies, by player id — survives rejoin. */
   tallies?: Record<string, { correct: number; misses: number }>;
+  /** Who found each found region, by feature id — drives the finder badge. */
+  foundBy?: Record<string, string>;
   /** Derived convenience: order[orderIndex], null when out of game. */
   target: string | null;
   startedAt: number | null;

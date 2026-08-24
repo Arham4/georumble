@@ -40,6 +40,8 @@ export type GameState = {
   misses: number;
   /** Wrong attempts it took to find each region; drives fill-color tiers. */
   missesByRegion: Record<string, number>;
+  /** Who found each found region; drives the finder badge on the map. */
+  foundBy: Record<string, string>;
   hintActive: boolean;
   ticker: TickerEntry[];
   win: { seconds: number; guesses: number } | null;
@@ -75,6 +77,7 @@ export class GameClient {
   /** Wrong attempts it took to find each region, frozen at the moment of finding. */
   private foundHeat = new Map<string, number>();
   private missedRegions = new Set<string>();
+  private foundByRegion: Record<string, string> = {};
   private tallies = new Map<string, PlayerTally>();
   /** Relay-clock minus local-clock at the last snapshot, so elapsed time survives device clock skew. */
   private clockOffset: number | null = null;
@@ -270,6 +273,9 @@ export class GameClient {
     if (snapshot.tallies) {
       this.tallies = new Map(Object.entries(snapshot.tallies));
     }
+    if (snapshot.foundBy) {
+      this.foundByRegion = snapshot.foundBy;
+    }
     if (typeof snapshot.serverNow === "number") {
       this.clockOffset = snapshot.serverNow - Date.now();
     }
@@ -284,6 +290,7 @@ export class GameClient {
     this.missesByTarget.clear();
     this.foundHeat.clear();
     this.missedRegions.clear();
+    this.foundByRegion = {};
     this.tallies.clear();
     this.ticker = [];
     this.win = null;
@@ -348,6 +355,7 @@ export class GameClient {
       tally.correct += 1;
       const target = snapshot?.target ?? outcome.featureId;
       this.foundHeat.set(outcome.featureId, this.missesByTarget.get(target) ?? 0);
+      this.foundByRegion = { ...this.foundByRegion, [outcome.featureId]: outcome.byPlayer };
       if (snapshot) {
         this.snapshot = { ...snapshot, found: [...snapshot.found, outcome.featureId] };
       }
@@ -448,6 +456,7 @@ export class GameClient {
       correct: this.correct,
       misses: this.misses,
       missesByRegion: Object.fromEntries(this.foundHeat),
+      foundBy: this.foundByRegion,
       hintActive:
         target !== null && (this.missesByTarget.get(target) ?? 0) >= HINT_AFTER_MISSES,
       ticker: this.ticker,

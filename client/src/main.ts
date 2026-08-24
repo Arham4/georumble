@@ -312,6 +312,7 @@ async function boot(): Promise<void> {
         correct: 0,
         misses: 0,
         missesByRegion: {},
+        foundBy: {},
         hintActive: false,
         ticker: [],
         win: null,
@@ -349,7 +350,10 @@ async function boot(): Promise<void> {
       localStorage.setItem(NAME_STORAGE_KEY, state.name);
     }
     void ensurePack(state.packId);
-    mapView.setFound(state.foundIds, state.missesByRegion);
+    const playersById = new Map(
+      state.players.map((player) => [player.id, { name: player.name, avatar: player.avatar }]),
+    );
+    mapView.setFound(state.foundIds, state.missesByRegion, state.foundBy, playersById);
     mapView.setTarget(state.target);
     mapView.setHint(state.hintActive);
     mapView.setInteractive(state.phase === "playing");
