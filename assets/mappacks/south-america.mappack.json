@@ -1,0 +1,112 @@
+{
+  "packId": "south-america",
+  "displayName": "South America",
+  "projection": {
+    "kind": "conic-conformal-preprojected",
+    "width": 1000,
+    "height": 1000
+  },
+  "source": {
+    "name": "world-atlas countries-50m.json (Natural Earth 1:50m)",
+    "url": "https://github.com/topojson/world-atlas",
+    "license": "Public domain (Natural Earth data)"
+  },
+  "features": [
+    {
+      "id": "AR",
+      "name": "Argentina",
+      "centroidHint": {
+        "x": 589,
+        "y": 609
+      }
+    },
+    {
+      "id": "BO",
+      "name": "Bolivia",
+      "centroidHint": {
+        "x": 584,
+        "y": 418
+      }
+    },
+    {
+      "id": "BR",
+      "name": "Brazil",
+      "centroidHint": {
+        "x": 700,
+        "y": 352
+      }
+    },
+    {
+      "id": "CL",
+      "name": "Chile",
+      "centroidHint": {
+        "x": 537,
+        "y": 615
+      }
+    },
+    {
+      "id": "CO",
+      "name": "Colombia",
+      "centroidHint": {
+        "x": 478,
+        "y": 197
+      }
+    },
+    {
+      "id": "EC",
+      "name": "Ecuador",
+      "centroidHint": {
+        "x": 426,
+        "y": 267
+      }
+    },
+    {
+      "id": "GY",
+      "name": "Guyana",
+      "centroidHint": {
+        "x": 643,
+        "y": 181
+      }
+    },
+    {
+      "id": "PY",
+      "name": "Paraguay",
+      "centroidHint": {
+        "x": 646,
+        "y": 486
+      }
+    },
+    {
+      "id": "PE",
+      "name": "Peru",
+      "centroidHint": {
+        "x": 478,
+        "y": 344
+      }
+    },
+    {
+      "id": "SR",
+      "name": "Suriname",
+      "centroidHint": {
+        "x": 679,
+        "y": 190
+      }
+    },
+    {
+      "id": "UY",
+      "name": "Uruguay",
+      "centroidHint": {
+        "x": 666,
+        "y": 585
+      }
+    },
+    {
+      "id": "VE",
+      "name": "Venezuela",
+      "centroidHint": {
+        "x": 557,
+        "y": 154
+      }
+    }
+  ]
+}

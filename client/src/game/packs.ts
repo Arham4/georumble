@@ -34,6 +34,13 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     mappackUrl: "/mappacks/asia.mappack.json",
     topoUrl: "/mappacks/asia.topojson",
   },
+  {
+    packId: "south-america",
+    displayName: "South America",
+    blurb: "12 countries from the Caribbean coast to Cape Horn",
+    mappackUrl: "/mappacks/south-america.mappack.json",
+    topoUrl: "/mappacks/south-america.topojson",
+  },
 ];
 
 export type LoadedPack = {
