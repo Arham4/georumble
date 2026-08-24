@@ -19,5 +19,5 @@
   // Optional: bind a KV namespace and write a number or {"maxRooms": N} to the
   // "limits" key to retune the room-capacity gate without a redeploy. Unbound
   // keeps LIMITS_KV undefined and capacity falls back to plan detection.
-  // "kv_namespaces": [{ "binding": "LIMITS_KV", "id": "<namespace-id>" }]
+  "kv_namespaces": [{ "binding": "LIMITS_KV", "id": "7242369c1da84f24b1d247492d09f61a" }]
 }
