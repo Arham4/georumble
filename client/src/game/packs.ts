@@ -23,14 +23,14 @@ export const PACK_MANIFEST: PackDescriptor[] = [
   {
     packId: "europe",
     displayName: "Europe",
-    blurb: "39 countries from Portugal to Russia, microstates spared",
+    blurb: "46 countries from Portugal to Russia, microstates included",
     mappackUrl: "/mappacks/europe.mappack.json",
     topoUrl: "/mappacks/europe.topojson",
   },
   {
     packId: "asia",
     displayName: "Asia",
-    blurb: "49 countries from the Mediterranean to the Pacific",
+    blurb: "50 countries from the Mediterranean to the Pacific",
     mappackUrl: "/mappacks/asia.mappack.json",
     topoUrl: "/mappacks/asia.topojson",
   },
@@ -44,7 +44,7 @@ export const PACK_MANIFEST: PackDescriptor[] = [
   {
     packId: "africa",
     displayName: "Africa",
-    blurb: "54 countries from the Maghreb to Madagascar",
+    blurb: "56 countries from the Maghreb to Madagascar",
     mappackUrl: "/mappacks/africa.mappack.json",
     topoUrl: "/mappacks/africa.topojson",
   },

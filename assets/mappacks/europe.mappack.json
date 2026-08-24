@@ -21,6 +21,14 @@
       }
     },
     {
+      "id": "AD",
+      "name": "Andorra",
+      "centroidHint": {
+        "x": 386,
+        "y": 487
+      }
+    },
+    {
       "id": "AT",
       "name": "Austria",
       "centroidHint": {
@@ -166,11 +174,27 @@
       }
     },
     {
+      "id": "XK",
+      "name": "Kosovo",
+      "centroidHint": {
+        "x": 590,
+        "y": 484
+      }
+    },
+    {
       "id": "LV",
       "name": "Latvia",
       "centroidHint": {
         "x": 591,
         "y": 276
+      }
+    },
+    {
+      "id": "LI",
+      "name": "Liechtenstein",
+      "centroidHint": {
+        "x": 471,
+        "y": 427
       }
     },
     {
@@ -203,6 +227,22 @@
       "centroidHint": {
         "x": 653,
         "y": 404
+      }
+    },
+    {
+      "id": "MC",
+      "name": "Monaco",
+      "centroidHint": {
+        "x": 448,
+        "y": 475
+      }
+    },
+    {
+      "id": "ME",
+      "name": "Montenegro",
+      "centroidHint": {
+        "x": 572,
+        "y": 483
       }
     },
     {
@@ -263,8 +303,16 @@
       "id": "RU",
       "name": "Russia",
       "centroidHint": {
-        "x": 891,
-        "y": -115
+        "x": 773,
+        "y": 175
+      }
+    },
+    {
+      "id": "SM",
+      "name": "San Marino",
+      "centroidHint": {
+        "x": 501,
+        "y": 472
       }
     },
     {
@@ -346,6 +394,18 @@
         "x": 371,
         "y": 322
       }
+    },
+    {
+      "id": "VA",
+      "name": "Vatican City",
+      "aliases": [
+        "Vatican",
+        "Holy See"
+      ],
+      "centroidHint": {
+        "x": 501,
+        "y": 501
+      }
     }
   ],
   "helpers": [
@@ -361,6 +421,41 @@
       "anchor": {
         "x": 422,
         "y": 337
+      }
+    },
+    {
+      "id": "AD",
+      "anchor": {
+        "x": 372,
+        "y": 504
+      }
+    },
+    {
+      "id": "MC",
+      "anchor": {
+        "x": 447,
+        "y": 484
+      }
+    },
+    {
+      "id": "SM",
+      "anchor": {
+        "x": 499,
+        "y": 478
+      }
+    },
+    {
+      "id": "VA",
+      "anchor": {
+        "x": 491,
+        "y": 506
+      }
+    },
+    {
+      "id": "LI",
+      "anchor": {
+        "x": 471,
+        "y": 421
       }
     }
   ]
