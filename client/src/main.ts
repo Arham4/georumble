@@ -66,6 +66,32 @@ function guestIdentity(): Identity {
  * Full handshake only inside a Discord activity iframe; plain-browser dev
  * runs as a guest without touching the SDK.
  */
+/**
+ * Discord's SDK rejects command promises with the client's raw error frame —
+ * a plain { code, message } object, not an Error — so each shape needs its own
+ * extraction before the reason can reach the lobby notice.
+ */
+function describeError(error: unknown): string {
+  if (error instanceof Error) {
+    const code = (error as { code?: unknown }).code;
+    return code !== undefined && code !== "" ? `${error.message} (${String(code)})` : error.message;
+  }
+  if (typeof error === "object" && error !== null) {
+    const frame = error as { message?: unknown; code?: unknown };
+    if (typeof frame.message === "string" && frame.message) {
+      return frame.code !== undefined
+        ? `${frame.message} (code ${String(frame.code)})`
+        : frame.message;
+    }
+    try {
+      return JSON.stringify(error) ?? "unrecognized error";
+    } catch {
+      return "unrecognized error";
+    }
+  }
+  return String(error);
+}
+
 async function resolveIdentity(): Promise<Identity> {
   const fallback = guestIdentity();
   const embedded = window.self !== window.top;
@@ -114,9 +140,8 @@ async function resolveIdentity(): Promise<Identity> {
   } catch (error) {
     // The reason rides into the lobby notice: inside the Discord webview the
     // console is unreachable, and "guest" without a why is undiagnosable.
-    const reason = error instanceof Error ? error.message : String(error);
     console.warn("[georumble] discord sign-in failed", error);
-    return { ...fallback, signInFailed: reason.slice(0, 140) };
+    return { ...fallback, signInFailed: describeError(error).slice(0, 140) };
   }
 }
 
