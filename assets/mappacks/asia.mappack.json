@@ -2,9 +2,9 @@
   "packId": "asia",
   "displayName": "Asia",
   "projection": {
-    "kind": "conic-conformal-preprojected",
+    "kind": "mercator-preprojected",
     "width": 1000,
-    "height": 657
+    "height": 905
   },
   "source": {
     "name": "world-atlas countries-50m.json (Natural Earth 1:50m)",
@@ -16,208 +16,208 @@
       "id": "AF",
       "name": "Afghanistan",
       "centroidHint": {
-        "x": 403,
-        "y": 316
+        "x": 269,
+        "y": 598
       }
     },
     {
       "id": "AM",
       "name": "Armenia",
       "centroidHint": {
-        "x": 326,
-        "y": 241
+        "x": 135,
+        "y": 547
       }
     },
     {
       "id": "AZ",
       "name": "Azerbaijan",
       "centroidHint": {
-        "x": 337,
-        "y": 247
+        "x": 152,
+        "y": 547
       }
     },
     {
       "id": "BH",
       "name": "Bahrain",
       "centroidHint": {
-        "x": 310,
-        "y": 331
+        "x": 170,
+        "y": 656
       }
     },
     {
       "id": "BD",
       "name": "Bangladesh",
       "centroidHint": {
-        "x": 524,
-        "y": 394
+        "x": 422,
+        "y": 670
       }
     },
     {
       "id": "BT",
       "name": "Bhutan",
       "centroidHint": {
-        "x": 525,
-        "y": 372
+        "x": 423,
+        "y": 646
       }
     },
     {
       "id": "BN",
       "name": "Brunei",
       "centroidHint": {
-        "x": 700,
-        "y": 499
+        "x": 577,
+        "y": 798
       }
     },
     {
       "id": "KH",
       "name": "Cambodia",
       "centroidHint": {
-        "x": 621,
-        "y": 458
+        "x": 515,
+        "y": 745
       }
     },
     {
       "id": "CN",
       "name": "China",
       "centroidHint": {
-        "x": 588,
-        "y": 311
+        "x": 510,
+        "y": 569
       }
     },
     {
       "id": "CY",
       "name": "Cyprus",
       "centroidHint": {
-        "x": 261,
-        "y": 235
+        "x": 59,
+        "y": 590
       }
     },
     {
       "id": "GE",
       "name": "Georgia",
       "centroidHint": {
-        "x": 326,
-        "y": 228
+        "x": 126,
+        "y": 531
       }
     },
     {
       "id": "IN",
       "name": "India",
       "centroidHint": {
-        "x": 461,
-        "y": 400
+        "x": 355,
+        "y": 675
       }
     },
     {
       "id": "ID",
       "name": "Indonesia",
       "centroidHint": {
-        "x": 705,
-        "y": 535
+        "x": 573,
+        "y": 828
       }
     },
     {
       "id": "IR",
       "name": "Iran",
       "centroidHint": {
-        "x": 346,
-        "y": 304
+        "x": 194,
+        "y": 607
       }
     },
     {
       "id": "IQ",
       "name": "Iraq",
       "centroidHint": {
-        "x": 299,
-        "y": 276
+        "x": 127,
+        "y": 604
       }
     },
     {
       "id": "IL",
       "name": "Israel",
       "centroidHint": {
-        "x": 256,
-        "y": 258
+        "x": 72,
+        "y": 616
       }
     },
     {
       "id": "JP",
       "name": "Japan",
       "centroidHint": {
-        "x": 742,
-        "y": 253
+        "x": 725,
+        "y": 576
       }
     },
     {
       "id": "JO",
       "name": "Jordan",
       "centroidHint": {
-        "x": 263,
-        "y": 265
+        "x": 83,
+        "y": 618
       }
     },
     {
       "id": "KZ",
       "name": "Kazakhstan",
       "centroidHint": {
-        "x": 433,
-        "y": 233
+        "x": 277,
+        "y": 475
       }
     },
     {
       "id": "KW",
       "name": "Kuwait",
       "centroidHint": {
-        "x": 305,
-        "y": 305
+        "x": 152,
+        "y": 632
       }
     },
     {
       "id": "KG",
       "name": "Kyrgyzstan",
       "centroidHint": {
-        "x": 454,
-        "y": 281
+        "x": 323,
+        "y": 537
       }
     },
     {
       "id": "LA",
       "name": "Laos",
       "centroidHint": {
-        "x": 608,
-        "y": 422
+        "x": 508,
+        "y": 707
       }
     },
     {
       "id": "LB",
       "name": "Lebanon",
       "centroidHint": {
-        "x": 269,
-        "y": 249
+        "x": 77,
+        "y": 598
       }
     },
     {
       "id": "MY",
       "name": "Malaysia",
       "centroidHint": {
-        "x": 702,
-        "y": 505
+        "x": 578,
+        "y": 804
       }
     },
     {
       "id": "MV",
       "name": "Maldives",
       "centroidHint": {
-        "x": 401,
-        "y": 522
+        "x": 316,
+        "y": 800
       }
     },
     {
       "id": "MN",
       "name": "Mongolia",
       "centroidHint": {
-        "x": 577,
-        "y": 250
+        "x": 503,
+        "y": 489
       }
     },
     {
@@ -227,128 +227,128 @@
         "Burma"
       ],
       "centroidHint": {
-        "x": 562,
-        "y": 411
+        "x": 462,
+        "y": 688
       }
     },
     {
       "id": "NP",
       "name": "Nepal",
       "centroidHint": {
-        "x": 490,
-        "y": 366
+        "x": 382,
+        "y": 640
       }
     },
     {
       "id": "KP",
       "name": "North Korea",
       "centroidHint": {
-        "x": 688,
-        "y": 258
+        "x": 657,
+        "y": 548
       }
     },
     {
       "id": "OM",
       "name": "Oman",
       "centroidHint": {
-        "x": 324,
-        "y": 376
+        "x": 206,
+        "y": 693
       }
     },
     {
       "id": "PK",
       "name": "Pakistan",
       "centroidHint": {
-        "x": 413,
-        "y": 344
+        "x": 290,
+        "y": 626
       }
     },
     {
       "id": "PH",
       "name": "Philippines",
       "centroidHint": {
-        "x": 761,
-        "y": 453
+        "x": 620,
+        "y": 724
       }
     },
     {
       "id": "QA",
       "name": "Qatar",
       "centroidHint": {
-        "x": 311,
-        "y": 336
+        "x": 174,
+        "y": 661
       }
     },
     {
       "id": "RU",
       "name": "Russia",
       "centroidHint": {
-        "x": 541,
-        "y": 140
+        "x": 490,
+        "y": 293
       }
     },
     {
       "id": "SA",
       "name": "Saudi Arabia",
       "centroidHint": {
-        "x": 275,
-        "y": 326
+        "x": 132,
+        "y": 668
       }
     },
     {
       "id": "SG",
       "name": "Singapore",
       "centroidHint": {
-        "x": 627,
-        "y": 540
+        "x": 508,
+        "y": 818
       }
     },
     {
       "id": "KR",
       "name": "South Korea",
       "centroidHint": {
-        "x": 701,
-        "y": 277
+        "x": 661,
+        "y": 578
       }
     },
     {
       "id": "LK",
       "name": "Sri Lanka",
       "centroidHint": {
-        "x": 458,
-        "y": 499
+        "x": 362,
+        "y": 778
       }
     },
     {
       "id": "SY",
       "name": "Syria",
       "centroidHint": {
-        "x": 283,
-        "y": 251
+        "x": 94,
+        "y": 589
       }
     },
     {
       "id": "TW",
       "name": "Taiwan",
       "centroidHint": {
-        "x": 697,
-        "y": 363
+        "x": 617,
+        "y": 672
       }
     },
     {
       "id": "TJ",
       "name": "Tajikistan",
       "centroidHint": {
-        "x": 435,
-        "y": 295
+        "x": 300,
+        "y": 561
       }
     },
     {
       "id": "TH",
       "name": "Thailand",
       "centroidHint": {
-        "x": 593,
-        "y": 448
+        "x": 491,
+        "y": 729
       }
     },
     {
@@ -358,8 +358,8 @@
         "East Timor"
       ],
       "centroidHint": {
-        "x": 820,
-        "y": 566
+        "x": 649,
+        "y": 883
       }
     },
     {
@@ -369,16 +369,16 @@
         "Turkiye"
       ],
       "centroidHint": {
-        "x": 285,
-        "y": 223
+        "x": 75,
+        "y": 557
       }
     },
     {
       "id": "TM",
       "name": "Turkmenistan",
       "centroidHint": {
-        "x": 384,
-        "y": 276
+        "x": 226,
+        "y": 556
       }
     },
     {
@@ -388,32 +388,32 @@
         "UAE"
       ],
       "centroidHint": {
-        "x": 324,
-        "y": 352
+        "x": 194,
+        "y": 671
       }
     },
     {
       "id": "UZ",
       "name": "Uzbekistan",
       "centroidHint": {
-        "x": 405,
-        "y": 267
+        "x": 250,
+        "y": 534
       }
     },
     {
       "id": "VN",
       "name": "Vietnam",
       "centroidHint": {
-        "x": 626,
-        "y": 434
+        "x": 524,
+        "y": 719
       }
     },
     {
       "id": "YE",
       "name": "Yemen",
       "centroidHint": {
-        "x": 264,
-        "y": 379
+        "x": 151,
+        "y": 724
       }
     }
   ],
@@ -421,22 +421,22 @@
     {
       "id": "BH",
       "anchor": {
-        "x": 315,
-        "y": 324
+        "x": 172,
+        "y": 646
       }
     },
     {
       "id": "SG",
       "anchor": {
-        "x": 639,
-        "y": 546
+        "x": 517,
+        "y": 826
       }
     },
     {
       "id": "MV",
       "anchor": {
-        "x": 370,
-        "y": 560
+        "x": 297,
+        "y": 843
       }
     }
   ]

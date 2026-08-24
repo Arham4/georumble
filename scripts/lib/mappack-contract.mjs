@@ -9,6 +9,7 @@ export const KNOWN_PROJECTIONS = new Set([
   "albers-usa-preprojected",
   "conic-conformal-preprojected",
   "equirectangular-geo",
+  "mercator-preprojected",
 ]);
 
 function isNonEmptyString(value) {

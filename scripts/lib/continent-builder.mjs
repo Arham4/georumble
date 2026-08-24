@@ -55,25 +55,24 @@ function decodePolygons(geometry, arcAt) {
 }
 
 /**
- * Clips a projected closed ring to the canvas rectangle (Sutherland–Hodgman).
- * Geometry poking past the frame — Arctic islands above the fit window,
- * far-side antimeridian pieces wrapping around the cone — comes back with a
- * clean straight cut at the edge instead of shipping out-of-canvas arcs.
+ * Clips a projected closed ring to a rect (Sutherland–Hodgman). Geometry
+ * poking past the fit window — Arctic islands above it, far-side antimeridian
+ * slivers beside it, unwrap artifact loops beyond it — comes back with a
+ * clean straight cut at the edge instead of shipping out-of-frame arcs.
  */
-function clipRingToCanvas(ring, width, height, pad = 2) {
-  const limits = { left: -pad, right: width + pad, top: -pad, bottom: height + pad };
+function clipRingToRect(ring, clip) {
   const inside = {
-    left: ([x]) => x >= limits.left,
-    right: ([x]) => x <= limits.right,
-    top: ([, y]) => y >= limits.top,
-    bottom: ([, y]) => y <= limits.bottom,
+    left: ([x]) => x >= clip.left,
+    right: ([x]) => x <= clip.right,
+    top: ([, y]) => y >= clip.top,
+    bottom: ([, y]) => y <= clip.bottom,
   };
   const meet = (a, b, side) => {
     if (side === "left" || side === "right") {
-      const x = limits[side];
+      const x = clip[side];
       return [x, a[1] + ((x - a[0]) / (b[0] - a[0])) * (b[1] - a[1])];
     }
-    const y = limits[side];
+    const y = clip[side];
     return [a[0] + ((y - a[1]) / (b[1] - a[1])) * (b[0] - a[0]), y];
   };
 
@@ -104,15 +103,20 @@ function clipRingToCanvas(ring, width, height, pad = 2) {
  *   canvas                    — { width, height } of the pre-projected canvas
  *   fit                       — { minLon, minLat, maxLon, maxLat } framing window;
  *                               outlying geometry clips at the canvas edge
- *   parallels, rotate         — geoConicConformal setup (rotate: [centerLon])
+ *   projection                — "conic-conformal" (default) or "mercator"
+ *   parallels, rotate         — geoConicConformal setup (rotate: [centerLon]);
+ *                               parallels unused for mercator
  *   selection                 — { "356": { iso2: "IN", name: "India", aliases?: [] } }
  *                               keyed by world-atlas ISO numeric id
  *   helpers                   — optional [{ id, at: [lon, lat] }] offshore circle anchors
  */
 export async function buildContinentPack(config) {
   const topology = await fetchWorldTopology();
-  const { geoConicConformal } = await loadD3Geo();
-  const project = geoConicConformal().parallels(config.parallels).rotate([config.rotate, 0]);
+  const { geoConicConformal, geoMercator } = await loadD3Geo();
+  const mercator = config.projection === "mercator";
+  const project = mercator
+    ? geoMercator().rotate([config.rotate, 0])
+    : geoConicConformal().parallels(config.parallels).rotate([config.rotate, 0]);
   const arcAt = decodeArcs(topology);
   const { arcs, toArcIndexes } = encodeArcsFromRings();
 
@@ -165,17 +169,26 @@ export async function buildContinentPack(config) {
 
   const geometries = [];
   const features = [];
-  const inCanvas = ([x, y]) =>
-    x >= -2 && x <= config.canvas.width + 2 && y >= -2 && y <= config.canvas.height + 2;
+  // Clip at the fitted content box, not the raw canvas: letterboxing leaves
+  // canvas margins where clipped geometry would render as stray slivers.
+  const clip = {
+    left: offX - 1,
+    right: offX + box.width * k + 1,
+    top: offY - 1,
+    bottom: offY + box.height * k + 1,
+  };
   for (const geometry of selected) {
     const meta = config.selection[numericId(geometry)];
     const polygons = decodePolygons(geometry, arcAt)
       .map((polygon) =>
         polygon
-          .map((ring) => ring.map(toPixel).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1])))
-          // Specks fully outside the frame (africa's Prince Edward Islands)
-          // would otherwise ship as invisible out-of-canvas arcs.
-          .filter((ring) => ring.length >= 4 && ring.some(inCanvas)),
+          .map((ring) =>
+            clipRingToRect(
+              ring.map(toPixel).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1])),
+              clip,
+            ),
+          )
+          .filter((ring) => ring.length >= 4),
       )
       .filter((polygon) => polygon.length > 0);
     if (polygons.length === 0) {
@@ -223,7 +236,7 @@ export async function buildContinentPack(config) {
     packId: config.packId,
     displayName: config.displayName,
     projection: {
-      kind: "conic-conformal-preprojected",
+      kind: mercator ? "mercator-preprojected" : "conic-conformal-preprojected",
       width: config.canvas.width,
       height: config.canvas.height,
     },

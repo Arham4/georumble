@@ -67,16 +67,15 @@ const HELPERS = [
 await buildContinentPack({
   packId: "asia",
   displayName: "Asia",
-  // Height matches the fit window's true projected aspect under the conic
-  // conformal (~1.55:1); the old 940-tall canvas letterboxed Asia into a
-  // small centered strip with huge dead margins. maxLat 78 covers Novaya
-  // Zemlya; the higher Arctic chains fall above the frame and drop out.
-  canvas: { width: 1000, height: 657 },
-  fit: { minLon: 25, minLat: -11, maxLon: 148, maxLat: 78 },
-  parallels: [22.5, 60],
-  // d3's rotate is the inverse angle: [-90] centers lon 90E. The previous
-  // [90] centered lon -90W, throwing Asia onto the cone's far side where
-  // points reflect — the whole map rendered mirrored.
+  // Mercator: the conic conformal squatted the continent into a wide strip,
+  // while Mercator gives the familiar tall school-map Asia. Canvas matches
+  // the window's Mercator aspect. maxLon runs to the antimeridian so all of
+  // Russian Far East mainland is in frame; maxLat 78 keeps Novaya Zemlya and
+  // drops the higher Arctic chains.
+  projection: "mercator",
+  canvas: { width: 1000, height: 905 },
+  fit: { minLon: 25, minLat: -11, maxLon: 180, maxLat: 78 },
+  // d3's rotate is the inverse angle: [-90] centers lon 90E.
   rotate: -90,
   selection: SELECTION,
   helpers: HELPERS,

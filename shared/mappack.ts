@@ -1,7 +1,8 @@
 export type ProjectionKind =
   | "albers-usa-preprojected"
   | "conic-conformal-preprojected"
-  | "equirectangular-geo";
+  | "equirectangular-geo"
+  | "mercator-preprojected";
 
 export type CentroidHint = {
   x: number;
