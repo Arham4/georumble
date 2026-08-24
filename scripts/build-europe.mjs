@@ -81,5 +81,14 @@ await buildContinentPack({
   rotate: -10,
   selection: SELECTION,
   nameSelection: NAME_SELECTION,
+  // Natural Earth draws Crimea inside Russia's polygon (de facto control);
+  // the quiz shows it with Ukraine (de jure, near-universally recognized).
+  ringMoves: [
+    {
+      from: "RU",
+      to: "UA",
+      box: { minLon: 32.3, minLat: 44.2, maxLon: 36.8, maxLat: 46.3 },
+    },
+  ],
   helpers: HELPERS,
 });

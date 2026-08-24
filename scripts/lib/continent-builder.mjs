@@ -182,9 +182,58 @@ export async function buildContinentPack(config) {
     top: offY - 1,
     bottom: offY + box.height * k + 1,
   };
+  // ringMoves reassigns rings between two selected features by centroid box —
+  // for places the source data assigns de facto but the quiz wants de jure
+  // (Crimea draws inside Russia's polygon in Natural Earth). Rings are moved
+  // in lon/lat before projection; both endpoints must be selected.
+  const incomingRings = new Map();
+  for (const move of config.ringMoves ?? []) {
+    const source = selected.find((geometry) => metaFor(geometry)?.iso2 === move.from);
+    if (!source) {
+      throw new Error(`ringMoves: source feature ${move.from} is not selected`);
+    }
+    const inBox = (ring) => {
+      const c = areaAndCentroid(ring);
+      return (
+        c !== null &&
+        c.x >= move.box.minLon &&
+        c.x <= move.box.maxLon &&
+        c.y >= move.box.minLat &&
+        c.y <= move.box.maxLat
+      );
+    };
+    const moved = decodePolygons(source, arcAt, config.fit.minLon, config.fit.maxLon)
+      .flat()
+      .filter(inBox);
+    if (moved.length === 0) {
+      throw new Error(`ringMoves: no ${move.from} rings found inside ${JSON.stringify(move.box)}`);
+    }
+    incomingRings.set(move.to, [...(incomingRings.get(move.to) ?? []), ...moved]);
+  }
   for (const geometry of selected) {
     const meta = metaFor(geometry);
-    const polygons = decodePolygons(geometry, arcAt, config.fit.minLon, config.fit.maxLon)
+    const outgoing = (config.ringMoves ?? []).filter((move) => move.from === meta.iso2);
+    const incoming = incomingRings.get(meta.iso2) ?? [];
+    let lonLatPolygons = decodePolygons(geometry, arcAt, config.fit.minLon, config.fit.maxLon);
+    if (outgoing.length > 0) {
+      lonLatPolygons = lonLatPolygons.map((polygon) =>
+        polygon.filter((ring) => {
+          const c = areaAndCentroid(ring);
+          if (c === null) return true;
+          return !outgoing.some(
+            (move) =>
+              c.x >= move.box.minLon &&
+              c.x <= move.box.maxLon &&
+              c.y >= move.box.minLat &&
+              c.y <= move.box.maxLat,
+          );
+        }),
+      );
+    }
+    if (incoming.length > 0) {
+      lonLatPolygons = [...lonLatPolygons, ...incoming.map((ring) => [ring])];
+    }
+    const polygons = lonLatPolygons
       .map((polygon) =>
         polygon
           .map((ring) =>
