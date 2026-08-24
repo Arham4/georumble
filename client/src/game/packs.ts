@@ -41,6 +41,13 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     mappackUrl: "/mappacks/south-america.mappack.json",
     topoUrl: "/mappacks/south-america.topojson",
   },
+  {
+    packId: "africa",
+    displayName: "Africa",
+    blurb: "54 countries from the Maghreb to Madagascar",
+    mappackUrl: "/mappacks/africa.mappack.json",
+    topoUrl: "/mappacks/africa.topojson",
+  },
 ];
 
 export type LoadedPack = {

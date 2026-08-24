@@ -1,0 +1,504 @@
+{
+  "packId": "africa",
+  "displayName": "Africa",
+  "projection": {
+    "kind": "conic-conformal-preprojected",
+    "width": 960,
+    "height": 1000
+  },
+  "source": {
+    "name": "world-atlas countries-50m.json (Natural Earth 1:50m)",
+    "url": "https://github.com/topojson/world-atlas",
+    "license": "Public domain (Natural Earth data)"
+  },
+  "features": [
+    {
+      "id": "DZ",
+      "name": "Algeria",
+      "centroidHint": {
+        "x": 343,
+        "y": 205
+      }
+    },
+    {
+      "id": "AO",
+      "name": "Angola",
+      "centroidHint": {
+        "x": 496,
+        "y": 638
+      }
+    },
+    {
+      "id": "BJ",
+      "name": "Benin",
+      "centroidHint": {
+        "x": 340,
+        "y": 410
+      }
+    },
+    {
+      "id": "BW",
+      "name": "Botswana",
+      "centroidHint": {
+        "x": 560,
+        "y": 744
+      }
+    },
+    {
+      "id": "BF",
+      "name": "Burkina Faso",
+      "centroidHint": {
+        "x": 298,
+        "y": 383
+      }
+    },
+    {
+      "id": "BI",
+      "name": "Burundi",
+      "centroidHint": {
+        "x": 622,
+        "y": 544
+      }
+    },
+    {
+      "id": "CV",
+      "name": "Cabo Verde",
+      "aliases": [
+        "Cape Verde"
+      ],
+      "centroidHint": {
+        "x": 73,
+        "y": 353
+      }
+    },
+    {
+      "id": "CM",
+      "name": "Cameroon",
+      "centroidHint": {
+        "x": 447,
+        "y": 451
+      }
+    },
+    {
+      "id": "CF",
+      "name": "Central African Republic",
+      "centroidHint": {
+        "x": 526,
+        "y": 442
+      }
+    },
+    {
+      "id": "TD",
+      "name": "Chad",
+      "centroidHint": {
+        "x": 507,
+        "y": 349
+      }
+    },
+    {
+      "id": "KM",
+      "name": "Comoros",
+      "centroidHint": {
+        "x": 761,
+        "y": 630
+      }
+    },
+    {
+      "id": "CI",
+      "name": "Côte d'Ivoire",
+      "aliases": [
+        "Ivory Coast"
+      ],
+      "centroidHint": {
+        "x": 259,
+        "y": 431
+      }
+    },
+    {
+      "id": "CD",
+      "name": "Democratic Republic of the Congo",
+      "aliases": [
+        "DR Congo",
+        "Congo-Kinshasa"
+      ],
+      "centroidHint": {
+        "x": 558,
+        "y": 540
+      }
+    },
+    {
+      "id": "DJ",
+      "name": "Djibouti",
+      "centroidHint": {
+        "x": 753,
+        "y": 388
+      }
+    },
+    {
+      "id": "EG",
+      "name": "Egypt",
+      "centroidHint": {
+        "x": 622,
+        "y": 226
+      }
+    },
+    {
+      "id": "GQ",
+      "name": "Equatorial Guinea",
+      "centroidHint": {
+        "x": 423,
+        "y": 494
+      }
+    },
+    {
+      "id": "ER",
+      "name": "Eritrea",
+      "centroidHint": {
+        "x": 714,
+        "y": 350
+      }
+    },
+    {
+      "id": "SZ",
+      "name": "Eswatini",
+      "aliases": [
+        "Swaziland"
+      ],
+      "centroidHint": {
+        "x": 639,
+        "y": 793
+      }
+    },
+    {
+      "id": "ET",
+      "name": "Ethiopia",
+      "centroidHint": {
+        "x": 722,
+        "y": 421
+      }
+    },
+    {
+      "id": "GA",
+      "name": "Gabon",
+      "centroidHint": {
+        "x": 437,
+        "y": 516
+      }
+    },
+    {
+      "id": "GM",
+      "name": "Gambia",
+      "centroidHint": {
+        "x": 158,
+        "y": 370
+      }
+    },
+    {
+      "id": "GH",
+      "name": "Ghana",
+      "centroidHint": {
+        "x": 303,
+        "y": 428
+      }
+    },
+    {
+      "id": "GN",
+      "name": "Guinea",
+      "centroidHint": {
+        "x": 204,
+        "y": 402
+      }
+    },
+    {
+      "id": "GW",
+      "name": "Guinea-Bissau",
+      "centroidHint": {
+        "x": 163,
+        "y": 385
+      }
+    },
+    {
+      "id": "KE",
+      "name": "Kenya",
+      "centroidHint": {
+        "x": 704,
+        "y": 504
+      }
+    },
+    {
+      "id": "LS",
+      "name": "Lesotho",
+      "centroidHint": {
+        "x": 605,
+        "y": 828
+      }
+    },
+    {
+      "id": "LR",
+      "name": "Liberia",
+      "centroidHint": {
+        "x": 220,
+        "y": 443
+      }
+    },
+    {
+      "id": "LY",
+      "name": "Libya",
+      "centroidHint": {
+        "x": 500,
+        "y": 220
+      }
+    },
+    {
+      "id": "MG",
+      "name": "Madagascar",
+      "centroidHint": {
+        "x": 795,
+        "y": 713
+      }
+    },
+    {
+      "id": "MW",
+      "name": "Malawi",
+      "centroidHint": {
+        "x": 668,
+        "y": 647
+      }
+    },
+    {
+      "id": "ML",
+      "name": "Mali",
+      "centroidHint": {
+        "x": 280,
+        "y": 328
+      }
+    },
+    {
+      "id": "MR",
+      "name": "Mauritania",
+      "centroidHint": {
+        "x": 210,
+        "y": 296
+      }
+    },
+    {
+      "id": "MU",
+      "name": "Mauritius",
+      "centroidHint": {
+        "x": 907,
+        "y": 722
+      }
+    },
+    {
+      "id": "MA",
+      "name": "Morocco",
+      "centroidHint": {
+        "x": 230,
+        "y": 186
+      }
+    },
+    {
+      "id": "MZ",
+      "name": "Mozambique",
+      "centroidHint": {
+        "x": 680,
+        "y": 691
+      }
+    },
+    {
+      "id": "NA",
+      "name": "Namibia",
+      "centroidHint": {
+        "x": 492,
+        "y": 744
+      }
+    },
+    {
+      "id": "NE",
+      "name": "Niger",
+      "centroidHint": {
+        "x": 412,
+        "y": 328
+      }
+    },
+    {
+      "id": "NG",
+      "name": "Nigeria",
+      "centroidHint": {
+        "x": 399,
+        "y": 411
+      }
+    },
+    {
+      "id": "CG",
+      "name": "Republic of the Congo",
+      "aliases": [
+        "Congo-Brazzaville"
+      ],
+      "centroidHint": {
+        "x": 472,
+        "y": 518
+      }
+    },
+    {
+      "id": "RW",
+      "name": "Rwanda",
+      "centroidHint": {
+        "x": 623,
+        "y": 530
+      }
+    },
+    {
+      "id": "ST",
+      "name": "São Tomé and Príncipe",
+      "aliases": [
+        "Sao Tome and Principe"
+      ],
+      "centroidHint": {
+        "x": 384,
+        "y": 507
+      }
+    },
+    {
+      "id": "SN",
+      "name": "Senegal",
+      "centroidHint": {
+        "x": 167,
+        "y": 361
+      }
+    },
+    {
+      "id": "SC",
+      "name": "Seychelles",
+      "centroidHint": {
+        "x": 885,
+        "y": 558
+      }
+    },
+    {
+      "id": "SL",
+      "name": "Sierra Leone",
+      "centroidHint": {
+        "x": 195,
+        "y": 421
+      }
+    },
+    {
+      "id": "SO",
+      "name": "Somalia",
+      "centroidHint": {
+        "x": 785,
+        "y": 461
+      }
+    },
+    {
+      "id": "ZA",
+      "name": "South Africa",
+      "centroidHint": {
+        "x": 573,
+        "y": 822
+      }
+    },
+    {
+      "id": "SS",
+      "name": "South Sudan",
+      "centroidHint": {
+        "x": 626,
+        "y": 434
+      }
+    },
+    {
+      "id": "SD",
+      "name": "Sudan",
+      "centroidHint": {
+        "x": 623,
+        "y": 343
+      }
+    },
+    {
+      "id": "TZ",
+      "name": "Tanzania",
+      "centroidHint": {
+        "x": 673,
+        "y": 574
+      }
+    },
+    {
+      "id": "TG",
+      "name": "Togo",
+      "centroidHint": {
+        "x": 326,
+        "y": 422
+      }
+    },
+    {
+      "id": "TN",
+      "name": "Tunisia",
+      "centroidHint": {
+        "x": 414,
+        "y": 136
+      }
+    },
+    {
+      "id": "UG",
+      "name": "Uganda",
+      "centroidHint": {
+        "x": 648,
+        "y": 497
+      }
+    },
+    {
+      "id": "ZM",
+      "name": "Zambia",
+      "centroidHint": {
+        "x": 601,
+        "y": 649
+      }
+    },
+    {
+      "id": "ZW",
+      "name": "Zimbabwe",
+      "centroidHint": {
+        "x": 622,
+        "y": 709
+      }
+    }
+  ],
+  "helpers": [
+    {
+      "id": "CV",
+      "anchor": {
+        "x": 44,
+        "y": 367
+      }
+    },
+    {
+      "id": "ST",
+      "anchor": {
+        "x": 365,
+        "y": 525
+      }
+    },
+    {
+      "id": "KM",
+      "anchor": {
+        "x": 796,
+        "y": 653
+      }
+    },
+    {
+      "id": "MU",
+      "anchor": {
+        "x": 906,
+        "y": 739
+      }
+    },
+    {
+      "id": "SC",
+      "anchor": {
+        "x": 865,
+        "y": 535
+      }
+    }
+  ]
+}
