@@ -5,7 +5,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { splitRingAtAntimeridian } from "./world-builder.mjs";
+import { splitRingOutsideWindow } from "./world-builder.mjs";
 import { areaAndCentroid, decodeArcs, encodeArcsFromRings, ringPoints } from "./topo-utils.mjs";
 
 const OUT_DIR = path.resolve(import.meta.dirname, "../../assets/mappacks");
@@ -44,13 +44,13 @@ async function loadD3Geo() {
  * (Chukotka) would otherwise project with a canvas-spanning wrap segment
  * whose fill renders as a solid rectangle.
  */
-function decodePolygons(geometry, arcAt) {
+function decodePolygons(geometry, arcAt, west, east) {
   const polygonsOf =
     geometry.type === "Polygon" ? [geometry.arcs]
     : geometry.type === "MultiPolygon" ? geometry.arcs
     : [];
   return polygonsOf.map((polygon) =>
-    polygon.flatMap((ring) => splitRingAtAntimeridian(ringPoints(ring, arcAt))),
+    polygon.flatMap((ring) => splitRingOutsideWindow(ringPoints(ring, arcAt), west, east)),
   );
 }
 
@@ -184,7 +184,7 @@ export async function buildContinentPack(config) {
   };
   for (const geometry of selected) {
     const meta = metaFor(geometry);
-    const polygons = decodePolygons(geometry, arcAt)
+    const polygons = decodePolygons(geometry, arcAt, config.fit.minLon, config.fit.maxLon)
       .map((polygon) =>
         polygon
           .map((ring) =>

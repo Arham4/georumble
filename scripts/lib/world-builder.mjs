@@ -83,12 +83,12 @@ async function worldFrame() {
  * the seam (Chukotka, Antarctica) otherwise draw a straight line across the
  * whole canvas when projected. Longitudes are first unwrapped into a
  * continuous space (so a 10-degree step onto the seam is not mistaken for a
- * 350-degree jump), then the ring is divided wherever it leaves the
- * [-180, 180] band; pieces landing in the same band are successive segments
- * of ONE ring and are concatenated in order, their shared seam stretch
- * becoming an ordinary vertical ring edge.
+ * 350-degree jump), then the ring is divided wherever it leaves the window;
+ * pieces landing in the same band are successive segments of ONE ring and are
+ * concatenated in order, their shared seam stretch becoming an ordinary
+ * vertical ring edge.
  */
-export function splitRingAtAntimeridian(ring) {
+export function splitRingOutsideWindow(ring, west = -180, east = 180) {
   const points = ring.slice();
   while (
     points.length > 1 &&
@@ -109,9 +109,9 @@ export function splitRingAtAntimeridian(ring) {
     seq.push([lon, raw[1]]);
   }
 
-  // Exact ±180 counts as in-frame: authored rings often run ALONG the seam,
-  // and only strict excursions past it are far-band geometry.
-  const bandOf = (lon) => (lon > 180 ? 1 : lon < -180 ? -1 : 0);
+  // Exact window edges count as in-frame: authored rings often run ALONG a
+  // seam, and only strict excursions past it are far-band geometry.
+  const bandOf = (lon) => (lon > east ? 1 : lon < west ? -1 : 0);
 
   const runsByBand = new Map();
   let band = bandOf(seq[0][0]);
@@ -127,7 +127,9 @@ export function splitRingAtAntimeridian(ring) {
       run.push(seq[i]);
       continue;
     }
-    const boundary = Math.max(band, nextBand) > 0 ? 180 : -180;
+    // Transitions only happen between adjacent bands, so whichever non-zero
+    // band is involved names the window edge to cut at.
+    const boundary = band === 1 || nextBand === 1 ? east : west;
     const seamLat = run.at(-1)[1] + ((boundary - run.at(-1)[0]) / (lon - run.at(-1)[0])) * (lat - run.at(-1)[1]);
     run.push([boundary, seamLat]);
     flushRun();
@@ -149,6 +151,10 @@ export function splitRingAtAntimeridian(ring) {
       const shift = -Math.round(meanLon / 360) * 360;
       return pts.map(([lon, lat]) => [lon + shift, lat]);
     });
+}
+
+export function splitRingAtAntimeridian(ring) {
+  return splitRingOutsideWindow(ring, -180, 180);
 }
 
 /**
