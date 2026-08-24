@@ -69,6 +69,13 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     mappackUrl: "/mappacks/north-america.mappack.json",
     topoUrl: "/mappacks/north-america.topojson",
   },
+  {
+    packId: "world-landmarks",
+    displayName: "World Landmarks",
+    blurb: "46 famous landmarks — click where they stand",
+    mappackUrl: "/mappacks/world-landmarks.mappack.json",
+    topoUrl: "/mappacks/world-landmarks.topojson",
+  },
 ];
 
 export type LoadedPack = {

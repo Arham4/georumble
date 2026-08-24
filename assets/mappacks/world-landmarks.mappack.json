@@ -1,0 +1,456 @@
+{
+  "packId": "world-landmarks",
+  "displayName": "World Landmarks",
+  "projection": {
+    "kind": "equirectangular-geo",
+    "width": 1000,
+    "height": 494
+  },
+  "source": {
+    "name": "Hand-authored landmark coordinates",
+    "license": "Original data"
+  },
+  "features": [
+    {
+      "id": "statue-of-liberty",
+      "name": "Statue of Liberty",
+      "centroidHint": {
+        "x": 298,
+        "y": 129
+      }
+    },
+    {
+      "id": "white-house",
+      "name": "White House",
+      "centroidHint": {
+        "x": 289,
+        "y": 134
+      }
+    },
+    {
+      "id": "golden-gate",
+      "name": "Golden Gate Bridge",
+      "aliases": [
+        "Golden Gate"
+      ],
+      "centroidHint": {
+        "x": 165,
+        "y": 137
+      }
+    },
+    {
+      "id": "hollywood-sign",
+      "name": "Hollywood Sign",
+      "aliases": [
+        "Hollywood"
+      ],
+      "centroidHint": {
+        "x": 177,
+        "y": 147
+      }
+    },
+    {
+      "id": "space-needle",
+      "name": "Space Needle",
+      "centroidHint": {
+        "x": 166,
+        "y": 110
+      }
+    },
+    {
+      "id": "cn-tower",
+      "name": "CN Tower",
+      "centroidHint": {
+        "x": 283,
+        "y": 121
+      }
+    },
+    {
+      "id": "niagara-falls",
+      "name": "Niagara Falls",
+      "centroidHint": {
+        "x": 284,
+        "y": 122
+      }
+    },
+    {
+      "id": "chichen-itza",
+      "name": "Chichén Itzá",
+      "aliases": [
+        "Chichen Itza"
+      ],
+      "centroidHint": {
+        "x": 258,
+        "y": 184
+      }
+    },
+    {
+      "id": "panama-canal",
+      "name": "Panama Canal",
+      "centroidHint": {
+        "x": 282,
+        "y": 216
+      }
+    },
+    {
+      "id": "christ-the-redeemer",
+      "name": "Christ the Redeemer",
+      "aliases": [
+        "Rio Statue"
+      ],
+      "centroidHint": {
+        "x": 382,
+        "y": 303
+      }
+    },
+    {
+      "id": "machu-picchu",
+      "name": "Machu Picchu",
+      "centroidHint": {
+        "x": 302,
+        "y": 276
+      }
+    },
+    {
+      "id": "iguazu-falls",
+      "name": "Iguazu Falls",
+      "centroidHint": {
+        "x": 351,
+        "y": 310
+      }
+    },
+    {
+      "id": "moai",
+      "name": "Moai Statues",
+      "aliases": [
+        "Easter Island",
+        "Rapa Nui"
+      ],
+      "centroidHint": {
+        "x": 201,
+        "y": 314
+      }
+    },
+    {
+      "id": "eiffel-tower",
+      "name": "Eiffel Tower",
+      "centroidHint": {
+        "x": 506,
+        "y": 107
+      }
+    },
+    {
+      "id": "stonehenge",
+      "name": "Stonehenge",
+      "centroidHint": {
+        "x": 495,
+        "y": 100
+      }
+    },
+    {
+      "id": "big-ben",
+      "name": "Big Ben",
+      "aliases": [
+        "Elizabeth Tower",
+        "Houses of Parliament"
+      ],
+      "centroidHint": {
+        "x": 500,
+        "y": 99
+      }
+    },
+    {
+      "id": "sagrada-familia",
+      "name": "Sagrada Família",
+      "aliases": [
+        "Sagrada Familia"
+      ],
+      "centroidHint": {
+        "x": 506,
+        "y": 127
+      }
+    },
+    {
+      "id": "alhambra",
+      "name": "Alhambra",
+      "centroidHint": {
+        "x": 490,
+        "y": 139
+      }
+    },
+    {
+      "id": "brandenburg-gate",
+      "name": "Brandenburg Gate",
+      "centroidHint": {
+        "x": 537,
+        "y": 97
+      }
+    },
+    {
+      "id": "neuschwanstein",
+      "name": "Neuschwanstein Castle",
+      "centroidHint": {
+        "x": 529,
+        "y": 110
+      }
+    },
+    {
+      "id": "matterhorn",
+      "name": "Matterhorn",
+      "centroidHint": {
+        "x": 521,
+        "y": 114
+      }
+    },
+    {
+      "id": "colosseum",
+      "name": "Colosseum",
+      "aliases": [
+        "Coliseum"
+      ],
+      "centroidHint": {
+        "x": 534,
+        "y": 126
+      }
+    },
+    {
+      "id": "leaning-tower-of-pisa",
+      "name": "Leaning Tower of Pisa",
+      "aliases": [
+        "Tower of Pisa"
+      ],
+      "centroidHint": {
+        "x": 528,
+        "y": 121
+      }
+    },
+    {
+      "id": "st-peters-basilica",
+      "name": "St. Peter's Basilica",
+      "aliases": [
+        "Saint Peters Basilica",
+        "Vatican"
+      ],
+      "centroidHint": {
+        "x": 534,
+        "y": 126
+      }
+    },
+    {
+      "id": "acropolis",
+      "name": "Acropolis of Athens",
+      "aliases": [
+        "Acropolis",
+        "Parthenon"
+      ],
+      "centroidHint": {
+        "x": 565,
+        "y": 136
+      }
+    },
+    {
+      "id": "hagia-sophia",
+      "name": "Hagia Sophia",
+      "centroidHint": {
+        "x": 579,
+        "y": 128
+      }
+    },
+    {
+      "id": "saint-basils-cathedral",
+      "name": "Saint Basil's Cathedral",
+      "aliases": [
+        "Red Square",
+        "Kremlin",
+        "St Basils"
+      ],
+      "centroidHint": {
+        "x": 603,
+        "y": 88
+      }
+    },
+    {
+      "id": "pyramids-of-giza",
+      "name": "Pyramids of Giza",
+      "aliases": [
+        "Great Pyramid of Giza",
+        "Giza Pyramids",
+        "Sphinx"
+      ],
+      "centroidHint": {
+        "x": 585,
+        "y": 158
+      }
+    },
+    {
+      "id": "timbuktu",
+      "name": "Timbuktu",
+      "centroidHint": {
+        "x": 492,
+        "y": 194
+      }
+    },
+    {
+      "id": "mount-kilimanjaro",
+      "name": "Mount Kilimanjaro",
+      "aliases": [
+        "Kilimanjaro"
+      ],
+      "centroidHint": {
+        "x": 602,
+        "y": 249
+      }
+    },
+    {
+      "id": "victoria-falls",
+      "name": "Victoria Falls",
+      "centroidHint": {
+        "x": 571,
+        "y": 289
+      }
+    },
+    {
+      "id": "table-mountain",
+      "name": "Table Mountain",
+      "centroidHint": {
+        "x": 550,
+        "y": 333
+      }
+    },
+    {
+      "id": "petra",
+      "name": "Petra",
+      "centroidHint": {
+        "x": 597,
+        "y": 157
+      }
+    },
+    {
+      "id": "dome-of-the-rock",
+      "name": "Dome of the Rock",
+      "centroidHint": {
+        "x": 596,
+        "y": 153
+      }
+    },
+    {
+      "id": "mecca",
+      "name": "Mecca",
+      "aliases": [
+        "Makkah",
+        "Kaaba"
+      ],
+      "centroidHint": {
+        "x": 609,
+        "y": 182
+      }
+    },
+    {
+      "id": "burj-khalifa",
+      "name": "Burj Khalifa",
+      "centroidHint": {
+        "x": 651,
+        "y": 171
+      }
+    },
+    {
+      "id": "great-wall",
+      "name": "Great Wall of China",
+      "aliases": [
+        "Great Wall"
+      ],
+      "centroidHint": {
+        "x": 817,
+        "y": 130
+      }
+    },
+    {
+      "id": "taj-mahal",
+      "name": "Taj Mahal",
+      "centroidHint": {
+        "x": 713,
+        "y": 166
+      }
+    },
+    {
+      "id": "mount-everest",
+      "name": "Mount Everest",
+      "aliases": [
+        "Everest",
+        "Sagarmatha"
+      ],
+      "centroidHint": {
+        "x": 738,
+        "y": 164
+      }
+    },
+    {
+      "id": "angkor-wat",
+      "name": "Angkor Wat",
+      "centroidHint": {
+        "x": 784,
+        "y": 203
+      }
+    },
+    {
+      "id": "borobudur",
+      "name": "Borobudur",
+      "centroidHint": {
+        "x": 801,
+        "y": 261
+      }
+    },
+    {
+      "id": "mount-fuji",
+      "name": "Mount Fuji",
+      "aliases": [
+        "Fuji"
+      ],
+      "centroidHint": {
+        "x": 879,
+        "y": 143
+      }
+    },
+    {
+      "id": "lake-baikal",
+      "name": "Lake Baikal",
+      "centroidHint": {
+        "x": 796,
+        "y": 94
+      }
+    },
+    {
+      "id": "sydney-opera-house",
+      "name": "Sydney Opera House",
+      "aliases": [
+        "Opera House"
+      ],
+      "centroidHint": {
+        "x": 913,
+        "y": 333
+      }
+    },
+    {
+      "id": "uluru",
+      "name": "Uluru",
+      "aliases": [
+        "Ayers Rock"
+      ],
+      "centroidHint": {
+        "x": 858,
+        "y": 309
+      }
+    },
+    {
+      "id": "great-barrier-reef",
+      "name": "Great Barrier Reef",
+      "aliases": [
+        "Barrier Reef"
+      ],
+      "centroidHint": {
+        "x": 903,
+        "y": 288
+      }
+    }
+  ]
+}
