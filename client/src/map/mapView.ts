@@ -68,6 +68,8 @@ export class MapView {
   private userZoomed = false;
   private width = 0;
   private height = 0;
+  private viewMarginX = 0;
+  private viewMarginY = 0;
   private k = 1;
   private tx = 0;
   private ty = 0;
@@ -148,6 +150,8 @@ export class MapView {
     const margin = 0.06;
     const mx = this.width * margin;
     const my = this.height * margin;
+    this.viewMarginX = mx;
+    this.viewMarginY = my;
     this.svg.setAttribute("viewBox", `${-mx} ${-my} ${this.width + 2 * mx} ${this.height + 2 * my}`);
     this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
@@ -519,9 +523,9 @@ export class MapView {
     if (this.interactive) {
       this.lastPointer = { x: event.clientX, y: event.clientY };
       if (this.debugDot) {
-        const [vx, vy] = this.clientToView(event.clientX, event.clientY);
-        this.debugDot.setAttribute("cx", String(vx));
-        this.debugDot.setAttribute("cy", String(vy));
+        const [wx, wy] = this.viewToWorld(...this.clientToView(event.clientX, event.clientY));
+        this.debugDot.setAttribute("cx", String(wx));
+        this.debugDot.setAttribute("cy", String(wy));
         this.debugDot.setAttribute("opacity", "0.9");
       }
       this.refreshHover("pointer");
@@ -556,7 +560,7 @@ export class MapView {
     if (now - this.lastCursorSentAt < CURSOR_SEND_MS) {
       return;
     }
-    const [x, y] = this.clientToView(clientX, clientY);
+    const [x, y] = this.viewToWorld(...this.clientToView(clientX, clientY));
     const [lastX, lastY] = this.lastCursorSentPoint;
     if (
       Number.isFinite(lastX) &&
@@ -654,16 +658,33 @@ export class MapView {
     if (rect.width === 0 || rect.height === 0) {
       return 1;
     }
-    return Math.min(rect.width / this.width, rect.height / this.height);
+    return Math.min(rect.width / this.viewWidth(), rect.height / this.viewHeight());
+  }
+
+  private viewWidth(): number {
+    return this.width + 2 * this.viewMarginX;
+  }
+
+  private viewHeight(): number {
+    return this.height + 2 * this.viewMarginY;
   }
 
   /** Maps a client point through the preserveAspectRatio letterboxing. */
   private clientToView(clientX: number, clientY: number): [number, number] {
     const rect = this.svg.getBoundingClientRect();
     const scale = this.viewScale();
-    const offsetX = (rect.width - this.width * scale) / 2;
-    const offsetY = (rect.height - this.height * scale) / 2;
-    return [(clientX - rect.left - offsetX) / scale, (clientY - rect.top - offsetY) / scale];
+    const offsetX = (rect.width - this.viewWidth() * scale) / 2;
+    const offsetY = (rect.height - this.viewHeight() * scale) / 2;
+    return [
+      (clientX - rect.left - offsetX) / scale - this.viewMarginX,
+      (clientY - rect.top - offsetY) / scale - this.viewMarginY,
+    ];
+  }
+
+  /** Cursor chips live inside the transformed viewport, so shared positions
+   * must be world coordinates — the sender's own pan/zoom inverted out. */
+  private viewToWorld(vx: number, vy: number): [number, number] {
+    return [(vx - this.tx) / this.k, (vy - this.ty) / this.k];
   }
 
   private destroyRegions(): void {
