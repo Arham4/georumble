@@ -17,6 +17,10 @@ export type RoomSnapshot = {
   /** Index into `order` of the shared prompt; null while not playing. */
   orderIndex: number | null;
   found: string[];
+  /** Wrong attempts it took to find each found region, by feature id. */
+  heat?: Record<string, number>;
+  /** Per-player round tallies, by player id — survives rejoin. */
+  tallies?: Record<string, { correct: number; misses: number }>;
   /** Derived convenience: order[orderIndex], null when out of game. */
   target: string | null;
   startedAt: number | null;

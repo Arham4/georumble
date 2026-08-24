@@ -248,6 +248,14 @@ export class GameClient {
       this.missedRegions.clear();
     }
     this.lastOrderIndex = snapshot.orderIndex;
+    // Heat and tallies are relay-owned: adopting them wholesale keeps
+    // rejoining clients in sync with everything that happened while away.
+    if (snapshot.heat) {
+      this.foundHeat = new Map(Object.entries(snapshot.heat));
+    }
+    if (snapshot.tallies) {
+      this.tallies = new Map(Object.entries(snapshot.tallies));
+    }
     this.snapshot = snapshot;
   }
 

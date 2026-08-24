@@ -658,6 +658,49 @@ body {
   color: var(--bg);
 }
 
+/* --- Tiny-region helper circles ------------------------------------------ */
+
+.helper-strip {
+  position: absolute;
+  right: 16px;
+  bottom: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.helper-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / 0.25);
+  background: var(--surface);
+  padding: 5px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.helper-btn:hover {
+  border-color: var(--map-hover);
+}
+
+.helper-btn.found {
+  border-color: var(--correct);
+  opacity: 0.5;
+}
+
+.helper-region {
+  fill: var(--map-fill);
+  stroke: var(--bg);
+  stroke-width: 0.5;
+}
+
+.helper-btn.found .helper-region {
+  fill: var(--correct);
+}
+
 /* --- Victory ------------------------------------------------------------ */
 
 .victory-panel {

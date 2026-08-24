@@ -16,11 +16,13 @@ type LocalRoom = {
   order: string[];
   orderIndex: number | null;
   found: string[];
+  heat: Record<string, number>;
+  tallies: Record<string, { correct: number; misses: number }>;
   startedAt: number | null;
 };
 
 function emptyRoom(): LocalRoom {
-  return { players: [], hostId: null, phase: "lobby", packId: null, order: [], orderIndex: null, found: [], startedAt: null };
+  return { players: [], hostId: null, phase: "lobby", packId: null, order: [], orderIndex: null, found: [], heat: {}, tallies: {}, startedAt: null };
 }
 
 /**
@@ -127,6 +129,8 @@ export class LocalConnection implements Connection {
     room.order = sequence;
     room.orderIndex = 0;
     room.found = [];
+    room.heat = {};
+    room.tallies = {};
     room.startedAt = Date.now();
     this.enqueue({ t: "snapshot", snapshot: this.snapshot() });
   }
@@ -140,9 +144,20 @@ export class LocalConnection implements Connection {
       this.reject("unknown player");
       return;
     }
-    if (outcome.correct && !room.found.includes(outcome.featureId)) {
-      room.found.push(outcome.featureId);
+    const tally = room.tallies[outcome.byPlayer] ?? { correct: 0, misses: 0 };
+    if (outcome.correct) {
+      if (!room.found.includes(outcome.featureId)) {
+        room.found.push(outcome.featureId);
+        tally.correct += 1;
+      }
+    } else {
+      tally.misses += 1;
+      const target = room.orderIndex !== null ? room.order[room.orderIndex] : null;
+      if (target !== null) {
+        room.heat[target] = (room.heat[target] ?? 0) + 1;
+      }
     }
+    room.tallies[outcome.byPlayer] = tally;
     const verified: GuessOutcome = {
       featureId: outcome.featureId,
       byPlayer: outcome.byPlayer,
@@ -215,6 +230,8 @@ export class LocalConnection implements Connection {
       order: [...room.order],
       orderIndex: room.orderIndex,
       found: [...room.found],
+      heat: { ...room.heat },
+      tallies: Object.fromEntries(Object.entries(room.tallies).map(([id, t]) => [id, { ...t }])),
       target: room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,
     };

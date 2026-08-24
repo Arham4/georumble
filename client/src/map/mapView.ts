@@ -270,6 +270,32 @@ export class MapView {
     this.flash(id, "miss", MISS_FLASH_MS);
   }
 
+  /** Regions too small for fair direct clicking — the helper-circle set. */
+  tinyRegionIds(): string[] {
+    return [...this.geoById.entries()]
+      .filter(([, geo]) => geo.minDim < HIT_MIN_UNITS)
+      .map(([id]) => id);
+  }
+
+  /** Path data for a magnified mini-view of a region, or null if unknown. */
+  regionPathData(id: string): { d: string; minX: number; minY: number; w: number; h: number } | null {
+    const parts = this.regions.get(id);
+    const geo = this.geoById.get(id);
+    const d = parts?.path.getAttribute("d");
+    if (!parts || !geo || !d) {
+      return null;
+    }
+    const [min, max] = geo.bounds;
+    const pad = Math.max(0.5, Math.max(max[0] - min[0], max[1] - min[1]) * 0.08);
+    return {
+      d,
+      minX: min[0] - pad,
+      minY: min[1] - pad,
+      w: max[0] - min[0] + pad * 2,
+      h: max[1] - min[1] + pad * 2,
+    };
+  }
+
   /** Instant neutral ack that a click was received, before any verdict. */
   pressFeedback(id: string): void {
     this.flash(id, "pressed", PRESS_MS);

@@ -44,6 +44,10 @@ type PersistedRoom = {
   order: string[];
   orderIndex: number | null;
   found: string[];
+  /** Wrong attempts it took to find each found region (per current target). */
+  heat: Record<string, number>;
+  /** Per-player round tallies, so rejoined clients recover the full score. */
+  tallies: Record<string, { correct: number; misses: number }>;
   startedAt: number | null;
 };
 
@@ -85,6 +89,8 @@ export class GameRoom extends DurableObject<Env> {
         order: [],
         orderIndex: null,
         found: [],
+        heat: {},
+        tallies: {},
         startedAt: null,
       };
       await this.persist();
@@ -301,6 +307,8 @@ export class GameRoom extends DurableObject<Env> {
     room.order = sequence;
     room.orderIndex = 0;
     room.found = [];
+    room.heat = {};
+    room.tallies = {};
     room.startedAt = Date.now();
     room.roundHostId = hostId;
     await this.persist();
@@ -329,9 +337,22 @@ export class GameRoom extends DurableObject<Env> {
       this.denyHost(hostId, "unknown player");
       return;
     }
-    if (parsed.correct && !room.found.includes(parsed.featureId)) {
-      room.found.push(parsed.featureId);
+    // The relay owns round bookkeeping (heat + per-player tallies) so
+    // rejoined clients recover the full history, not just their tenure.
+    const tally = room.tallies[parsed.byPlayer] ?? { correct: 0, misses: 0 };
+    if (parsed.correct) {
+      if (!room.found.includes(parsed.featureId)) {
+        room.found.push(parsed.featureId);
+        tally.correct += 1;
+      }
+    } else {
+      tally.misses += 1;
+      const target = room.orderIndex !== null ? room.order[room.orderIndex] : null;
+      if (target !== null) {
+        room.heat[target] = (room.heat[target] ?? 0) + 1;
+      }
     }
+    room.tallies[parsed.byPlayer] = tally;
     const verified: GuessOutcome = {
       featureId: parsed.featureId,
       byPlayer: parsed.byPlayer,
@@ -439,6 +460,8 @@ export class GameRoom extends DurableObject<Env> {
       order: room.order,
       orderIndex: room.orderIndex,
       found: room.found,
+      heat: room.heat,
+      tallies: room.tallies,
       target:
         room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,
