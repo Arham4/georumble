@@ -116,11 +116,13 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
       const ranked = state.scoreboard
         .map((row, index) => ({ row, index }))
         .filter(({ row }) => row.correct + row.misses > 0)
+        // Carrying is volume first: one lucky hit must not outrank someone
+        // who grinded the map; accuracy breaks ties among equals.
         .sort(
           (a, b) =>
+            b.row.correct - a.row.correct ||
             b.row.correct / (b.row.correct + b.row.misses) -
-              a.row.correct / (a.row.correct + a.row.misses) ||
-            b.row.correct - a.row.correct,
+              a.row.correct / (a.row.correct + a.row.misses),
         );
       scoreList.replaceChildren(...ranked.map(({ index }) => scoreRow(state, index)));
       scoreboardLabel.classList.toggle("hidden", solo || ranked.length === 0);
