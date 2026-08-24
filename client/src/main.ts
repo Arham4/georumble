@@ -28,6 +28,8 @@ type Identity = {
   avatar: string | null;
   instanceId: string | null;
   embedded: boolean;
+  /** True when an embedded Discord sign-in was attempted and failed. */
+  signInFailed?: boolean;
 };
 
 type DiscordUser = {
@@ -67,7 +69,18 @@ function guestIdentity(): Identity {
 async function resolveIdentity(): Promise<Identity> {
   const fallback = guestIdentity();
   const embedded = window.self !== window.top;
-  if (!CLIENT_ID || !embedded) {
+  if (!CLIENT_ID) {
+    // A build without the baked-in client id can never sign in; inside Discord
+    // that means every player lands in a guest solo room, so say why loudly.
+    if (embedded) {
+      console.warn(
+        "[georumble] discord sign-in skipped: VITE_DISCORD_CLIENT_ID is not baked into this build",
+      );
+      return { ...fallback, signInFailed: true };
+    }
+    return fallback;
+  }
+  if (!embedded) {
     return fallback;
   }
   try {
@@ -98,8 +111,9 @@ async function resolveIdentity(): Promise<Identity> {
       instanceId: sdk.instanceId,
       embedded: true,
     };
-  } catch {
-    return fallback;
+  } catch (error) {
+    console.warn("[georumble] discord sign-in failed", error);
+    return { ...fallback, signInFailed: true };
   }
 }
 
@@ -163,6 +177,10 @@ async function boot(): Promise<void> {
           client,
           store,
           identityLocked: identity.instanceId !== null,
+          signInNotice:
+            identity.signInFailed && !identity.instanceId
+              ? "Discord sign-in failed — playing as a guest"
+              : undefined,
         });
         break;
       case "playing":

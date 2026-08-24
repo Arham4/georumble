@@ -7,6 +7,8 @@ export type LobbyDeps = {
   store: PackStore;
   /** True inside Discord: your name is your Discord identity, not editable. */
   identityLocked?: boolean;
+  /** Shown when an embedded Discord sign-in was attempted and failed. */
+  signInNotice?: string;
 };
 
 type PackCardRefs = {
@@ -60,6 +62,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   const nameSection: HTMLElement[] = deps.identityLocked
     ? [identityRow]
     : [nameLabel, nameField];
+  const signInWarning = deps.signInNotice ? el("p", "lobby-warning", deps.signInNotice) : null;
 
   const playersLabel = el("div", "section-label", "In this room");
   const playerList = el("ul", "player-list");
@@ -115,6 +118,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
 
   panel.append(
     heading,
+    ...(signInWarning ? [signInWarning] : []),
     ...nameSection,
     playersLabel,
     playerList,

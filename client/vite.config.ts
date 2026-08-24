@@ -8,6 +8,10 @@ export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(buildId),
   },
+  // Vite defaults to client/; the documented convention is one .env at the
+  // repo root, and missing it silently strips VITE_DISCORD_CLIENT_ID from
+  // the bundle — which reads as "Discord sign-in never happens" in production.
+  envDir: "..",
   // Shared asset root: pack artifacts live at /mappacks/*, brand at /brand/*.
   publicDir: "../assets",
   server: {
