@@ -92,7 +92,7 @@ function buildPack(topology, project) {
     if (!name) throw new Error(`Feature ${id} has no name`);
 
     const aliases = [POSTAL_BY_FIPS[id], ...(EXTRA_ALIASES[id] ?? [])].filter(Boolean);
-    const centroid = mainRingCentroid(topology, geometry, arcAt);
+    const centroid = mainRingCentroid(geometry, arcAt);
 
     const feature = { id, name };
     if (aliases.length) feature.aliases = aliases;
@@ -101,7 +101,7 @@ function buildPack(topology, project) {
   });
 
   features.sort((a, b) => a.name.localeCompare(b.name));
-  const { width, height } = bounds(topology, geometries, arcAt);
+  const { width, height } = bounds(geometries, arcAt);
 
   const helpers = HELPERS.map((helper) => {
     const point = project(helper.at);
@@ -132,7 +132,7 @@ async function main() {
   // 0,0 viewBox. Rewriting transform.translate shifts every decoded
   // coordinate so the canvas truly spans 0..width × 0..height.
   const survey = decodeArcs(topology);
-  const { minX, minY } = bounds(topology, geometries, survey);
+  const { minX, minY } = bounds(geometries, survey);
   topology.transform.translate[0] -= minX;
   topology.transform.translate[1] -= minY;
 

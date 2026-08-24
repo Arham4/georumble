@@ -24,7 +24,7 @@ export function decodeArcs(topology) {
   };
 }
 
-export function ringPoints(topology, arcIndexes, arcAt) {
+export function ringPoints(arcIndexes, arcAt) {
   const points = [];
   for (const index of arcIndexes) {
     const segment = index < 0 ? [...arcAt(~index)].reverse() : arcAt(index);
@@ -50,21 +50,21 @@ export function areaAndCentroid(points) {
 }
 
 /** Centroid of a geometry's largest outer ring, or null when it has none. */
-export function mainRingCentroid(topology, geometry, arcAt) {
+export function mainRingCentroid(geometry, arcAt) {
   const polygons =
     geometry.type === "Polygon" ? [geometry.arcs]
     : geometry.type === "MultiPolygon" ? geometry.arcs
     : [];
   let best = null;
   for (const polygon of polygons) {
-    const candidate = areaAndCentroid(ringPoints(topology, polygon[0], arcAt));
+    const candidate = areaAndCentroid(ringPoints(polygon[0], arcAt));
     if (candidate && (!best || candidate.absArea > best.absArea)) best = candidate;
   }
   return best;
 }
 
 /** Extent of the pixel space spanned by the given geometries. */
-export function bounds(topology, geometries, arcAt) {
+export function bounds(geometries, arcAt) {
   const xs = [];
   const ys = [];
   for (const geometry of geometries) {
@@ -73,7 +73,7 @@ export function bounds(topology, geometries, arcAt) {
       : geometry.type === "MultiPolygon" ? geometry.arcs.flat()
       : [];
     for (const ring of rings) {
-      for (const [x, y] of ringPoints(topology, ring, arcAt)) {
+      for (const [x, y] of ringPoints(ring, arcAt)) {
         xs.push(x);
         ys.push(y);
       }

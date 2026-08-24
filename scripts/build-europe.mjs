@@ -108,7 +108,7 @@ function decodePolygons(geometry, arcAt) {
     : geometry.type === "MultiPolygon" ? geometry.arcs
     : [];
   return polygonsOf.map((polygon) =>
-    polygon.map((ring) => ringPoints(geometry, ring, arcAt)),
+    polygon.map((ring) => ringPoints(ring, arcAt)),
   );
 }
 

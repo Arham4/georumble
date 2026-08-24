@@ -5,6 +5,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { splitRingAtAntimeridian } from "./world-builder.mjs";
 import { areaAndCentroid, decodeArcs, encodeArcsFromRings, ringPoints } from "./topo-utils.mjs";
 
 const OUT_DIR = path.resolve(import.meta.dirname, "../../assets/mappacks");
@@ -37,15 +38,62 @@ async function loadD3Geo() {
   );
 }
 
-/** Decodes a geometry into lon/lat polygon rings: [[[lon,lat],...],...]. */
+/**
+ * Decodes a geometry into lon/lat polygon rings: [[[lon,lat],...],...].
+ * Rings are cut at the antimeridian first — a ring straddling lon ±180
+ * (Chukotka) would otherwise project with a canvas-spanning wrap segment
+ * whose fill renders as a solid rectangle.
+ */
 function decodePolygons(geometry, arcAt) {
   const polygonsOf =
     geometry.type === "Polygon" ? [geometry.arcs]
     : geometry.type === "MultiPolygon" ? geometry.arcs
     : [];
   return polygonsOf.map((polygon) =>
-    polygon.map((ring) => ringPoints(geometry, ring, arcAt)),
+    polygon.flatMap((ring) => splitRingAtAntimeridian(ringPoints(ring, arcAt))),
   );
+}
+
+/**
+ * Clips a projected closed ring to the canvas rectangle (Sutherland–Hodgman).
+ * Geometry poking past the frame — Arctic islands above the fit window,
+ * far-side antimeridian pieces wrapping around the cone — comes back with a
+ * clean straight cut at the edge instead of shipping out-of-canvas arcs.
+ */
+function clipRingToCanvas(ring, width, height, pad = 2) {
+  const limits = { left: -pad, right: width + pad, top: -pad, bottom: height + pad };
+  const inside = {
+    left: ([x]) => x >= limits.left,
+    right: ([x]) => x <= limits.right,
+    top: ([, y]) => y >= limits.top,
+    bottom: ([, y]) => y <= limits.bottom,
+  };
+  const meet = (a, b, side) => {
+    if (side === "left" || side === "right") {
+      const x = limits[side];
+      return [x, a[1] + ((x - a[0]) / (b[0] - a[0])) * (b[1] - a[1])];
+    }
+    const y = limits[side];
+    return [a[0] + ((y - a[1]) / (b[1] - a[1])) * (b[0] - a[0]), y];
+  };
+
+  let output = ring;
+  for (const side of ["left", "right", "top", "bottom"]) {
+    const input = output;
+    output = [];
+    for (let i = 0; i < input.length; i++) {
+      const prev = input[(i + input.length - 1) % input.length];
+      const curr = input[i];
+      if (inside[side](curr)) {
+        if (!inside[side](prev)) output.push(meet(prev, curr, side));
+        output.push(curr);
+      } else if (inside[side](prev)) {
+        output.push(meet(prev, curr, side));
+      }
+    }
+    if (output.length < 3) return [];
+  }
+  return output;
 }
 
 /**
@@ -117,13 +165,17 @@ export async function buildContinentPack(config) {
 
   const geometries = [];
   const features = [];
+  const inCanvas = ([x, y]) =>
+    x >= -2 && x <= config.canvas.width + 2 && y >= -2 && y <= config.canvas.height + 2;
   for (const geometry of selected) {
     const meta = config.selection[numericId(geometry)];
     const polygons = decodePolygons(geometry, arcAt)
       .map((polygon) =>
         polygon
           .map((ring) => ring.map(toPixel).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1])))
-          .filter((ring) => ring.length >= 4),
+          // Specks fully outside the frame (africa's Prince Edward Islands)
+          // would otherwise ship as invisible out-of-canvas arcs.
+          .filter((ring) => ring.length >= 4 && ring.some(inCanvas)),
       )
       .filter((polygon) => polygon.length > 0);
     if (polygons.length === 0) {

@@ -67,10 +67,17 @@ const HELPERS = [
 await buildContinentPack({
   packId: "asia",
   displayName: "Asia",
-  canvas: { width: 1000, height: 940 },
-  fit: { minLon: 25, minLat: -11, maxLon: 148, maxLat: 76 },
+  // Height matches the fit window's true projected aspect under the conic
+  // conformal (~1.55:1); the old 940-tall canvas letterboxed Asia into a
+  // small centered strip with huge dead margins. maxLat 78 covers Novaya
+  // Zemlya; the higher Arctic chains fall above the frame and drop out.
+  canvas: { width: 1000, height: 657 },
+  fit: { minLon: 25, minLat: -11, maxLon: 148, maxLat: 78 },
   parallels: [22.5, 60],
-  rotate: 90,
+  // d3's rotate is the inverse angle: [-90] centers lon 90E. The previous
+  // [90] centered lon -90W, throwing Asia onto the cone's far side where
+  // points reflect — the whole map rendered mirrored.
+  rotate: -90,
   selection: SELECTION,
   helpers: HELPERS,
 });
