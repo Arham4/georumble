@@ -15,9 +15,12 @@
       <stop offset="0" stop-color="#57B0DF"/>
       <stop offset="1" stop-color="#3579AE"/>
     </radialGradient>
+    <!-- clip coords resolve in the clipped element's user space (translated to
+         512,512), so the circle centers on the origin, not the page -->
+    <clipPath id="globe"><circle r="317"/></clipPath>
   </defs>
 
-  <!-- full-bleed sea; Discord circle-crops, so keep everything inside r~460 -->
+  <!-- full-bleed sea; Discord circle-crops, so everything lives inside r~460 -->
   <rect width="1024" height="1024" fill="url(#sea)"/>
   <g stroke="#ffffff" stroke-opacity="0.18" stroke-width="10" stroke-linecap="round" fill="none">
     <path d="M150 850 q34 -30 68 0 t68 0"/>
@@ -26,38 +29,26 @@
     <path d="M760 160 q34 -30 68 0 t68 0"/>
   </g>
 
-  <!-- chunky globe -->
+  <!-- brand globe: chunky ring + clean white wireframe -->
   <g transform="translate(512 512)">
     <circle r="330" fill="none" stroke="#23272A" stroke-width="64"/>
     <circle r="330" fill="none" stroke="#ffffff" stroke-width="26"/>
 
-    <!-- land blobs clipped to the globe -->
-    <clipPath id="globe"><circle r="330"/></clipPath>
-    <g clip-path="url(#globe)">
-      <path fill="#5BC878" stroke="#23272A" stroke-width="22" stroke-linejoin="round"
-            d="M-300 -120 Q-220 -220 -90 -190 Q20 -165 10 -70 Q0 20 -110 40 Q-240 60 -300 -20 Z"/>
-      <path fill="#F2C94C" stroke="#23272A" stroke-width="22" stroke-linejoin="round"
-            d="M120 -300 Q260 -280 290 -160 Q310 -70 210 -40 Q110 -15 70 -110 Q35 -210 120 -300 Z"/>
-      <path fill="#F27E63" stroke="#23272A" stroke-width="22" stroke-linejoin="round"
-            d="M-160 140 Q-60 110 10 170 Q80 230 30 310 L-60 380 L-220 330 Q-280 240 -160 140 Z"/>
-      <circle cx="230" cy="180" r="58" fill="#5BC878" stroke="#23272A" stroke-width="22"/>
-    </g>
-
-    <!-- graticule over land -->
-    <g fill="none" stroke="#23272A" stroke-opacity="0.4" stroke-width="14" stroke-linecap="round" clip-path="url(#globe)">
-      <line x1="-286" y1="-110" x2="286" y2="-110"/>
-      <line x1="-286" y1="110" x2="286" y2="110"/>
-      <ellipse rx="140" ry="330"/>
-    </g>
-
     <!-- brand wedge, clipped so its outline never crosses the outer ring -->
-    <clipPath id="wedgeClip"><circle r="317"/></clipPath>
-    <g clip-path="url(#wedgeClip)">
+    <g clip-path="url(#globe)">
       <path d="M0 0 L0 -340 A340 340 0 0 1 320 -110 L0 0 Z" fill="#98A7F8" stroke="#23272A" stroke-width="26" stroke-linejoin="round"/>
     </g>
 
-    <!-- found pop -->
-    <circle cx="150" cy="-215" r="40" fill="#248046" stroke="#ffffff" stroke-width="16"/>
+    <!-- wireframe over everything, like the logo glyph -->
+    <g fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" clip-path="url(#globe)">
+      <line x1="-311" y1="-110" x2="311" y2="-110"/>
+      <line x1="-311" y1="110" x2="311" y2="110"/>
+      <ellipse rx="140" ry="330"/>
+    </g>
+
+    <!-- found pops, placed in open sea away from the wedge -->
+    <circle cx="-175" cy="195" r="46" fill="#248046" stroke="#ffffff" stroke-width="16"/>
+    <circle cx="190" cy="140" r="36" fill="#248046" stroke="#ffffff" stroke-width="14"/>
   </g>
 </svg>
 </body>
