@@ -213,6 +213,18 @@ async function main() {
 
   features.sort((a, b) => a.name.localeCompare(b.name));
 
+  // Seterra-style helper circles for the specks: the circle floats in open
+  // water (hand-picked lon/lat) and the client draws a leader line to the
+  // country, so it never covers other regions.
+  const HELPERS = [
+    { id: "MT", at: [14.75, 35.45] }, // Mediterranean, just off Malta
+    { id: "LU", at: [3.8, 53.3] }, // open North Sea, clear of every coast
+  ];
+  const helpers = HELPERS.map(({ id, at }) => {
+    const [x, y] = toPixel(at);
+    return { id, anchor: { x: Math.round(x), y: Math.round(y) } };
+  });
+
   const pack = {
     packId: PACK_ID,
     displayName: DISPLAY_NAME,
@@ -223,6 +235,7 @@ async function main() {
       license: "Public domain (Natural Earth data)",
     },
     features,
+    ...(helpers.length ? { helpers } : {}),
   };
 
   await mkdir(OUT_DIR, { recursive: true });

@@ -19,6 +19,18 @@ export type MapFeature = {
   centroidHint?: CentroidHint;
 };
 
+export type PackHelper = {
+  /** The feature this helper clicks as; must match a MapFeature.id. */
+  id: string;
+  /**
+   * Where the circle floats, in the pack's projected coordinate space — open
+   * space beside the region (typically offshore) so it never covers other
+   * regions. The renderer draws a leader line from here to the region's
+   * centroidHint.
+   */
+  anchor: CentroidHint;
+};
+
 export type PackSource = {
   name: string;
   url?: string;
@@ -38,4 +50,6 @@ export type MapPack = {
   projection: Projection;
   source: PackSource;
   features: MapFeature[];
+  /** Seterra-style helper circles for regions too small to click fairly. Optional. */
+  helpers?: PackHelper[];
 };

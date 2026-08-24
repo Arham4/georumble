@@ -54,7 +54,7 @@ export class MapView {
   private readonly namesById = new Map<string, string>();
   private readonly centroidById = new Map<string, [number, number]>();
   private readonly halos: SVGPathElement[] = [];
-  private readonly helperCircles = new Map<string, SVGCircleElement>();
+  private readonly helpers = new Map<string, { group: SVGGElement; circle: SVGCircleElement }>();
   private debugDot: SVGCircleElement | null = null;
   private readonly peers = new Map<string, PeerCursor>();
   private peerRaf: number | null = null;
@@ -188,8 +188,8 @@ export class MapView {
     const cursors = createElement<SVGGElement>("g");
     cursors.classList.add("cursor-layer");
     this.cursorLayer = cursors;
-    this.viewport.replaceChildren(hitLayer, regionLayer, cursors);
-    this.buildHelperCircles();
+    const helperLayer = this.buildHelperLayer(pack);
+    this.viewport.replaceChildren(hitLayer, regionLayer, helperLayer, cursors);
     if (this.debug) {
       const dot = createElement<SVGCircleElement>("circle");
       dot.classList.add("debug-dot");
@@ -226,8 +226,8 @@ export class MapView {
         parts.path.classList.toggle(cls, isFound && cls === tier);
       }
     }
-    for (const [id, circle] of this.helperCircles) {
-      circle.classList.toggle("found", next.has(id));
+    for (const [id, helper] of this.helpers) {
+      helper.group.classList.toggle("found", next.has(id));
     }
     this.foundIds = next;
     this.syncHint();
@@ -276,13 +276,6 @@ export class MapView {
     this.flash(id, "miss", MISS_FLASH_MS);
   }
 
-  /** Regions too small for fair direct clicking — the helper-circle set. */
-  tinyRegionIds(): string[] {
-    return [...this.geoById.entries()]
-      .filter(([, geo]) => geo.minDim < HIT_MIN_UNITS)
-      .map(([id]) => id);
-  }
-
   /** Instant neutral ack that a click was received, before any verdict. */
   pressFeedback(id: string): void {
     this.flash(id, "pressed", PRESS_MS);
@@ -293,33 +286,51 @@ export class MapView {
   }
 
   /**
-   * Seterra-style helpers: translucent clickable circles sitting at each tiny
-   * region's location, so specks like DC or Malta are clickable at any zoom.
-   * They carry data-region-id, so the regular hover/click pipeline just works.
+   * Seterra-style helpers: for regions too small to click fairly, a translucent
+   * circle floats in open space beside them — the pack bakes each anchor
+   * (typically offshore) — with a leader line to the real region, so specks
+   * like DC or Malta are clickable at any zoom without covering the map. The
+   * group carries data-region-id, so the regular hover/click pipeline just
+   * works; the line is display-only.
    */
-  private buildHelperCircles(): void {
-    this.helperCircles.clear();
-    for (const [id, geo] of this.geoById) {
-      if (geo.minDim >= HIT_MIN_UNITS) {
+  private buildHelperLayer(pack: MapPack): SVGGElement {
+    this.helpers.clear();
+    const layer = createElement<SVGGElement>("g");
+    layer.classList.add("helper-layer");
+    for (const helper of pack.helpers ?? []) {
+      const centroid = this.centroidById.get(helper.id);
+      if (!centroid) {
         continue;
       }
-      const [min, max] = geo.bounds;
-      const hint = this.centroidById.get(id);
+      const group = createElement<SVGGElement>("g");
+      group.classList.add("helper");
+      group.setAttribute("data-region-id", helper.id);
+
+      const line = createElement<SVGLineElement>("line");
+      line.classList.add("helper-line");
+      line.setAttribute("x1", String(helper.anchor.x));
+      line.setAttribute("y1", String(helper.anchor.y));
+      line.setAttribute("x2", String(centroid[0]));
+      line.setAttribute("y2", String(centroid[1]));
+      line.setAttribute("vector-effect", "non-scaling-stroke");
+      group.append(line);
+
       const circle = createElement<SVGCircleElement>("circle");
       circle.classList.add("helper-circle");
-      circle.setAttribute("data-region-id", id);
-      circle.setAttribute("cx", String(hint ? hint[0] : (min[0] + max[0]) / 2));
-      circle.setAttribute("cy", String(hint ? hint[1] : (min[1] + max[1]) / 2));
-      circle.setAttribute("vector-effect", "non-scaling-stroke");
-      this.viewport.append(circle);
-      this.helperCircles.set(id, circle);
+      circle.setAttribute("cx", String(helper.anchor.x));
+      circle.setAttribute("cy", String(helper.anchor.y));
+      group.append(circle);
+
+      layer.append(group);
+      this.helpers.set(helper.id, { group, circle });
     }
     this.rescaleHelperCircles();
+    return layer;
   }
 
   private rescaleHelperCircles(): void {
     const r = HELPER_CIRCLE_PX / this.k;
-    for (const circle of this.helperCircles.values()) {
+    for (const { circle } of this.helpers.values()) {
       circle.setAttribute("r", String(r));
     }
   }
@@ -658,7 +669,7 @@ export class MapView {
     this.geoById.clear();
     this.centroidById.clear();
     this.halos.length = 0;
-    this.helperCircles.clear();
+    this.helpers.clear();
     this.debugDot = null;
     for (const peer of this.peers.values()) {
       peer.group.remove();

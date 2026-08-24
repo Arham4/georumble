@@ -4,6 +4,7 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   bounds,
   decodeArcs,
@@ -41,6 +42,25 @@ const EXTRA_ALIASES = {
   "11": ["Washington DC"],
 };
 
+// Seterra-style helpers: only the specks that are genuinely unfair to click
+// get a circle, and it floats in open Atlantic beside the coast (the client
+// draws a leader line to the region) so it never covers other states. Anchors
+// are lon/lat, projected with the same geoAlbersUsa parameters us-atlas uses
+// for states-albers-10m.json.
+const HELPERS = [
+  { id: "10", name: "Delaware", at: [-74.35, 38.55] },
+  { id: "44", name: "Rhode Island", at: [-70.7, 40.9] },
+  { id: "11", name: "District of Columbia", at: [-74.85, 37.2] },
+];
+
+async function loadProjection() {
+  // Borrowed from the client's dependencies so this script stays dependency-free.
+  const d3Geo = await import(
+    pathToFileURL(path.resolve(import.meta.dirname, "../client/node_modules/d3-geo/src/index.js"))
+  );
+  return d3Geo.geoAlbersUsa().scale(1300).translate([487.5, 305]);
+}
+
 async function fetchTopology() {
   const failures = [];
   for (const url of SOURCES) {
@@ -58,7 +78,7 @@ async function fetchTopology() {
   throw new Error(`All sources failed:\n  ${failures.join("\n  ")}`);
 }
 
-function buildPack(topology) {
+function buildPack(topology, project) {
   const geometries = topology.objects.states.geometries;
   const arcAt = decodeArcs(topology);
   const seenIds = new Set();
@@ -83,6 +103,12 @@ function buildPack(topology) {
   features.sort((a, b) => a.name.localeCompare(b.name));
   const { width, height } = bounds(topology, geometries, arcAt);
 
+  const helpers = HELPERS.map((helper) => {
+    const point = project(helper.at);
+    if (!point) throw new Error(`Helper anchor for ${helper.name} falls outside the projection`);
+    return { id: helper.id, anchor: { x: Math.round(point[0]), y: Math.round(point[1]) } };
+  });
+
   return {
     packId: PACK_ID,
     displayName: DISPLAY_NAME,
@@ -93,6 +119,7 @@ function buildPack(topology) {
       license: "Public domain (US Census Bureau cartographic boundary data)",
     },
     features,
+    ...(helpers.length ? { helpers } : {}),
   };
 }
 
@@ -100,7 +127,7 @@ async function main() {
   const topology = await fetchTopology();
   const geometries = topology.objects.states.geometries;
 
-  const pack = buildPack(topology);
+  const pack = buildPack(topology, await loadProjection());
   await mkdir(OUT_DIR, { recursive: true });
   await writeFile(path.join(OUT_DIR, "us-states.topojson"), `${JSON.stringify(topology)}\n`);
   await writeFile(path.join(OUT_DIR, "us-states.mappack.json"), `${JSON.stringify(pack, null, 2)}\n`);

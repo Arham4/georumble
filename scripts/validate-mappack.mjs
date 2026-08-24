@@ -98,6 +98,39 @@ function validate(packPath, pack) {
   });
   if (violations.length > 0) return violations;
 
+  if (pack.helpers !== undefined) {
+    if (!require(Array.isArray(pack.helpers), "helpers must be an array")) {
+      return violations;
+    }
+    const seenHelpers = new Set();
+    const canvasOk =
+      isFiniteNumber(pack.projection.width) && isFiniteNumber(pack.projection.height);
+    pack.helpers.forEach((helper, index) => {
+      const where = `helpers[${index}]`;
+      if (!require(helper && typeof helper === "object" && !Array.isArray(helper), `${where}: must be an object`)) {
+        return;
+      }
+      if (require(isNonEmptyString(helper.id), `${where}.id must be a non-empty string`)) {
+        require(!seenHelpers.has(helper.id), `duplicate helper for id "${helper.id}"`);
+        seenHelpers.add(helper.id);
+        require(seenIds.has(helper.id), `${where}.id "${helper.id}" does not match any feature`);
+      }
+      const anchor = helper.anchor;
+      const validAnchor =
+        anchor && typeof anchor === "object" && isFiniteNumber(anchor.x) && isFiniteNumber(anchor.y);
+      require(validAnchor, `${where}.anchor must be { x: number, y: number } with finite values`);
+      if (validAnchor && canvasOk) {
+        require(
+          anchor.x >= 0 &&
+            anchor.x <= pack.projection.width &&
+            anchor.y >= 0 &&
+            anchor.y <= pack.projection.height,
+          `${where}.anchor must sit inside the projection canvas`,
+        );
+      }
+    });
+  }
+
   for (const feature of pack.features) {
     for (const answer of [feature.name, ...(feature.aliases ?? [])]) {
       const key = normalizeAnswer(answer);

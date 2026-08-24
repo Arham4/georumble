@@ -324,6 +324,13 @@ body {
   object-fit: cover;
 }
 
+.lobby-warning {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wrong);
+}
+
 .identity-row {
   display: flex;
   align-items: center;
@@ -658,18 +665,30 @@ body {
   color: var(--bg);
 }
 
-/* --- Tiny-region helper circles (Seterra-style, on-map) ------------------- */
+/* --- Tiny-region helper circles (Seterra-style: float beside the region) --- */
 
 .helper-circle {
-  fill: rgb(255 255 255 / 0.14);
-  stroke: rgb(255 255 255 / 0.3);
-  stroke-width: 1;
+  fill: rgb(255 255 255 / 0.16);
   pointer-events: auto;
   cursor: pointer;
 }
 
-.helper-circle.found {
-  opacity: 0.12;
+.helper-circle:hover {
+  fill: rgb(255 255 255 / 0.3);
+}
+
+.helper-line {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.4);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.helper.found {
+  opacity: 0.1;
+}
+
+.helper.found .helper-circle {
   pointer-events: none;
 }
 

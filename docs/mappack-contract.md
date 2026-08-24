@@ -46,6 +46,18 @@ export type MapFeature = {
   centroidHint?: CentroidHint;
 };
 
+export type PackHelper = {
+  /** The feature this helper clicks as; must match a MapFeature.id. */
+  id: string;
+  /**
+   * Where the circle floats, in the pack's projected coordinate space — open
+   * space beside the region (typically offshore) so it never covers other
+   * regions. The renderer draws a leader line from here to the region's
+   * centroidHint.
+   */
+  anchor: CentroidHint;
+};
+
 export type PackSource = {
   name: string;
   url?: string;
@@ -65,6 +77,8 @@ export type MapPack = {
   projection: Projection;
   source: PackSource;
   features: MapFeature[];
+  /** Seterra-style helper circles for regions too small to click fairly. Optional. */
+  helpers?: PackHelper[];
 };
 ```
 
@@ -72,9 +86,11 @@ export type MapPack = {
 
 - **`projection.kind`** — `"albers-usa-preprojected"` and `"conic-conformal-preprojected"` mean
   coordinates (TopoJSON arcs and `centroidHint`) are already projected pixels inside a
-  `width`×`height` canvas; render with `d3.geoIdentity().fitExtent(...)`, no reprojection needed.
-  The kind string documents which projection produced the pixels. `"equirectangular-geo"` means
-  coordinates are lon/lat degrees and `centroidHint` is `{ x: lon, y: lat }`.
+  `width`×`height` canvas; render with a plain `d3.geoIdentity()` — the pixels already fit the
+  canvas, and refitting with `fitExtent` would rescale by outlying geometry (the
+  double-transform bug). The kind string documents which projection produced the pixels.
+  `"equirectangular-geo"` means coordinates are lon/lat degrees and `centroidHint` is
+  `{ x: lon, y: lat }`.
 - **`id`** — the join key to TopoJSON geometries and the value sent as `featureId` on the wire.
   Never renumber; new packs should adopt their source atlas's native id convention.
 - **`name`** — canonical player-facing answer. Unique within a pack (see validation).
@@ -84,6 +100,13 @@ export type MapPack = {
 - **Answer normalization (game-side guidance)**: trim, lowercase, strip diacritics and
   punctuation (`.` `,` `-`), then compare against `name` plus every `alias`,
   case-insensitively. Normalization lives in game code, not in the pack.
+- **`helpers`** — Seterra-style helper circles for regions too small to click fairly (US:
+  Delaware, Rhode Island, DC). Each `anchor` is where the circle floats, in projected canvas
+  coordinates, placed in open space beside the region (typically offshore) so it never covers
+  other regions; the renderer draws a leader line from the anchor to the region's
+  `centroidHint`. Helpers are a rendering affordance only — the wire protocol is unaffected
+  (clicking a circle sends the region's `id` exactly like clicking the region would). Keep the
+  list minimal: only regions that are genuinely unfair to click at default zoom.
 
 ## Validation rules
 
@@ -102,6 +125,8 @@ Enforced by `scripts/validate-mappack.mjs`:
 8. No collisions: all `name`s are distinct case-insensitively, and no alias may equal any
    other feature's `name` or `alias` case-insensitively (an answer must resolve to at most
    one region).
+9. `helpers` when present is an array of `{ id, anchor }` with unique ids that each match a
+   feature, finite numeric anchors, and anchors inside the projection canvas.
 
 ## Versioning rules
 
