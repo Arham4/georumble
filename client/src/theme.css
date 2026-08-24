@@ -49,7 +49,21 @@ body {
   }
 }
 
-.map-holder,
+#app {
+  /* The play HUD overlays this strip; the map fits into what remains, so
+     top-row regions never hide beneath it on wide viewports where map height
+     is the limiting dimension. */
+  --hud-clear: calc(56px + max(env(safe-area-inset-top, 0px), var(--chrome-top)));
+}
+
+.map-holder {
+  position: absolute;
+  top: var(--hud-clear);
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
 .map-holder svg {
   position: absolute;
   inset: 0;

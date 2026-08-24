@@ -185,8 +185,11 @@ async function boot(): Promise<void> {
   app.replaceChildren(mapHolder, screenHolder, toastHolder);
 
   const identity = await resolveIdentity();
-  // Lets CSS pad for host chrome (Discord's mobile header overlays the iframe).
-  app.classList.toggle("embedded", identity.embedded);
+  // Lets CSS pad for host chrome (Discord's mobile header overlays the app).
+  // Discord mobile hosts the activity as a TOP-LEVEL WebView — the SDK talks
+  // over a native bridge, so the frame check alone is false there; a real
+  // SDK session (instanceId) is the dependable Discord signal.
+  app.classList.toggle("embedded", identity.embedded || identity.instanceId !== null);
   const store = new PackStore();
   const mapView = new MapView(mapHolder);
 
