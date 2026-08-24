@@ -56,3 +56,15 @@ Secrets: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`; optional `DISCORD_BOT_TOK
 instance verification), `OPEN_ROOMS=1` (enables browser code rooms), `LIMITS_KV` +
 `CF_ACCOUNT_ID`/`CF_API_TOKEN` (dynamic capacity ceiling). Legal pages for the Discord portal
 live at `/privacy` and `/terms`.
+
+### Discord portal requirements
+
+- **OAuth2 → Redirects must list the activity URL** (e.g. `https://<activity-host>/`). The
+  client's authorize bridge sends no `redirect_uri` of its own, and Discord rejects the
+  sign-in with `invalid_request: Missing "redirect_uri" in request` when the app registers
+  none.
+- Scopes requested: `identify` + `guilds.members.read` (the latter resolves each player's
+  server nickname and server-specific avatar; sign-in falls back to the global profile if
+  it is declined).
+- Store art lives in `assets/brand/store/` — see its README for which file uploads to which
+  portal field.

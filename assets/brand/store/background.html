@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body { font-family: system-ui, "DejaVu Sans", sans-serif; }
+</style>
+</head>
+<body>
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="vig" cx="0.5" cy="0.5" r="0.75">
+      <stop offset="0.55" stop-color="#2C2F33" stop-opacity="0"/>
+      <stop offset="1" stop-color="#191B1E" stop-opacity="0.9"/>
+    </radialGradient>
+  </defs>
+
+  <!-- calm center: the live map and HUD sit on top of this -->
+  <rect width="1920" height="1080" fill="#23272A"/>
+
+  <!-- faint toy-map landmasses hugging the edges -->
+  <g stroke="#8EA1E1" stroke-opacity="0.10" stroke-width="10" stroke-linejoin="round">
+    <path fill="#5BC878" fill-opacity="0.09" d="M-80 -60 L560 -60 Q620 -60 600 10 L520 220 Q490 290 410 270 L200 220 Q90 195 40 90 L-20 -20 Z"/>
+    <path fill="#F2C94C" fill-opacity="0.08" d="M1380 -80 L1990 -80 L1990 340 L1800 300 Q1690 275 1640 170 L1590 60 Q1560 -10 1380 -80 Z"/>
+    <path fill="#F27E63" fill-opacity="0.08" d="M-100 780 Q80 700 240 770 Q380 830 340 980 L310 1140 L-100 1140 Z"/>
+    <path fill="#5BC878" fill-opacity="0.09" d="M2000 720 L2000 1160 L1580 1160 Q1530 1020 1600 900 Q1670 780 1820 770 Z"/>
+  </g>
+
+  <!-- faint graticule arcs sweeping the corners -->
+  <g fill="none" stroke="#8EA1E1" stroke-opacity="0.08" stroke-width="4">
+    <circle cx="-140" cy="1120" r="620"/>
+    <circle cx="-140" cy="1120" r="760"/>
+    <circle cx="2040" cy="-60" r="560"/>
+    <circle cx="2040" cy="-60" r="700"/>
+  </g>
+
+  <!-- sparse wave marks -->
+  <g stroke="#8EA1E1" stroke-opacity="0.10" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M240 540 q30 -26 60 0 t60 0"/>
+    <path d="M1560 520 q30 -26 60 0 t60 0"/>
+    <path d="M930 1010 q30 -26 60 0 t60 0"/>
+  </g>
+
+  <rect width="1920" height="1080" fill="url(#vig)"/>
+</svg>
+</body>
+</html>

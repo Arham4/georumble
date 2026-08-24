@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body { font-family: system-ui, "DejaVu Sans", sans-serif; }
+</style>
+</head>
+<body>
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ocean" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#54ACDD"/>
+      <stop offset="1" stop-color="#3B87BE"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="titleShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="0" flood-color="#1B1F24" flood-opacity="0.55"/>
+    </filter>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#173247" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#ocean)"/>
+  <rect width="1920" height="1080" fill="url(#glow)"/>
+
+  <!-- wave marks -->
+  <g stroke="#ffffff" stroke-opacity="0.16" stroke-width="7" stroke-linecap="round" fill="none">
+    <path d="M120 950 q30 -26 60 0 t60 0"/>
+    <path d="M300 1010 q30 -26 60 0 t60 0"/>
+    <path d="M1560 980 q30 -26 60 0 t60 0"/>
+    <path d="M1740 920 q30 -26 60 0 t60 0"/>
+    <path d="M90 210 q30 -26 60 0 t60 0"/>
+    <path d="M1690 240 q30 -26 60 0 t60 0"/>
+    <path d="M960 90 q30 -26 60 0 t60 0" transform="translate(-30,0)"/>
+  </g>
+
+  <!-- chunky board-game landmasses around the edges -->
+  <g stroke="#23272A" stroke-width="12" stroke-linejoin="round">
+    <path filter="url(#softShadow)" fill="#5BC878" d="M-60 -40 L420 -40 Q470 -40 455 10 L400 150 Q380 200 320 190 L170 160 Q90 145 60 70 L20 -20 Z"/>
+    <path filter="url(#softShadow)" fill="#F2C94C" d="M1500 -60 L1990 -60 L1990 260 L1780 230 Q1690 215 1650 140 L1600 40 Q1585 -10 1500 -60 Z"/>
+    <path filter="url(#softShadow)" fill="#F27E63" d="M-80 760 Q60 700 180 760 Q290 815 260 930 L220 1090 L-80 1090 Z"/>
+    <path filter="url(#softShadow)" fill="#5BC878" d="M1990 700 L1990 1090 L1620 1090 Q1580 980 1640 890 Q1700 800 1810 790 Z"/>
+    <path filter="url(#softShadow)" fill="#8EA1E1" d="M690 -50 L1080 -50 Q1120 30 1060 80 Q980 145 870 120 Q740 95 690 -50 Z"/>
+    <path filter="url(#softShadow)" fill="#F2C94C" d="M780 1090 Q800 990 900 960 Q1010 930 1090 990 Q1160 1040 1140 1090 Z"/>
+    <circle filter="url(#softShadow)" fill="#F27E63" cx="240" cy="480" r="58"/>
+    <circle filter="url(#softShadow)" fill="#5BC878" cx="1700" cy="540" r="66"/>
+  </g>
+
+  <!-- gameplay motifs: helper circles, found pops, hint ring -->
+  <g>
+    <circle cx="330" cy="700" r="64" fill="#ffffff" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.45" stroke-width="5"/>
+    <circle cx="1560" cy="820" r="52" fill="#ffffff" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.45" stroke-width="5"/>
+    <circle cx="1620" cy="330" r="26" fill="#248046" stroke="#ffffff" stroke-width="7"/>
+    <circle cx="420" cy="330" r="22" fill="#248046" stroke="#ffffff" stroke-width="7"/>
+    <circle cx="1310" cy="880" r="30" fill="none" stroke="#ffffff" stroke-opacity="0.7" stroke-width="6" stroke-dasharray="14 10"/>
+    <path d="M480 830 l0 -74 q0 -40 40 -40 q40 0 40 40 l0 74 Z" fill="#D83C3E" stroke="#23272A" stroke-width="10" stroke-linejoin="round"/>
+    <circle cx="520" cy="760" r="16" fill="#ffffff"/>
+  </g>
+
+  <!-- globe glyph + wordmark -->
+  <g transform="translate(960 385)">
+    <g fill="none" stroke="#23272A" stroke-width="26">
+      <circle r="86"/>
+    </g>
+    <g fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round">
+      <circle r="86"/>
+      <line x1="-75" y1="-30" x2="75" y2="-30"/>
+      <line x1="-75" y1="30" x2="75" y2="30"/>
+      <ellipse rx="38" ry="86"/>
+    </g>
+    <path d="M0 0 L0 -86 A86 86 0 0 1 81 -28 Z" fill="#98A7F8" stroke="#23272A" stroke-width="10" stroke-linejoin="round"/>
+  </g>
+
+  <text x="960" y="640" text-anchor="middle" font-size="176" font-weight="800" letter-spacing="2"
+        stroke="#23272A" stroke-width="18" stroke-linejoin="round" paint-order="stroke"
+        filter="url(#titleShadow)" font-family="system-ui, 'DejaVu Sans', sans-serif">
+    <tspan fill="#FFFFFF">Geo</tspan><tspan fill="#98A7F8">Rumble</tspan>
+  </text>
+
+  <g filter="url(#softShadow)">
+    <rect x="560" y="700" width="800" height="86" rx="43" fill="#23272A"/>
+    <text x="960" y="755" text-anchor="middle" font-size="36" font-weight="700" letter-spacing="5" fill="#FFFFFF" font-family="system-ui, 'DejaVu Sans', sans-serif">FIND IT FAST. TOGETHER.</text>
+  </g>
+</svg>
+</body>
+</html>
