@@ -87,14 +87,19 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       }
       updateStartButton(lastState);
     });
-    void deps.store.load(descriptor.packId).then((loaded) => {
-      const count = el("div", "pack-count", `${loaded.pack.features.length} regions`);
-      card.append(count);
-      const refs = cards.get(descriptor.packId);
-      if (refs) {
-        refs.count = count;
-      }
-    });
+    void deps.store
+      .load(descriptor.packId)
+      .then((loaded) => {
+        const count = el("div", "pack-count", `${loaded.pack.features.length} regions`);
+        card.append(count);
+        const refs = cards.get(descriptor.packId);
+        if (refs) {
+          refs.count = count;
+        }
+      })
+      .catch(() => {
+        // Counts are decoration; the Start path surfaces load failures.
+      });
     cards.set(descriptor.packId, { card, count: null });
     packGrid.append(card);
   }

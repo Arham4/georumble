@@ -323,8 +323,13 @@ async function boot(): Promise<void> {
     if (!packId) {
       return;
     }
-    const loaded = await store.load(packId);
-    client.startGame(loaded.pack);
+    try {
+      const loaded = await store.load(packId);
+      client.startGame(loaded.pack);
+    } catch {
+      // Swallowed here so the victory button's finally-driven re-enable isn't
+      // followed by an unhandled rejection; a fresh click retries.
+    }
   }
 
   const onVerdict = (outcome: GuessOutcome): void => {

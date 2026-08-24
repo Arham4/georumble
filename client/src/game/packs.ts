@@ -95,11 +95,19 @@ export class PackStore {
     if (!descriptor) {
       return Promise.reject(new Error(`Unknown pack: ${packId}`));
     }
-    const pending = this.fetchPack(descriptor).then((loaded) => {
-      this.settled.set(packId, loaded);
-      this.inflight.delete(packId);
-      return loaded;
-    });
+    const pending = this.fetchPack(descriptor)
+      .then((loaded) => {
+        this.settled.set(packId, loaded);
+        this.inflight.delete(packId);
+        return loaded;
+      })
+      .catch((error) => {
+        // A cached rejection would turn one transient blip into "this pack
+        // never loads again" for the whole session; forget and let the next
+        // call retry fresh.
+        this.inflight.delete(packId);
+        throw error;
+      });
     this.inflight.set(packId, pending);
     return pending;
   }
