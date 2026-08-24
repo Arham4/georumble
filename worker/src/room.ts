@@ -15,7 +15,9 @@ import { rejectUpgrade } from "./upgrade";
 // Matches the design-patterns guidance that voice channels are the real ceiling.
 const MAX_PARTICIPANTS = 30;
 const MAX_NAME_LENGTH = 32;
-const MAX_AVATAR_LENGTH = 64;
+// Full CDN URLs (guild avatars included) run ~80-100 chars; a 64 cap rejected
+// every real Discord avatar and rendered everyone as initials.
+const MAX_AVATAR_LENGTH = 512;
 const HELLO_TIMEOUT_MS = 30_000;
 const ALARM_INTERVAL_MS = 5 * 60_000;
 const CURSOR_MIN_INTERVAL_MS = 33;
@@ -248,9 +250,15 @@ export class GameRoom extends DurableObject<Env> {
     }
     this.pending.delete(ws);
     const name = (rawName || "").trim().slice(0, MAX_NAME_LENGTH) || "Player";
-    const avatar = typeof rawAvatar === "string" && rawAvatar.length > 0 && rawAvatar.length <= MAX_AVATAR_LENGTH
-      ? rawAvatar.replace(/[^A-Za-z0-9_-]/g, "")
-      : null;
+    // Avatars render as <img src>, so the only sanitization that matters is
+    // "is it an https URL we are willing to display"; rewriting the string
+    // would just corrupt it.
+    const avatar =
+      typeof rawAvatar === "string" &&
+      rawAvatar.startsWith("https://") &&
+      rawAvatar.length <= MAX_AVATAR_LENGTH
+        ? rawAvatar
+        : null;
     let player = room.players.find((p) => p.id === playerId);
     if (!player) {
       player = { id: playerId, name, joinedAt: Date.now() };

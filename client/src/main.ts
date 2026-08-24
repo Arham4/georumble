@@ -43,6 +43,13 @@ type AuthenticateShape = {
   user: DiscordUser;
 };
 
+type GuildMemberShape = {
+  /** Server nickname; absent when the member never set one. */
+  nick?: string | null;
+  /** Server-specific avatar hash; absent when they use their global one. */
+  avatar?: string | null | undefined;
+};
+
 function discordAvatarUrl(userId: string, avatarHash: string): string {
   return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=64`;
 }
@@ -115,7 +122,7 @@ async function resolveIdentity(): Promise<Identity> {
     await sdk.ready();
     const { code } = await sdk.commands.authorize({
       client_id: CLIENT_ID,
-      scope: ["identify"],
+      scope: ["identify", "guilds.members.read"],
       prompt: "none",
     });
     const tokenResponse = await fetch("/api/token", {
@@ -129,11 +136,32 @@ async function resolveIdentity(): Promise<Identity> {
     const { access_token } = (await tokenResponse.json()) as { access_token: string };
     // Response schema drifts between SDK majors; read only the fields we need.
     const auth = (await sdk.commands.authenticate({ access_token })) as AuthenticateShape;
-    localStorage.setItem(NAME_STORAGE_KEY, auth.user.global_name ?? auth.user.username);
+    let name = auth.user.global_name ?? auth.user.username;
+    let avatar = auth.user.avatar ? discordAvatarUrl(auth.user.id, auth.user.avatar) : null;
+    // Inside a server, players know each other by the server nickname (and the
+    // server-specific avatar, when set) — not the global profile.
+    if (sdk.guildId) {
+      try {
+        const memberResponse = await fetch(
+          `https://discord.com/api/users/@me/guilds/${sdk.guildId}/member`,
+          { headers: { Authorization: `Bearer ${access_token}` } },
+        );
+        if (memberResponse.ok) {
+          const member = (await memberResponse.json()) as GuildMemberShape;
+          name = member.nick ?? name;
+          if (member.avatar) {
+            avatar = `https://cdn.discordapp.com/guilds/${sdk.guildId}/users/${auth.user.id}/${member.avatar}.png?size=64`;
+          }
+        }
+      } catch {
+        // Guild details are a nicety; the global identity is already good.
+      }
+    }
+    localStorage.setItem(NAME_STORAGE_KEY, name);
     return {
       userId: auth.user.id,
-      name: auth.user.global_name ?? auth.user.username,
-      avatar: auth.user.avatar ? discordAvatarUrl(auth.user.id, auth.user.avatar) : null,
+      name,
+      avatar,
       instanceId: sdk.instanceId,
       embedded: true,
     };
