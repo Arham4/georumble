@@ -5,6 +5,6 @@
     "dev": "docker compose up --build",
     "install:all": "npm --prefix client install && npm --prefix worker install",
     "packs:validate": "node scripts/validate-mappack.mjs assets/mappacks/*.mappack.json",
-    "packs:build": "node scripts/fetch-mappacks.mjs && node scripts/build-europe.mjs && npm run packs:validate"
+    "packs:build": "node scripts/fetch-mappacks.mjs && node scripts/build-europe.mjs && node scripts/build-asia.mjs && npm run packs:validate"
   }
 }

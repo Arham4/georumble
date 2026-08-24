@@ -27,6 +27,13 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     mappackUrl: "/mappacks/europe.mappack.json",
     topoUrl: "/mappacks/europe.topojson",
   },
+  {
+    packId: "asia",
+    displayName: "Asia",
+    blurb: "49 countries from the Mediterranean to the Pacific",
+    mappackUrl: "/mappacks/asia.mappack.json",
+    topoUrl: "/mappacks/asia.topojson",
+  },
 ];
 
 export type LoadedPack = {
