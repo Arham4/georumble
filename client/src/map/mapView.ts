@@ -284,6 +284,17 @@ export class MapView {
       shape.setAttribute("d", d);
       clip.append(shape);
       defs.append(clip);
+      // Avatars read as circular chips everywhere else in the UI, so the
+      // square image is circle-clipped first, then region-clipped.
+      const circleId = `badge-circle-${sanitizeClipId(id)}`;
+      const circleClip = createElement<SVGClipPathElement>("clipPath");
+      circleClip.setAttribute("id", circleId);
+      const circle = createElement<SVGCircleElement>("circle");
+      circle.setAttribute("cx", String(center[0]));
+      circle.setAttribute("cy", String(center[1]));
+      circle.setAttribute("r", String(size / 2));
+      circleClip.append(circle);
+      defs.append(circleClip);
 
       const clipped = createElement<SVGGElement>("g");
       clipped.setAttribute("clip-path", `url(#${clipId})`);
@@ -295,6 +306,7 @@ export class MapView {
         image.setAttribute("width", String(size));
         image.setAttribute("height", String(size));
         image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        image.setAttribute("clip-path", `url(#${circleId})`);
         clipped.append(image);
       } else {
         const dot = createElement<SVGCircleElement>("circle");
