@@ -1,0 +1,55 @@
+{
+  "packId": "oceans",
+  "displayName": "Oceans",
+  "projection": {
+    "kind": "equirectangular-geo",
+    "width": 1000,
+    "height": 494
+  },
+  "source": {
+    "name": "Hand-authored coarse coastline rings (v1)",
+    "license": "Original approximation, no third-party data"
+  },
+  "features": [
+    {
+      "id": "PA",
+      "name": "Pacific Ocean",
+      "centroidHint": {
+        "x": 139,
+        "y": 266
+      }
+    },
+    {
+      "id": "AT",
+      "name": "Atlantic Ocean",
+      "centroidHint": {
+        "x": 420,
+        "y": 245
+      }
+    },
+    {
+      "id": "IN",
+      "name": "Indian Ocean",
+      "centroidHint": {
+        "x": 716,
+        "y": 316
+      }
+    },
+    {
+      "id": "AR",
+      "name": "Arctic Ocean",
+      "centroidHint": {
+        "x": 734,
+        "y": 27
+      }
+    },
+    {
+      "id": "SO",
+      "name": "Southern Ocean",
+      "centroidHint": {
+        "x": 257,
+        "y": 422
+      }
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "packId": "continents",
+  "displayName": "Continents",
+  "projection": {
+    "kind": "equirectangular-geo",
+    "width": 1000,
+    "height": 494
+  },
+  "source": {
+    "name": "world-atlas countries-50m.json (Natural Earth 1:50m)",
+    "url": "https://github.com/topojson/world-atlas",
+    "license": "Public domain (Natural Earth data)"
+  },
+  "features": [
+    {
+      "id": "AF",
+      "name": "Africa",
+      "centroidHint": {
+        "x": 507,
+        "y": 163
+      }
+    },
+    {
+      "id": "AN",
+      "name": "Antarctica",
+      "centroidHint": {
+        "x": 369,
+        "y": 457
+      }
+    },
+    {
+      "id": "AS",
+      "name": "Asia",
+      "centroidHint": {
+        "x": 771,
+        "y": 72
+      }
+    },
+    {
+      "id": "EU",
+      "name": "Europe",
+      "centroidHint": {
+        "x": 546,
+        "y": 68
+      }
+    },
+    {
+      "id": "NA",
+      "name": "North America",
+      "centroidHint": {
+        "x": 220,
+        "y": 82
+      }
+    },
+    {
+      "id": "OC",
+      "name": "Oceania",
+      "aliases": [
+        "Australia"
+      ],
+      "centroidHint": {
+        "x": 867,
+        "y": 310
+      }
+    },
+    {
+      "id": "SA",
+      "name": "South America",
+      "centroidHint": {
+        "x": 355,
+        "y": 270
+      }
+    }
+  ]
+}

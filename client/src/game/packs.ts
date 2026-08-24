@@ -48,6 +48,20 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     mappackUrl: "/mappacks/africa.mappack.json",
     topoUrl: "/mappacks/africa.topojson",
   },
+  {
+    packId: "continents",
+    displayName: "Continents",
+    blurb: "The seven continents on one world map",
+    mappackUrl: "/mappacks/continents.mappack.json",
+    topoUrl: "/mappacks/continents.topojson",
+  },
+  {
+    packId: "oceans",
+    displayName: "Oceans",
+    blurb: "Five oceans on the same world frame",
+    mappackUrl: "/mappacks/oceans.mappack.json",
+    topoUrl: "/mappacks/oceans.topojson",
+  },
 ];
 
 export type LoadedPack = {
