@@ -26,6 +26,8 @@ const HELPER_CIRCLE_PX = 18;
 type RegionParts = {
   path: SVGPathElement;
   hit: SVGPathElement | null;
+  /** Dot packs counter-scale this wrapper on zoom; null for country packs. */
+  wrap: SVGGElement | null;
 };
 
 type RegionGeo = {
@@ -55,6 +57,8 @@ export class MapView {
   private readonly centroidById = new Map<string, [number, number]>();
   private readonly halos: SVGPathElement[] = [];
   private readonly helpers = new Map<string, { group: SVGGElement; circle: SVGCircleElement }>();
+  private readonly badgeGroups = new Map<string, SVGGElement>();
+  private dotPack = false;
   private badgeLayer: SVGGElement | null = null;
   private debugDot: SVGCircleElement | null = null;
   private readonly peers = new Map<string, PeerCursor>();
@@ -165,6 +169,7 @@ export class MapView {
 
     const hitLayer = createElement("g");
     const regionLayer = createElement("g");
+    this.dotPack = pack.dotPack === true;
     for (const geometry of collection.features) {
       const id = String(geometry.id ?? "");
       if (!this.namesById.has(id)) {
@@ -178,7 +183,16 @@ export class MapView {
       region.setAttribute("d", d);
       region.setAttribute("data-region-id", id);
       region.classList.add("region");
-      regionLayer.append(region);
+      // Dot packs zoom via a per-dot counter-scale on a wrapper, so CSS flash
+      // animations on the path itself never fight the zoom transform.
+      let wrap: SVGGElement | null = null;
+      if (this.dotPack) {
+        wrap = createElement<SVGGElement>("g");
+        wrap.append(region);
+        regionLayer.append(wrap);
+      } else {
+        regionLayer.append(region);
+      }
 
       let hit: SVGPathElement | null = null;
       const bounds = path.bounds(geometry);
@@ -193,7 +207,7 @@ export class MapView {
         this.halos.push(hit);
         hitLayer.append(hit);
       }
-      this.regions.set(id, { path: region, hit });
+      this.regions.set(id, { path: region, hit, wrap });
       this.geoById.set(id, { bounds, minDim });
     }
     const cursors = createElement<SVGGElement>("g");
@@ -286,7 +300,7 @@ export class MapView {
       return;
     }
     layer.replaceChildren();
-    const size = 30;
+    this.badgeGroups.clear();
     for (const id of this.foundIds) {
       const player = foundBy[id] ? players.get(foundBy[id]) : undefined;
       const d = this.regions.get(id)?.path.getAttribute("d");
@@ -294,6 +308,11 @@ export class MapView {
       if (!player || !d || !center) {
         continue;
       }
+      // Dot packs shrink the chip to fit inside the dot — a fixed 30-unit
+      // badge on a 7-unit dot is all crop, while fitting shows the whole
+      // icon. Big regions keep the full-size chip.
+      const geo = this.geoById.get(id);
+      const size = this.dotPack && geo ? Math.min(30, geo.minDim * 0.8) : 30;
       const clipId = `badge-clip-${sanitizeClipId(id)}`;
       const defs = createElement<SVGElement>("defs");
       const clip = createElement<SVGClipPathElement>("clipPath");
@@ -340,10 +359,12 @@ export class MapView {
         initial.setAttribute("text-anchor", "middle");
         initial.setAttribute("dominant-baseline", "central");
         initial.textContent = (player.name.trim()[0] ?? "?").toUpperCase();
+        initial.style.fontSize = `${Math.max(6, Math.round(size * 0.5))}px`;
         clipped.append(initial);
       }
       const group = createElement<SVGGElement>("g");
       group.append(defs, clipped);
+      this.badgeGroups.set(id, group);
       layer.append(group);
     }
   }
@@ -765,7 +786,50 @@ export class MapView {
     }
     this.rescaleHelperCircles();
     this.debugDot?.setAttribute("r", String(4 / this.k));
+    this.applyDotScale();
     this.refreshHover("camera");
+  }
+
+  /**
+   * Dot packs hold dots at a constant ON-SCREEN size: while the viewport
+   * zooms, every dot counter-scales around its own center, so zooming
+   * spreads dense neighbors apart instead of letting dots balloon over
+   * them. Zoom can never shrink overlap on its own — spacing and radius
+   * scale equally — so this counter-scale is what makes zoom useful on
+   * dense packs. Badges ride the same transform and stay glued to their
+   * dots.
+   */
+  private applyDotScale(): void {
+    if (!this.dotPack) {
+      return;
+    }
+    for (const [id, parts] of this.regions) {
+      const geo = this.geoById.get(id);
+      if (!geo) {
+        continue;
+      }
+      const cx = (geo.bounds[0][0] + geo.bounds[1][0]) / 2;
+      const cy = (geo.bounds[0][1] + geo.bounds[1][1]) / 2;
+      const transform =
+        this.k === 1
+          ? null
+          : `translate(${cx} ${cy}) scale(${(1 / this.k).toFixed(4)}) translate(${-cx} ${-cy})`;
+      const nodes: (SVGGElement | SVGPathElement | null | undefined)[] = [
+        parts.wrap,
+        parts.hit,
+        this.badgeGroups.get(id),
+      ];
+      for (const node of nodes) {
+        if (!node) {
+          continue;
+        }
+        if (transform === null) {
+          node.removeAttribute("transform");
+        } else {
+          node.setAttribute("transform", transform);
+        }
+      }
+    }
   }
 
   private viewScale(): number {
@@ -812,6 +876,8 @@ export class MapView {
     this.centroidById.clear();
     this.halos.length = 0;
     this.helpers.clear();
+    this.badgeGroups.clear();
+    this.dotPack = false;
     this.badgeLayer = null;
     this.debugDot = null;
     for (const peer of this.peers.values()) {

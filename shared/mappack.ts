@@ -53,4 +53,9 @@ export type MapPack = {
   features: MapFeature[];
   /** Seterra-style helper circles for regions too small to click fairly. Optional. */
   helpers?: PackHelper[];
+  /**
+   * Dot packs (POI targets): the client holds dots at a constant on-screen
+   * size while zooming, so dense packs separate instead of blobbing.
+   */
+  dotPack?: boolean;
 };

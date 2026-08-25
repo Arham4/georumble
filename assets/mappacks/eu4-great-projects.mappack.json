@@ -10,6 +10,7 @@
     "name": "Monument list from eu4.paradoxwikis.com (EU4 Leviathan great projects); coordinates hand-authored; land underlay from world-atlas land-110m (Natural Earth, public domain)",
     "license": "Original data; underlay public domain (Natural Earth)"
   },
+  "dotPack": true,
   "features": [
     {
       "id": "cahokia",
@@ -382,7 +383,7 @@
       ],
       "centroidHint": {
         "x": 543,
-        "y": 75
+        "y": 74
       }
     },
     {

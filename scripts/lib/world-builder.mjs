@@ -255,6 +255,7 @@ export async function buildWorldPack(config) {
       height: canvas.height,
     },
     source: config.source,
+    ...(config.dotPack ? { dotPack: true } : {}),
     features,
   };
 

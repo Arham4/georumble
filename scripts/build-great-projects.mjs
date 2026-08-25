@@ -15,8 +15,9 @@ await buildPoiPack({
   },
   points: GREAT_PROJECTS,
   // 141 dots cluster tightly (Europe alone holds 48 within a few degrees of
-  // its neighbors); zoom scales dots and spacing equally, so a small radius
-  // is the only way to keep neighbors separable.
-  radiusDegrees: 1.2,
+  // its neighbors). The client holds dot packs at constant screen size while
+  // zooming, so this radius only sets the fit-view footprint — big enough to
+  // read at world view, small enough that Europe stays legible.
+  radiusDegrees: 1.8,
   background: await fetchLandParts(),
 });

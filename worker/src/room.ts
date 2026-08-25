@@ -221,7 +221,16 @@ export class GameRoom extends DurableObject<Env> {
     if (!this.room) {
       return;
     }
+    const departed = this.room.players.find((p) => p.id === playerId);
     this.room.players = this.room.players.filter((p) => p.id !== playerId);
+    if (departed) {
+      console.log(JSON.stringify({
+        event: "player_leave",
+        roomId: this.roomId,
+        playerId,
+        secondsPlayed: Math.round((Date.now() - departed.joinedAt) / 1000),
+      }));
+    }
     if (this.room.players.length === 0) {
       await this.teardown();
       return;
@@ -443,6 +452,13 @@ export class GameRoom extends DurableObject<Env> {
       room.startedAt !== null ? Math.round((Date.now() - room.startedAt) / 1000) : seconds;
     room.phase = "victory";
     await this.persist();
+    console.log(JSON.stringify({
+      event: "round_complete",
+      roomId: this.roomId,
+      packId: room.packId,
+      seconds: stampedSeconds,
+      guesses,
+    }));
     this.broadcast({ t: "win", seconds: stampedSeconds, guesses });
   }
 

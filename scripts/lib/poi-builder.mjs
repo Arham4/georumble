@@ -47,6 +47,7 @@ export async function buildPoiPack(config) {
     packId: config.packId,
     displayName: config.displayName,
     source: config.source,
+    dotPack: true,
     background: config.background,
     features: points.map(({ lon, lat, ...meta }) => ({
       ...meta,

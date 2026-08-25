@@ -117,16 +117,24 @@ body {
 
 .region.found {
   fill: var(--correct);
+  /* The tier color rides the outline too: when a finder badge fills the
+     region, the fill alone hides underneath the avatar. Screen-constant
+     width keeps the border crisp at every zoom. */
+  stroke: #57cf87;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
 }
 
 /* Seterra-style heat: how many misses it took before the region was found.
    Tiers differ in lightness as well as hue so they never rely on color alone. */
 .region.found.heat-warm {
   fill: #8f7d2c;
+  stroke: #d9b545;
 }
 
 .region.found.heat-hard {
   fill: #a34f42;
+  stroke: #ef8264;
 }
 
 .region.miss {
