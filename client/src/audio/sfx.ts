@@ -66,6 +66,10 @@ export const sfx = {
   miss(): void {
     blip(150, 0, 0.16, 0.05);
   },
+  /** Slot-machine tick for the map-roll sweep; pitch rises as it slows. */
+  tick(progress: number): void {
+    blip(440 + progress * 260, 0, 0.04, 0.028);
+  },
   win(): void {
     blip(523, 0, 0.14, 0.07);
     blip(659, 0.12, 0.14, 0.07);

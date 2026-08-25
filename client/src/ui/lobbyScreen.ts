@@ -2,6 +2,7 @@ import type { GameClient, GameState } from "../game/gameClient";
 import { PACK_MANIFEST, type PackStore } from "../game/packs";
 import { el, setText, type Screen } from "./dom";
 import { normalizeAnswer } from "../../../shared/answers";
+import { sfx } from "../audio/sfx";
 import { createDiscordInviteLink, createGithubLink } from "./linkButtons";
 
 export type LobbyDeps = {
@@ -345,6 +346,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     let delay = 70;
     const step = (): void => {
       chipEls.forEach((chip, i) => chip.classList.toggle("hot", i === tick % entries.length));
+      sfx.tick(tick / ticks);
       tick += 1;
       if (tick < ticks) {
         delay *= 1.14;
