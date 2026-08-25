@@ -7,7 +7,7 @@
     "install:all": "npm --prefix client install && npm --prefix worker install",
     "test": "node --test tests/*.test.mjs tests/*.test.ts",
     "packs:validate": "node scripts/validate-mappack.mjs assets/mappacks/*.mappack.json",
-    "deploy": "npm --prefix client run build && npx --prefix worker wrangler deploy --config worker/wrangler.jsonc",
+    "deploy": "npm --prefix client run build && npx --prefix worker wrangler deploy --config worker/wrangler.jsonc && node scripts/post-patch-notes.mjs",
     "packs:build": "node scripts/fetch-mappacks.mjs && node scripts/build-europe.mjs && node scripts/build-asia.mjs && node scripts/build-south-america.mjs && node scripts/build-africa.mjs && node scripts/build-north-america.mjs && node scripts/build-oceania.mjs && node scripts/build-continents.mjs && node scripts/build-oceans.mjs && node scripts/build-landmarks.mjs && npm run packs:validate"
   }
 }

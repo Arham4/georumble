@@ -12,6 +12,7 @@ node_modules
 # Sensitive environment variables
 .env
 .dev.vars
+.patchnotes-webhook
 
 # Modules + built files
 node_modules
