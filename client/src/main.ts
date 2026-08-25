@@ -237,6 +237,7 @@ async function boot(): Promise<void> {
   let currentPhase = "";
   let currentScreen: Screen | null = null;
   let lastState: GameState | null = null;
+  let lastPersistedName: string | null = null;
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let nameRevealTimer: ReturnType<typeof setTimeout> | null = null;
   let prevPlayerIds = new Set<string>();
@@ -400,7 +401,10 @@ async function boot(): Promise<void> {
 
   const handleState = (state: GameState): void => {
     lastState = state;
-    if (state.name) {
+    // State emits fire per inbound message including peer cursors; only the
+    // rare rename should touch synchronous disk-backed storage.
+    if (state.name && state.name !== lastPersistedName) {
+      lastPersistedName = state.name;
       localStorage.setItem(NAME_STORAGE_KEY, state.name);
     }
     void ensurePack(state.packId);

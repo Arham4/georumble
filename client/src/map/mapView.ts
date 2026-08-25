@@ -18,7 +18,7 @@ const MISS_FLASH_MS = 700;
 const POP_MS = 420;
 const PRESS_MS = 260;
 const ZOOM_TWEEN_MS = 480;
-const CURSOR_SEND_MS = 80;
+const CURSOR_SEND_MS = 150;
 const CURSOR_SEND_MIN_UNITS = 1.5;
 const HELPER_CIRCLE_PX = 18;
 // Upper bound on a click halo's on-screen diameter at extreme zoom, so the

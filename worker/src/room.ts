@@ -25,9 +25,11 @@ const HELLO_TIMEOUT_MS = 30_000;
 // stay a comfortable multiple of this.
 const ALARM_INTERVAL_MS = 10 * 60_000;
 // Every webSocketMessage on a hibernating DO is a billable request, and
-// cursors are the bulk of live traffic; clients lerp between updates, so
-// ~16/s per player reads just as smoothly as 30/s at a fraction of the cost.
-const CURSOR_MIN_INTERVAL_MS = 60;
+// cursors are the bulk of live traffic. Clients lerp between updates, so
+// ~6-7/s per player reads just as smoothly as 12/s at half the cost — this
+// floor matches CURSOR_SEND_MS in mapView.ts so a forged client cannot send
+// faster than a real one.
+const CURSOR_MIN_INTERVAL_MS = 150;
 // Cursor fan-out is O(seats²): the per-sender floor stretches with the
 // roster so a full voice channel cannot multiply request volume quadratically.
 const CURSOR_FLOOR_PER_SEAT_MS = 50;

@@ -177,7 +177,10 @@ export class GameClient {
         break;
       case "cursor":
         this.events.onPeerCursor(message.byPlayer, message.x, message.y);
-        break;
+        // Pure relay traffic: the cursor layer paints it directly, so a full
+        // GameState rebuild per peer movement would melt the UI thread in
+        // crowded rooms.
+        return;
       case "win":
         this.win = { seconds: message.seconds, guesses: message.guesses, wheelSeed: message.wheelSeed };
         if (this.snapshot) {
@@ -188,7 +191,7 @@ export class GameClient {
         this.setNotice(`Rejected: ${message.reason}`, "error");
         break;
       case "pong":
-        break;
+        return; // keepalive answered; nothing observable changed
     }
     this.emit();
   };
@@ -295,6 +298,12 @@ export class GameClient {
   }
 
   sendCursor(x: number, y: number): void {
+    // Peer cursors are the bulk of relay traffic and every relayed frame is a
+    // billable request on the worker; a solo session has nobody to show them
+    // to and should transmit nothing at all.
+    if ((this.snapshot?.players.length ?? 1) < 2) {
+      return;
+    }
     this.connection?.send({ t: "cursor", x, y });
   }
 
