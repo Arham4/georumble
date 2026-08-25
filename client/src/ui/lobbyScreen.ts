@@ -275,12 +275,44 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   let overlay: HTMLElement | null = null;
   let rollTimers: ReturnType<typeof setTimeout>[] = [];
   let revealFailed = false;
+  let revealDone = false;
+  /** Pack whose post-reveal launch is already scheduled; cleared when the choice clears. */
+  let armedAutoStart: string | null = null;
 
   function clearRollTimers(): void {
     for (const timer of rollTimers) {
       clearTimeout(timer);
     }
     rollTimers = [];
+  }
+
+  /**
+   * Launch the rolled pack once the reveal has landed. Whoever is host at
+   * that moment owns the start — including a host crowned mid-reveal after
+   * the old one left, which is why update() re-offers this on every snapshot.
+   */
+  function armAutoStart(packId: string): void {
+    if (!revealDone || armedAutoStart !== null || lastState?.isHost !== true) {
+      return;
+    }
+    armedAutoStart = packId;
+    rollTimers.push(
+      setTimeout(() => {
+        if (lastState?.phase !== "lobby") {
+          return;
+        }
+        void deps.store
+          .load(packId)
+          .then((loaded) => deps.client.startGame(loaded.pack, hintsCheck.checked))
+          .catch(() => {
+            // The chosen pack won't load (stale client, bad id): hand the
+            // room back to the host instead of stranding everyone behind
+            // hidden controls. Starting also clears the server-side choice.
+            revealFailed = true;
+            updateStartButton(lastState);
+          });
+      }, 700),
+    );
   }
 
   /** Live countdown on the banner; fires the relay nudge once at expiry. */
@@ -313,6 +345,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     votes: Record<string, string>,
     state: GameState,
   ): void {
+    revealDone = false;
     const candidates = [...new Set(Object.values(votes))];
     const entries = candidates.map((id) => ({
       id,
@@ -356,6 +389,11 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       chipEls.forEach((chip, i) => chip.classList.toggle("hot", i === winnerIndex));
       reveal.textContent = `🗺️ ${entries[winnerIndex]?.name ?? chosenPackId}`;
       reveal.classList.add("visible");
+      revealDone = true;
+      // Whoever is host NOW launches — normally the original host a beat
+      // after the reveal; a crowned mid-sweep replacement picks it up via
+      // update()'s re-offer.
+      armAutoStart(chosenPackId);
       // If the host never launches (AFK, refresh mid-reveal), the overlay
       // must not hold the lobby hostage — step aside and say so.
       rollTimers.push(
@@ -368,22 +406,6 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
           }
         }, 8000),
       );
-      if (lastState?.isHost) {
-        rollTimers.push(
-          setTimeout(() => {
-            void deps.store
-              .load(chosenPackId)
-              .then((loaded) => deps.client.startGame(loaded.pack, hintsCheck.checked))
-              .catch(() => {
-                // The chosen pack won't load (stale client, bad id): hand the
-                // room back to the host instead of stranding everyone behind
-                // hidden controls. Starting also clears the server-side choice.
-                revealFailed = true;
-                updateStartButton(lastState);
-              });
-          }, 1100),
-        );
-      }
     };
     step();
   }
@@ -470,9 +492,18 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       if (chosen !== prevChosenPackId) {
         if (chosen) {
           clearRollTimers();
+          armedAutoStart = null;
+          revealFailed = false;
           showReveal(chosen, votes, state);
         }
         prevChosenPackId = chosen;
+      } else if (chosen !== null) {
+        // Host crowned after the reveal began (old host left mid-sweep):
+        // the launch offer must move to the new crown.
+        armAutoStart(chosen);
+      }
+      if (chosen === null) {
+        armedAutoStart = null;
       }
       if (chosen) {
         rollBanner.classList.add("hidden");
