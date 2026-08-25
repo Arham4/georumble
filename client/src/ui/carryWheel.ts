@@ -89,10 +89,18 @@ export function createCarryWheel(): Wheel {
     wheel.replaceChildren();
     const weights = rows.map((row) => Math.max(row.correct, 0));
     const total = weights.reduce((sum, weight) => sum + weight, 0);
+    // A do-nothing player still gets a real sliver (and nonzero odds): a
+    // zero-width wedge renders as a degenerate full-circle arc — the broken
+    // pie — so clamp first, then renormalize back to a full turn.
+    const MIN_SLICE = 0.09;
+    const clamped = rows.map((row, index) =>
+      Math.max(total === 0 ? 1 / rows.length : weights[index] / total, MIN_SLICE),
+    );
+    const clampedSum = clamped.reduce((sum, share) => sum + share, 0);
     let angle = START;
     rows.forEach((row, index) => {
-      const share = total === 0 ? 1 / rows.length : weights[index] / total;
-      const end = index === rows.length - 1 ? START + TAU : angle + share * TAU;
+      const end =
+        index === rows.length - 1 ? START + TAU : angle + (clamped[index] / clampedSum) * TAU;
       const slice: Slice = {
         name: row.name,
         initial: (row.name.trim()[0] ?? "?").toUpperCase(),
