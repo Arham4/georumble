@@ -14,5 +14,9 @@ await buildPoiPack({
     license: "Original data; underlay public domain (Natural Earth)",
   },
   points: GREAT_PROJECTS,
+  // 141 dots cluster tightly (Europe alone holds 48 within a few degrees of
+  // its neighbors); zoom scales dots and spacing equally, so a small radius
+  // is the only way to keep neighbors separable.
+  radiusDegrees: 1.2,
   background: await fetchLandParts(),
 });
