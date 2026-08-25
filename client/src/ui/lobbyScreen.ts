@@ -273,6 +273,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   let resolveSent = false;
   let overlay: HTMLElement | null = null;
   let rollTimers: ReturnType<typeof setTimeout>[] = [];
+  let revealFailed = false;
 
   function clearRollTimers(): void {
     for (const timer of rollTimers) {
@@ -360,7 +361,11 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
               .load(chosenPackId)
               .then((loaded) => deps.client.startGame(loaded.pack, hintsCheck.checked))
               .catch(() => {
-                // Load failed: the room stays in the lobby, Start still works.
+                // The chosen pack won't load (stale client, bad id): hand the
+                // room back to the host instead of stranding everyone behind
+                // hidden controls. Starting also clears the server-side choice.
+                revealFailed = true;
+                updateStartButton(lastState);
               });
           }, 1100),
         );
@@ -400,11 +405,12 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     const isHost = state?.isHost ?? false;
     const chosen = state?.chosenPackId ?? null;
     // Once the roll lands, the reveal auto-starts the game — direct controls
-    // would only fight it.
-    startButton.classList.toggle("hidden", !isHost || chosen !== null);
-    randomButton.classList.toggle("hidden", !isHost || chosen !== null);
-    hintsToggle.classList.toggle("hidden", !isHost || chosen !== null);
-    waitingNote.classList.toggle("hidden", isHost || chosen !== null);
+    // would only fight it. A failed reveal hands them back instead.
+    const locked = chosen !== null && !revealFailed;
+    startButton.classList.toggle("hidden", !isHost || locked);
+    randomButton.classList.toggle("hidden", !isHost || locked);
+    hintsToggle.classList.toggle("hidden", !isHost || locked);
+    waitingNote.classList.toggle("hidden", isHost || locked);
     startButton.disabled = !selectedPackId;
     const descriptor = selectedPackId ? deps.store.byId(selectedPackId) : null;
     setText(startButton, `Start${descriptor ? ` — ${descriptor.displayName}` : ""}`);

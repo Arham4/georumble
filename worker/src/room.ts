@@ -11,6 +11,7 @@ import {
 } from "../../shared/protocol";
 import { BROKER_SINGLETON } from "./broker";
 import { rejectUpgrade } from "./upgrade";
+import { PACK_IDS } from "../../shared/pack-manifest";
 import { isUnanimous, pickTicket } from "./vote-math";
 
 // Matches the design-patterns guidance that voice channels are the real ceiling.
@@ -385,10 +386,14 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     // Once the roll has spoken, the reveal owns the start: only the chosen
-    // pack may launch, and starting always closes the nomination window.
+    // pack may launch. But if the host is asking for a DIFFERENT pack, the
+    // choice must have failed to load on their end — clear it and hand
+    // control back instead of bricking the lobby behind a hidden Start.
     if (room.chosenPackId !== null && packId !== room.chosenPackId) {
-      this.denyHost(hostId, "start the chosen map");
-      return;
+      room.chosenPackId = null;
+      room.packVotes = {};
+      room.packVoteDeadline = null;
+      await this.persist();
     }
     room.phase = "playing";
     room.packId = packId;
@@ -578,7 +583,7 @@ export class GameRoom extends DurableObject<Env> {
     if (!room || room.phase !== "lobby" || room.chosenPackId !== null) {
       return;
     }
-    if (typeof rawPackId !== "string" || !rawPackId || rawPackId.length > 64) {
+    if (typeof rawPackId !== "string" || !PACK_IDS.includes(rawPackId)) {
       const ws = this.sockets.get(playerId);
       if (ws) {
         this.sendTo(ws, { t: "rejected", reason: "invalid pack vote" });
