@@ -125,17 +125,36 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
 
   const startButton = el("button", "btn full");
   startButton.type = "button";
+  const startWith = async (packId: string): Promise<void> => {
+    const loaded = await deps.store.load(packId);
+    deps.client.startGame(loaded.pack);
+  };
   startButton.addEventListener("click", async () => {
     if (!selectedPackId) {
       return;
     }
     startButton.disabled = true;
     try {
-      const loaded = await deps.store.load(selectedPackId);
-      deps.client.startGame(loaded.pack);
+      await startWith(selectedPackId);
     } finally {
       updateStartButton(lastState);
     }
+  });
+  // Decision fatigue is real with a dozen packs: one click rolls the whole
+  // manifest and starts. The card highlight shows what came up.
+  const randomButton = el("button", "btn btn-ghost full");
+  randomButton.type = "button";
+  randomButton.textContent = "🎲 Random map";
+  randomButton.addEventListener("click", () => {
+    const pick = PACK_MANIFEST[Math.floor(Math.random() * PACK_MANIFEST.length)];
+    if (!pick) {
+      return;
+    }
+    selectedPackId = pick.packId;
+    for (const [id, refs] of cards) {
+      refs.card.classList.toggle("selected", id === selectedPackId);
+    }
+    void startWith(pick.packId);
   });
   const waitingNote = el("p", "waiting-note hidden");
   waitingNote.textContent = "Only the host can start — nudge them in voice chat.";
@@ -149,6 +168,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     packsLabel,
     packScroller,
     startButton,
+    randomButton,
     waitingNote,
     el("p", "lobby-footer", "Everyone hunts the same region at once. Fewest wrong clicks wins bragging rights."),
   );
@@ -186,6 +206,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   function updateStartButton(state: GameState | null): void {
     const isHost = state?.isHost ?? false;
     startButton.classList.toggle("hidden", !isHost);
+    randomButton.classList.toggle("hidden", !isHost);
     waitingNote.classList.toggle("hidden", isHost);
     startButton.disabled = !selectedPackId;
     const descriptor = selectedPackId ? deps.store.byId(selectedPackId) : null;
