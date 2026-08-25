@@ -31,6 +31,8 @@ export type RoomSnapshot = {
   packVoteDeadline?: number;
   /** The rolled winner; clients play the reveal, then the host starts it. */
   chosenPackId?: string;
+  /** Whether the round grants the miss-streak hint; host's choice at start. */
+  hintsEnabled?: boolean;
   /** Derived convenience: order[orderIndex], null when out of game. */
   target: string | null;
   startedAt: number | null;
@@ -53,7 +55,7 @@ export type GuessOutcome = {
 export type ClientMessage =
   | { t: "hello"; name: string; avatar?: string | null }
   | { t: "ping" }
-  | { t: "start"; packId: string; order: string[] }
+  | { t: "start"; packId: string; order: string[]; hints?: boolean }
   | { t: "guess"; featureId: string }
   | { t: "verdict"; outcome: GuessOutcome }
   | { t: "advance"; index: number }
@@ -75,7 +77,7 @@ export type ServerMessage =
   | { t: "host"; hostId: string }
   | { t: "guess"; featureId: string; byPlayer: string }
   | { t: "verdict"; outcome: GuessOutcome }
-  | { t: "win"; seconds: number; guesses: number }
+  | { t: "win"; seconds: number; guesses: number; wheelSeed?: number }
   | { t: "cursor"; byPlayer: string; x: number; y: number }
   | { t: "rejected"; reason: string }
   | { t: "pong" };

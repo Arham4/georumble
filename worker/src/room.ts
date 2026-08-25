@@ -63,6 +63,8 @@ type PersistedRoom = {
   packVoteDeadline: number | null;
   /** The rolled winner; set exactly once per nomination window. */
   chosenPackId: string | null;
+  /** Host's choice at start: does this round grant miss-streak hints. */
+  hintsEnabled: boolean;
   startedAt: number | null;
 };
 
@@ -111,6 +113,7 @@ export class GameRoom extends DurableObject<Env> {
         packVotes: {},
         packVoteDeadline: null,
         chosenPackId: null,
+        hintsEnabled: true,
         startedAt: null,
       };
       await this.persist();
@@ -176,7 +179,7 @@ export class GameRoom extends DurableObject<Env> {
         this.relayCursor(ws, playerId, message.x, message.y);
         break;
       case "start":
-        await this.start(playerId, message.packId, message.order);
+        await this.start(playerId, message.packId, message.order, message.hints);
         break;
       case "verdict":
         await this.verdict(playerId, message.outcome);
@@ -350,7 +353,7 @@ export class GameRoom extends DurableObject<Env> {
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }
 
-  private async start(hostId: string, packId: unknown, order: unknown): Promise<void> {
+  private async start(hostId: string, packId: unknown, order: unknown, hints: unknown): Promise<void> {
     if (!this.requireHost(hostId)) {
       return;
     }
@@ -391,6 +394,7 @@ export class GameRoom extends DurableObject<Env> {
     room.packVotes = {};
     room.packVoteDeadline = null;
     room.chosenPackId = null;
+    room.hintsEnabled = hints !== false;
     room.startedAt = Date.now();
     room.roundHostId = hostId;
     await this.persist();
@@ -502,7 +506,14 @@ export class GameRoom extends DurableObject<Env> {
       seconds: stampedSeconds,
       guesses,
     }));
-    this.broadcast({ t: "win", seconds: stampedSeconds, guesses });
+    // The carry wheel must crown the same player on every screen: one relay
+    // rolled seed, fanned out to all clients, beats N local Math.randoms.
+    this.broadcast({
+      t: "win",
+      seconds: stampedSeconds,
+      guesses,
+      wheelSeed: crypto.getRandomValues(new Uint32Array(1))[0],
+    });
   }
 
   /**
@@ -631,6 +642,7 @@ export class GameRoom extends DurableObject<Env> {
     room.packVotes = {};
     room.packVoteDeadline = null;
     room.chosenPackId = null;
+    room.hintsEnabled = true;
     await this.persist();
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }
@@ -689,6 +701,7 @@ export class GameRoom extends DurableObject<Env> {
         ? { packVoteDeadline: room.packVoteDeadline }
         : {}),
       ...(room.chosenPackId !== null ? { chosenPackId: room.chosenPackId } : {}),
+      hintsEnabled: room.hintsEnabled,
       target:
         room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,

@@ -18,11 +18,12 @@ type LocalRoom = {
   found: string[];
   heat: Record<string, number>;
   tallies: Record<string, { correct: number; misses: number }>;
+  hintsEnabled: boolean;
   startedAt: number | null;
 };
 
 function emptyRoom(): LocalRoom {
-  return { players: [], hostId: null, phase: "lobby", packId: null, order: [], orderIndex: null, found: [], heat: {}, tallies: {}, startedAt: null };
+  return { players: [], hostId: null, phase: "lobby", packId: null, order: [], orderIndex: null, found: [], heat: {}, tallies: {}, hintsEnabled: true, startedAt: null };
 }
 
 /**
@@ -57,7 +58,7 @@ export class LocalConnection implements Connection {
         this.enqueue({ t: "pong" });
         break;
       case "start":
-        this.start(message.packId, message.order);
+        this.start(message.packId, message.order, message.hints);
         break;
       case "guess":
         if (this.hasJoined()) {
@@ -115,7 +116,7 @@ export class LocalConnection implements Connection {
     this.enqueue({ t: "snapshot", snapshot: this.snapshot() });
   }
 
-  private start(packId: unknown, order: unknown): void {
+  private start(packId: unknown, order: unknown, hints: unknown): void {
     if (!this.requireHost()) {
       return;
     }
@@ -142,6 +143,7 @@ export class LocalConnection implements Connection {
     room.found = [];
     room.heat = {};
     room.tallies = {};
+    room.hintsEnabled = hints !== false;
     room.startedAt = Date.now();
     this.enqueue({ t: "snapshot", snapshot: this.snapshot() });
   }
@@ -216,7 +218,12 @@ export class LocalConnection implements Connection {
     // trusting the hosting client.
     const stampedSeconds = Math.round((Date.now() - room.startedAt) / 1000);
     room.phase = "victory";
-    this.enqueue({ t: "win", seconds: stampedSeconds, guesses });
+    this.enqueue({
+      t: "win",
+      seconds: stampedSeconds,
+      guesses,
+      wheelSeed: crypto.getRandomValues(new Uint32Array(1))[0],
+    });
   }
 
   /** Mirrors the relay: clear the round and reopen the map picker. */
@@ -261,6 +268,7 @@ export class LocalConnection implements Connection {
       found: [...room.found],
       heat: { ...room.heat },
       tallies: Object.fromEntries(Object.entries(room.tallies).map(([id, t]) => [id, { ...t }])),
+      hintsEnabled: room.hintsEnabled,
       target: room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,
     };
