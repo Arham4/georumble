@@ -149,6 +149,23 @@ export class GameClient {
     if (this.disposed) {
       return;
     }
+    // One inbound frame should cost at most one full state rebuild, even
+    // when handling it touches several emit sites (welcome + host + ...).
+    this.batchDepth += 1;
+    try {
+      this.dispatch(message);
+    } finally {
+      this.batchDepth -= 1;
+    }
+    if (this.batchDepth === 0 && this.emitPending) {
+      this.emit();
+    }
+  };
+
+  private batchDepth = 0;
+  private emitPending = false;
+
+  private dispatch(message: ServerMessage): void {
     switch (message.t) {
       case "welcome":
         this.you = message.you;
@@ -199,7 +216,7 @@ export class GameClient {
         return; // keepalive answered; nothing observable changed
     }
     this.emit();
-  };
+  }
 
   /**
    * Transport failure. State stays mounted so a quick reconnect resumes
@@ -515,6 +532,12 @@ export class GameClient {
     if (this.disposed) {
       return;
     }
+    if (this.batchDepth > 0) {
+      // Mid-dispatch: the frame's tail emits exactly once.
+      this.emitPending = true;
+      return;
+    }
+    this.emitPending = false;
     const snapshot = this.snapshot;
     const target = snapshot?.target ?? null;
     this.events.onState({

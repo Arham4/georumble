@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { planGhostSweep } from "./ghost-sweep";
 import type { Env } from "./env";
 import {
   CLOSE_HELLO_TIMEOUT,
@@ -740,29 +741,20 @@ export class GameRoom extends DurableObject<Env> {
       }
     }
     const now = Date.now();
-    const ghosts: string[] = [];
-    let touched = false;
-    for (const player of room.players) {
-      const lastSeen = player.lastSeenAt ?? now;
-      if (!live.has(player.id) && now - lastSeen > GHOST_GRACE_MS) {
-        ghosts.push(player.id);
-        continue;
-      }
-      // Restamping is throttled so the extra alarms this DO now wakes for
-      // (hello deadlines, nomination rolls) don't buy a blob write each.
-      // Unstamped seats get a stamp so they age in, never vanish outright.
-      if (
-        (live.has(player.id) || player.lastSeenAt === undefined) &&
-        (player.lastSeenAt === undefined || now - player.lastSeenAt > GHOST_STAMP_INTERVAL_MS)
-      ) {
-        player.lastSeenAt = now;
-        touched = true;
+    // Restamping is throttled so the extra alarms this DO now wakes for
+    // (hello deadlines, nomination rolls) don't buy a blob write each.
+    const plan = planGhostSweep(room.players, live, now, GHOST_GRACE_MS, GHOST_STAMP_INTERVAL_MS);
+    let touched = plan.stamps.size > 0;
+    for (const [playerId, at] of plan.stamps) {
+      const player = room.players.find((p) => p.id === playerId);
+      if (player) {
+        player.lastSeenAt = at;
       }
     }
-    if (ghosts.length > 0) {
+    if (plan.ghosts.length > 0) {
       // removeSeat persists and rebroadcasts per departure, which also
       // carries any stamps made above.
-      for (const playerId of ghosts) {
+      for (const playerId of plan.ghosts) {
         if (!this.room) {
           return;
         }
