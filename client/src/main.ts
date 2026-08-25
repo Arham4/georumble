@@ -264,6 +264,7 @@ async function boot(): Promise<void> {
       case "playing":
         currentScreen = createPlayScreen(screenHolder, {
           mapView,
+          client,
           packOf: () => currentPack?.pack ?? null,
         });
         break;
@@ -322,6 +323,7 @@ async function boot(): Promise<void> {
         misses: 0,
         missesByRegion: {},
         foundBy: {},
+        lobbyVotes: [],
         hintActive: false,
         ticker: [],
         win: null,

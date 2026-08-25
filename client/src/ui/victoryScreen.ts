@@ -84,6 +84,11 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
   mapButton.type = "button";
   mapButton.textContent = "Change map";
   mapButton.addEventListener("click", () => deps.changeMap());
+  // Non-hosts have no direct way back to the picker; the same unanimous vote
+  // as mid-game works here, so nobody waits on an absent host.
+  const voteButton = el("button", "btn btn-ghost full");
+  voteButton.type = "button";
+  voteButton.addEventListener("click", () => deps.client.voteLobby());
 
   panel.append(
     title,
@@ -93,6 +98,7 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
     scoreList,
     againButton,
     mapButton,
+    voteButton,
     waitingNote,
   );
   container.append(panel);
@@ -129,7 +135,15 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
       scoreList.classList.toggle("hidden", solo || ranked.length === 0);
       againButton.classList.toggle("hidden", !state.isHost);
       mapButton.classList.toggle("hidden", !state.isHost);
-      waitingNote.classList.toggle("hidden", state.isHost);
+      const votes = state.lobbyVotes.length;
+      const mine = state.you !== null && state.lobbyVotes.includes(state.you);
+      voteButton.textContent =
+        votes > 0
+          ? `Vote for the menu ${mine ? "✓ " : ""}${votes}/${state.players.length}`
+          : "Vote for the menu";
+      voteButton.classList.toggle("voted", mine);
+      voteButton.classList.toggle("hidden", state.isHost);
+      waitingNote.classList.toggle("hidden", state.isHost || votes > 0);
     },
     destroy(): void {
       panel.remove();

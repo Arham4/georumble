@@ -511,6 +511,16 @@ body {
   padding: 8px 14px;
 }
 
+/* Vote-to-menu buttons light up once this seat has cast theirs. */
+.menu-btn {
+  flex-shrink: 0;
+}
+
+.btn-ghost.voted {
+  background: rgb(88 101 242 / 0.25);
+  color: var(--accent-light);
+}
+
 .name-field {
   display: flex;
   gap: 8px;

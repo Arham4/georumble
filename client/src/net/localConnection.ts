@@ -79,6 +79,10 @@ export class LocalConnection implements Connection {
       case "lobby":
         this.backToLobby();
         break;
+      // Solo: the lone seat is instantly unanimous.
+      case "vote-lobby":
+        this.backToLobby();
+        break;
     }
   }
 

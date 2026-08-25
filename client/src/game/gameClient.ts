@@ -42,6 +42,8 @@ export type GameState = {
   missesByRegion: Record<string, number>;
   /** Who found each found region; drives the finder badge on the map. */
   foundBy: Record<string, string>;
+  /** Seats currently voted to return to the lobby; unanimous consent ends the round. */
+  lobbyVotes: string[];
   hintActive: boolean;
   ticker: TickerEntry[];
   win: { seconds: number; guesses: number } | null;
@@ -78,6 +80,7 @@ export class GameClient {
   private foundHeat = new Map<string, number>();
   private missedRegions = new Set<string>();
   private foundByRegion: Record<string, string> = {};
+  private lobbyVotes: string[] = [];
   private tallies = new Map<string, PlayerTally>();
   /** Relay-clock minus local-clock at the last snapshot, so elapsed time survives device clock skew. */
   private clockOffset: number | null = null;
@@ -230,6 +233,18 @@ export class GameClient {
     this.send({ t: "lobby" });
   }
 
+  /**
+   * Any seat, playing or stuck on the victory screen: toggles this seat's
+   * vote to send everyone back to the picker. Solo rooms leave immediately.
+   */
+  voteLobby(): void {
+    const phase = this.snapshot?.phase;
+    if (phase !== "playing" && phase !== "victory") {
+      return;
+    }
+    this.send({ t: "vote-lobby" });
+  }
+
   /** False means the click was swallowed locally and needs its own feedback. */
   guess(featureId: string): boolean {
     const snapshot = this.snapshot;
@@ -276,6 +291,7 @@ export class GameClient {
     if (snapshot.foundBy) {
       this.foundByRegion = snapshot.foundBy;
     }
+    this.lobbyVotes = snapshot.lobbyVotes ?? [];
     if (typeof snapshot.serverNow === "number") {
       this.clockOffset = snapshot.serverNow - Date.now();
     }
@@ -291,6 +307,7 @@ export class GameClient {
     this.foundHeat.clear();
     this.missedRegions.clear();
     this.foundByRegion = {};
+    this.lobbyVotes = [];
     this.tallies.clear();
     this.ticker = [];
     this.win = null;
@@ -457,6 +474,7 @@ export class GameClient {
       misses: this.misses,
       missesByRegion: Object.fromEntries(this.foundHeat),
       foundBy: this.foundByRegion,
+      lobbyVotes: this.lobbyVotes,
       hintActive:
         target !== null && (this.missesByTarget.get(target) ?? 0) >= HINT_AFTER_MISSES,
       ticker: this.ticker,

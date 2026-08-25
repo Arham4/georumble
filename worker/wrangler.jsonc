@@ -19,6 +19,10 @@
     ]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom", "RoomBroker"] }],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
   // Optional: bind a KV namespace and write a number or {"maxRooms": N} to the
   // "limits" key to retune the room-capacity gate without a redeploy. Unbound
   // keeps LIMITS_KV undefined and capacity falls back to plan detection.

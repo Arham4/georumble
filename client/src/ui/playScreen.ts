@@ -1,10 +1,11 @@
-import type { GameState } from "../game/gameClient";
+import type { GameClient, GameState } from "../game/gameClient";
 import type { MapPack } from "../../../shared/mappack";
 import type { MapView } from "../map/mapView";
 import { accuracyPercent, el, formatClock, setText, type Screen } from "./dom";
 
 export type PlayDeps = {
   mapView: MapView;
+  client: GameClient;
   packOf(): MapPack | null;
 };
 
@@ -26,7 +27,11 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
   const timeStat = el("span", "stat time");
   const accuracyStat = el("span", "stat bad");
   stats.append(foundStat, timeStat, accuracyStat);
-  top.append(prompt, stats);
+  const menuButton = el("button", "btn-ghost menu-btn");
+  menuButton.type = "button";
+  menuButton.title = "Vote to return to the menu — it happens once everyone votes";
+  menuButton.addEventListener("click", () => deps.client.voteLobby());
+  top.append(prompt, stats, menuButton);
 
   const hintChip = el("div", "hud-hint hidden");
   hintChip.textContent = "Tough one? The answer is outlined on the map.";
@@ -73,6 +78,12 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
       accuracyStat.classList.toggle("bad", attempts === 0 || state.correct < state.misses);
       accuracyStat.classList.toggle("good", attempts > 0 && state.correct >= state.misses);
       hintChip.classList.toggle("hidden", !state.hintActive);
+
+      const votes = state.lobbyVotes.length;
+      const mine = state.you !== null && state.lobbyVotes.includes(state.you);
+      menuButton.textContent =
+        votes > 0 ? `Menu ${mine ? "✓ " : ""}${votes}/${state.players.length}` : "Menu";
+      menuButton.classList.toggle("voted", mine);
 
       ticker.replaceChildren(
         ...state.ticker.map((entry) => {

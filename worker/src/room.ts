@@ -52,6 +52,8 @@ type PersistedRoom = {
   tallies: Record<string, { correct: number; misses: number }>;
   /** Finder of each found region, by feature id — replayed as badges. */
   foundBy: Record<string, string>;
+  /** Seats that voted to return to the lobby during the current round. */
+  lobbyVotes: string[];
   startedAt: number | null;
 };
 
@@ -96,6 +98,7 @@ export class GameRoom extends DurableObject<Env> {
         heat: {},
         tallies: {},
         foundBy: {},
+        lobbyVotes: [],
         startedAt: null,
       };
       await this.persist();
@@ -175,6 +178,9 @@ export class GameRoom extends DurableObject<Env> {
       case "lobby":
         await this.backToLobby(playerId);
         break;
+      case "vote-lobby":
+        await this.voteLobby(playerId);
+        break;
       default:
         this.sendTo(ws, { t: "rejected", reason: "unknown message" });
     }
@@ -220,10 +226,17 @@ export class GameRoom extends DurableObject<Env> {
       await this.teardown();
       return;
     }
+    this.room.lobbyVotes = this.room.lobbyVotes.filter((id) => id !== playerId);
     if (this.room.hostId === playerId) {
       this.room.lastHostId = playerId;
       this.room.hostId = this.room.players[0].id;
       this.broadcast({ t: "host", hostId: this.room.hostId });
+    }
+    // The leaver may have been the only holdout: everyone still present who
+    // voted is now a unanimous room, so honor it without another click.
+    if (this.unanimousLobbyVote(this.room)) {
+      await this.resetToLobby(this.room);
+      return;
     }
     await this.persist();
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(this.room) });
@@ -269,6 +282,7 @@ export class GameRoom extends DurableObject<Env> {
     if (!player) {
       player = { id: playerId, name, joinedAt: Date.now() };
       room.players.push(player);
+      console.log(JSON.stringify({ event: "player_join", roomId: this.roomId, playerId, name }));
     } else {
       player.name = name;
     }
@@ -324,6 +338,7 @@ export class GameRoom extends DurableObject<Env> {
     room.heat = {};
     room.tallies = {};
     room.foundBy = {};
+    room.lobbyVotes = [];
     room.startedAt = Date.now();
     room.roundHostId = hostId;
     await this.persist();
@@ -443,6 +458,38 @@ export class GameRoom extends DurableObject<Env> {
     if (!room || room.phase === "lobby") {
       return;
     }
+    await this.resetToLobby(room);
+  }
+
+  /**
+   * Any player toggles a vote to abandon the round; once every seat present
+   * has voted — trivially and instantly true solo — the picker reopens
+   * without waiting on the host. Voting again rescinds.
+   */
+  private async voteLobby(playerId: string): Promise<void> {
+    const room = this.room;
+    if (!room || room.phase === "lobby") {
+      return;
+    }
+    const votes = new Set(room.lobbyVotes);
+    if (!votes.delete(playerId)) {
+      votes.add(playerId);
+    }
+    // Rebuild in seat order so a voter who already left never lingers.
+    room.lobbyVotes = room.players.filter((p) => votes.has(p.id)).map((p) => p.id);
+    if (this.unanimousLobbyVote(room)) {
+      await this.resetToLobby(room);
+      return;
+    }
+    await this.persist();
+    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
+  }
+
+  private unanimousLobbyVote(room: PersistedRoom): boolean {
+    return room.players.length > 0 && room.players.every((p) => room.lobbyVotes.includes(p.id));
+  }
+
+  private async resetToLobby(room: PersistedRoom): Promise<void> {
     room.phase = "lobby";
     room.orderIndex = null;
     room.found = [];
@@ -451,6 +498,7 @@ export class GameRoom extends DurableObject<Env> {
     room.foundBy = {};
     room.startedAt = null;
     room.roundHostId = null;
+    room.lobbyVotes = [];
     await this.persist();
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }
@@ -503,6 +551,7 @@ export class GameRoom extends DurableObject<Env> {
       heat: room.heat,
       tallies: room.tallies,
       foundBy: room.foundBy,
+      ...(room.lobbyVotes.length > 0 ? { lobbyVotes: [...room.lobbyVotes] } : {}),
       target:
         room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,

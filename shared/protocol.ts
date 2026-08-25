@@ -23,6 +23,8 @@ export type RoomSnapshot = {
   tallies?: Record<string, { correct: number; misses: number }>;
   /** Who found each found region, by feature id — drives the finder badge. */
   foundBy?: Record<string, string>;
+  /** Seats that voted to return to the lobby; unanimous consent ends the round. */
+  lobbyVotes?: string[];
   /** Derived convenience: order[orderIndex], null when out of game. */
   target: string | null;
   startedAt: number | null;
@@ -52,6 +54,8 @@ export type ClientMessage =
   | { t: "win"; seconds: number; guesses: number }
   /** Host-only: leave victory (or abort a round) and reopen the map picker. */
   | { t: "lobby" }
+  /** Any player: toggle a vote to send everyone back to the map picker. */
+  | { t: "vote-lobby" }
   /** Pointer position in pack coordinates; relayed live, never stored. */
   | { t: "cursor"; x: number; y: number };
 
