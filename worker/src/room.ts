@@ -41,6 +41,10 @@ const MAX_ORDER_ID_LENGTH = 64;
 // client cannot convert one socket into unbounded billable invocations.
 const MESSAGE_BURST_LIMIT = 25;
 const MESSAGE_BURST_WINDOW_MS = 1_000;
+// A seat whose socket vanished without a deliverable close frame (killed
+// app, dropped network) stops counting against the roster cap after this
+// much silence — two full alarm beats of grace for flappy mobile radios.
+const GHOST_GRACE_MS = 20 * 60_000;
 // How long lobby map nominations stay open before the relay rolls one at
 // random. Unanimous nominations resolve immediately instead.
 const PACK_VOTE_WINDOW_MS = 15_000;
@@ -50,6 +54,12 @@ type StoredPlayer = {
   name: string;
   avatar?: string | null;
   joinedAt: number;
+  /**
+   * Last alarm that saw a live socket for this seat. Absent on rooms
+   * persisted before ghost reconciliation — stamped, never evicted, on
+   * first sight so legacy seats age in instead of vanishing.
+   */
+  lastSeenAt?: number;
 };
 
 /**
@@ -308,8 +318,18 @@ export class GameRoom extends DurableObject<Env> {
     if (!this.room) {
       return;
     }
-    const departed = this.room.players.find((p) => p.id === playerId);
-    this.room.players = this.room.players.filter((p) => p.id !== playerId);
+    await this.removeSeat(this.room, playerId);
+  }
+
+  /**
+   * Drops one seat and settles everything that depended on it — vote rolls,
+   * host handoff, instant unanimity, teardown on the last departure. Shared
+   * by the socket-close path and the alarm's ghost sweep so both leave the
+   * room in exactly the same shape.
+   */
+  private async removeSeat(room: PersistedRoom, playerId: string): Promise<void> {
+    const departed = room.players.find((p) => p.id === playerId);
+    room.players = room.players.filter((p) => p.id !== playerId);
     if (departed) {
       console.log(JSON.stringify({
         event: "player_leave",
@@ -318,28 +338,27 @@ export class GameRoom extends DurableObject<Env> {
         secondsPlayed: Math.round((Date.now() - departed.joinedAt) / 1000),
       }));
     }
-    if (this.room.players.length === 0) {
+    if (room.players.length === 0) {
       await this.teardown();
       return;
     }
-    this.room.lobbyVotes = this.room.lobbyVotes.filter((id) => id !== playerId);
-    delete this.room.packVotes[playerId];
-    if (Object.keys(this.room.packVotes).length === 0) {
-      this.room.packVoteDeadline = null;
+    room.lobbyVotes = room.lobbyVotes.filter((id) => id !== playerId);
+    delete room.packVotes[playerId];
+    if (Object.keys(room.packVotes).length === 0) {
+      room.packVoteDeadline = null;
     }
-    if (this.room.hostId === playerId) {
-      this.room.lastHostId = playerId;
-      this.room.hostId = this.room.players[0].id;
-      this.broadcast({ t: "host", hostId: this.room.hostId });
+    if (room.hostId === playerId) {
+      room.lastHostId = playerId;
+      room.hostId = room.players[0].id;
+      this.broadcast({ t: "host", hostId: room.hostId });
     }
     // The leaver may have been the only holdout: everyone still present who
     // voted is now a unanimous room, so honor it without another click.
-    if (this.unanimousLobbyVote(this.room)) {
-      await this.resetToLobby(this.room);
+    if (this.unanimousLobbyVote(room)) {
+      await this.resetToLobby(room);
       return;
     }
     // Same for nominations: the leaver may have been the last missing pick.
-    const room = this.room;
     if (
       room.phase === "lobby" &&
       room.chosenPackId === null &&
@@ -350,7 +369,7 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     await this.persist();
-    this.broadcast({ t: "snapshot", snapshot: this.snapshot(this.room) });
+    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }
 
   async webSocketError(ws: WebSocket): Promise<void> {
@@ -372,6 +391,12 @@ export class GameRoom extends DurableObject<Env> {
     // The alarm may have been set to a nomination deadline rather than the
     // regular heartbeat; settle the roll before resuming the cadence.
     await this.resolvePackVotesIfDue();
+    await this.reconcileGhosts();
+    if (!this.room) {
+      // The last seat turned out to be a ghost; teardown already cleared
+      // storage and the alarm, so resume nothing.
+      return;
+    }
     await this.heartbeatBroker();
     await this.scheduleAlarm();
   }
@@ -394,11 +419,12 @@ export class GameRoom extends DurableObject<Env> {
         : null;
     let player = room.players.find((p) => p.id === playerId);
     if (!player) {
-      player = { id: playerId, name, joinedAt: Date.now() };
+      player = { id: playerId, name, joinedAt: Date.now(), lastSeenAt: Date.now() };
       room.players.push(player);
       console.log(JSON.stringify({ event: "player_join", roomId: this.roomId, playerId, name }));
     } else {
       player.name = name;
+      player.lastSeenAt = Date.now();
     }
     player.avatar = avatar;
     this.sockets.set(playerId, ws);
@@ -681,6 +707,56 @@ export class GameRoom extends DurableObject<Env> {
     }
     await this.persist();
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
+  }
+
+  /**
+   * Seats whose socket disappeared without a close frame never trigger
+   * webSocketClose, so only this periodic sweep can reclaim them — otherwise
+   * ghosts hold the roster cap forever while broadcasts keep serializing for
+   * nobody. Live sockets and legacy seats (no stamp yet) just get stamped.
+   */
+  private async reconcileGhosts(): Promise<void> {
+    const room = this.room;
+    if (!room || room.players.length === 0) {
+      return;
+    }
+    const live = new Set<string>();
+    for (const ws of this.ctx.getWebSockets()) {
+      const attached = ws.deserializeAttachment() as SocketAttachment | null;
+      if (attached && typeof attached.playerId === "string") {
+        live.add(attached.playerId);
+      }
+    }
+    const now = Date.now();
+    const ghosts: string[] = [];
+    let touched = false;
+    for (const player of room.players) {
+      if (live.has(player.id)) {
+        if (player.lastSeenAt !== now) {
+          player.lastSeenAt = now;
+          touched = true;
+        }
+      } else if (player.lastSeenAt === undefined) {
+        player.lastSeenAt = now;
+        touched = true;
+      } else if (now - player.lastSeenAt > GHOST_GRACE_MS) {
+        ghosts.push(player.id);
+      }
+    }
+    if (ghosts.length > 0) {
+      // removeSeat persists and rebroadcasts per departure, which also
+      // carries any stamps made above.
+      for (const playerId of ghosts) {
+        if (!this.room) {
+          return;
+        }
+        await this.removeSeat(this.room, playerId);
+      }
+      return;
+    }
+    if (touched) {
+      await this.persist();
+    }
   }
 
   /**
