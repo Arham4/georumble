@@ -79,7 +79,12 @@ type PlayerTally = { correct: number; misses: number };
  */
 export class GameClient {
   private connection: Connection | null = null;
-  private snapshot: RoomSnapshot | null = null;
+  /**
+   * Latest relay state. The wire omits `order` from routine snapshots, so
+   * everything this client holds is normalized to always carry the round's
+   * order (see applySnapshot) and readers never re-check.
+   */
+  private snapshot: (RoomSnapshot & { order: string[] }) | null = null;
   private you: string | null = null;
   private connected = false;
   private correct = 0;
@@ -345,7 +350,12 @@ export class GameClient {
     if (typeof snapshot.serverNow === "number") {
       this.clockOffset = snapshot.serverNow - Date.now();
     }
-    this.snapshot = snapshot;
+    // Routine snapshots omit the (unchanging) round order; keep the copy the
+    // welcome/start snapshot delivered. A lobby snapshot is a fresh slate —
+    // the previous round's order must not leak into picker stats.
+    const carriedOrder =
+      snapshot.phase === "lobby" ? [] : (snapshot.order ?? this.snapshot?.order ?? []);
+    this.snapshot = { ...snapshot, order: carriedOrder };
   }
 
   private resetRound(): void {

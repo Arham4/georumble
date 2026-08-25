@@ -440,7 +440,7 @@ export class GameRoom extends DurableObject<Env> {
       room.hostId = playerId;
     }
     await this.persist();
-    this.sendTo(ws, { t: "welcome", you: playerId, snapshot: this.snapshot(room) });
+    this.sendTo(ws, { t: "welcome", you: playerId, snapshot: this.snapshot(room, true) });
     if (electedHost || reclaimable) {
       this.broadcast({ t: "host", hostId: playerId });
     }
@@ -493,7 +493,9 @@ export class GameRoom extends DurableObject<Env> {
     room.startedAt = Date.now();
     room.roundHostId = hostId;
     await this.persist();
-    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
+    // The one broadcast that carries the order: every seat's copy for the
+    // whole round comes from right here (or their later welcome).
+    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room, true) });
   }
 
   private async verdict(hostId: string, outcome: unknown): Promise<void> {
@@ -857,7 +859,13 @@ export class GameRoom extends DurableObject<Env> {
     return this.room === null || this.room.players.length === 0;
   }
 
-  private snapshot(room: PersistedRoom): RoomSnapshot {
+  /**
+   * Routine snapshots omit the round order: it never changes mid-round and
+   * every seat received it in their welcome or the starting broadcast, so
+   * re-shipping hundreds of feature ids per mutation is pure egress. Only
+   * those two moments pass `withOrder`.
+   */
+  private snapshot(room: PersistedRoom, withOrder = false): RoomSnapshot {
     return {
       hostId: room.hostId,
       players: room.players.map(({ id, name, avatar }) => ({
@@ -867,7 +875,7 @@ export class GameRoom extends DurableObject<Env> {
       })),
       phase: room.phase,
       packId: room.packId,
-      order: room.order,
+      ...(withOrder ? { order: [...room.order] } : {}),
       orderIndex: room.orderIndex,
       found: room.found,
       heat: room.heat,

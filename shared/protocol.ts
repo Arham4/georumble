@@ -12,8 +12,12 @@ export type RoomSnapshot = {
   players: Player[];
   phase: Phase;
   packId: string | null;
-  /** Full shuffled feature order fixed at start; identical on every client. */
-  order: string[];
+  /**
+   * Full shuffled feature order fixed at start; identical on every client.
+   * Present only in the welcome and starting snapshots — every seat already
+   * holds it, so routine snapshots omit it to keep fan-out light.
+   */
+  order?: string[];
   /** Index into `order` of the shared prompt; null while not playing. */
   orderIndex: number | null;
   found: string[];
