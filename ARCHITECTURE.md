@@ -20,7 +20,9 @@ LIMITS_KV                     optional room-capacity override without redeploy
 ```
 
 - **GameRoom** (`worker/src/room.ts`): owns membership, phase, round state,
-  and the vote systems (unanimous leave, democratic map roll). The hosting
+  and the vote systems (unanimous leave, democratic map roll — the roll fires
+  from the DO alarm at the nomination deadline, so an all-backgrounded room
+  still resolves; client nudges only make it snappier). The hosting
   *client* adjudicates guesses; the relay verifies and persists the results.
 - **RoomBroker** (`worker/src/broker.ts`): admits new rooms up to a limit,
   sweeps records whose alarm stopped beating. Capacity gates *new* rooms
@@ -57,11 +59,20 @@ entirely under a capacity signal from `LIMITS_KV`.
 ## Module seams
 
 - `shared/protocol.ts` — the wire contract; both sides import it.
+- `shared/pack-manifest.ts` — the single list of shippable packs; the client
+  renders its picker from it and the relay validates votes against it, so a
+  stale client can never nominate a pack nobody can load.
 - `worker/src/vote-math.ts` — pure decision math (weighted roll, unanimity),
   unit-tested without a DO runtime.
 - `shared/mappack.ts` + `scripts/lib/mappack-contract.mjs` — pack contract
   and its validator; builders are convention-discovered
   (`scripts/run-packs-build.mjs`).
-- Client split: `game/gameClient.ts` (state machine), `map/mapView.ts`
-  (rendering/camera), `net/*` (socket vs in-browser loopback speaking the
+- Client split: `game/gameClient.ts` (state machine), `game/shuffle.ts`
+  (the one seeded PRNG — round order and the carry wheel draw from it so
+  every screen replays identically), `map/mapView.ts`
+  (rendering/camera; all constant-on-screen sizing flows through one
+  camera helper), `net/*` (socket vs in-browser loopback speaking the
   same contract), `ui/*` (screens).
+- Relay-owned determinism rule: anything players see simultaneously (roll
+  winner, carry-wheel crown) is decided server-side and persisted in the
+  snapshot — never derived per-client from local randomness.
