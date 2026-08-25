@@ -58,6 +58,14 @@ export type GuessOutcome = {
   remaining: number;
 };
 
+/**
+ * Exact wire frames of the browser keepalive. GameRoom registers its
+ * hibernation auto-responder against these literal bytes — build both sides
+ * from these constants so the pair can never drift apart.
+ */
+export const PING_MESSAGE: ClientMessage = { t: "ping" };
+export const PONG_MESSAGE: ServerMessage = { t: "pong" };
+
 export type ClientMessage =
   | { t: "hello"; name: string; avatar?: string | null }
   | { t: "ping" }

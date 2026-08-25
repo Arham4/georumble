@@ -1,4 +1,5 @@
 import type { ClientMessage } from "../../../shared/protocol";
+import { PING_MESSAGE } from "../../../shared/protocol";
 import { dispatchMessage, type CloseInfo, type Connection, type ConnectionHandlers } from "./connection";
 
 const PING_INTERVAL_MS = 25_000;
@@ -36,7 +37,7 @@ export class SocketConnection implements Connection {
       this.reportClosed({ code: 0, reason: "socket-error" });
     });
     // The relay answers these via its auto-response pair without waking hibernation.
-    this.pingTimer = setInterval(() => this.send({ t: "ping" }), PING_INTERVAL_MS);
+    this.pingTimer = setInterval(() => this.send(PING_MESSAGE), PING_INTERVAL_MS);
   }
 
   send(message: ClientMessage): void {

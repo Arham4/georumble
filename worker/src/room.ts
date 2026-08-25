@@ -3,6 +3,8 @@ import type { Env } from "./env";
 import {
   CLOSE_HELLO_TIMEOUT,
   CLOSE_ROOM_FULL,
+  PING_MESSAGE,
+  PONG_MESSAGE,
   type ClientMessage,
   type GuessOutcome,
   type Phase,
@@ -43,8 +45,10 @@ const MESSAGE_BURST_LIMIT = 25;
 const MESSAGE_BURST_WINDOW_MS = 1_000;
 // A seat whose socket vanished without a deliverable close frame (killed
 // app, dropped network) stops counting against the roster cap after this
-// much silence — two full alarm beats of grace for flappy mobile radios.
+// much silence — plus up to one stamp interval of measurement slack.
 const GHOST_GRACE_MS = 20 * 60_000;
+/** Liveness stamps refresh at most this often, so extra alarms stay write-free. */
+const GHOST_STAMP_INTERVAL_MS = ALARM_INTERVAL_MS;
 // How long lobby map nominations stay open before the relay rolls one at
 // random. Unanimous nominations resolve immediately instead.
 const PACK_VOTE_WINDOW_MS = 15_000;
@@ -98,6 +102,8 @@ type PersistedRoom = {
   /** Seed for the victory carry-wheel; persisted so a mid-victory refresh crowns the same player. */
   wheelSeed: number | null;
   startedAt: number | null;
+  /** Last broker heartbeat wall-clock; a throttle, not game state. */
+  brokerBeatAt?: number;
 };
 
 type SocketAttachment = { playerId: string };
@@ -127,10 +133,12 @@ export class GameRoom extends DurableObject<Env> {
     super(ctx, env);
     this.roomId = ctx.id.name ?? ctx.id.toString();
     // Answered by the runtime while hibernating, so keepalives never wake us.
+    // Built from the shared frames — a client-side rename would otherwise
+    // silently turn every keepalive into a billable wake-up.
     ctx.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair(
-        JSON.stringify({ t: "ping" } satisfies ClientMessage),
-        JSON.stringify({ t: "pong" } satisfies ServerMessage),
+        JSON.stringify(PING_MESSAGE),
+        JSON.stringify(PONG_MESSAGE),
       ),
     );
   }
@@ -177,7 +185,9 @@ export class GameRoom extends DurableObject<Env> {
     server.serializeAttachment({ playerId } satisfies SocketAttachment);
     this.ctx.acceptWebSocket(server, [`player:${playerId}`, `room:${this.roomId}`]);
     this.pending.set(server, Date.now());
-    await this.scheduleAlarm();
+    // Enforce the hello deadline on its own schedule: waiting out the full
+    // heartbeat cadence would let a hello-less socket linger ~10 minutes.
+    await this.armSoonestAlarm(HELLO_TIMEOUT_MS);
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
 
@@ -733,16 +743,20 @@ export class GameRoom extends DurableObject<Env> {
     const ghosts: string[] = [];
     let touched = false;
     for (const player of room.players) {
-      if (live.has(player.id)) {
-        if (player.lastSeenAt !== now) {
-          player.lastSeenAt = now;
-          touched = true;
-        }
-      } else if (player.lastSeenAt === undefined) {
+      const lastSeen = player.lastSeenAt ?? now;
+      if (!live.has(player.id) && now - lastSeen > GHOST_GRACE_MS) {
+        ghosts.push(player.id);
+        continue;
+      }
+      // Restamping is throttled so the extra alarms this DO now wakes for
+      // (hello deadlines, nomination rolls) don't buy a blob write each.
+      // Unstamped seats get a stamp so they age in, never vanish outright.
+      if (
+        (live.has(player.id) || player.lastSeenAt === undefined) &&
+        (player.lastSeenAt === undefined || now - player.lastSeenAt > GHOST_STAMP_INTERVAL_MS)
+      ) {
         player.lastSeenAt = now;
         touched = true;
-      } else if (now - player.lastSeenAt > GHOST_GRACE_MS) {
-        ghosts.push(player.id);
       }
     }
     if (ghosts.length > 0) {
@@ -930,6 +944,18 @@ export class GameRoom extends DurableObject<Env> {
     }
   }
 
+  /**
+   * Arms an alarm `within` ms from now unless one already fires sooner.
+   * Never clobbers a nearer deadline (e.g. a nomination roll).
+   */
+  private async armSoonestAlarm(within: number): Promise<void> {
+    const deadline = Date.now() + within;
+    const existing = await this.ctx.storage.getAlarm();
+    if (existing === null || existing > deadline) {
+      await this.ctx.storage.setAlarm(deadline);
+    }
+  }
+
   private async persist(): Promise<void> {
     await this.ctx.storage.put("room", this.room);
   }
@@ -949,7 +975,22 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   private async heartbeatBroker(): Promise<void> {
+    const room = this.room;
+    // Early alarms (hello deadlines, nomination rolls) must not multiply
+    // broker traffic: the TTL math assumes roughly one beat per interval.
+    if (
+      room &&
+      room.brokerBeatAt !== undefined &&
+      Date.now() - room.brokerBeatAt < ALARM_INTERVAL_MS * 0.75
+    ) {
+      return;
+    }
     await this.brokerCall("heartbeat").catch(() => undefined);
+    // Deliberately unpersisted: losing the stamp to an eviction just buys
+    // one redundant beat, and saving it would cost a blob write every beat.
+    if (room) {
+      room.brokerBeatAt = Date.now();
+    }
   }
 
   private async releaseWithBroker(): Promise<void> {
