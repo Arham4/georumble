@@ -272,6 +272,37 @@ body {
   width: min(560px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow-y: auto;
+  animation: rise-in 260ms ease-out;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Victory reads as a finale: children rise in a stagger behind the confetti. */
+.victory-panel > * {
+  animation: rise-in 420ms ease-out both;
+}
+
+.victory-panel > *:nth-child(2) { animation-delay: 60ms; }
+.victory-panel > *:nth-child(3) { animation-delay: 120ms; }
+.victory-panel > *:nth-child(4) { animation-delay: 180ms; }
+.victory-panel > *:nth-child(5) { animation-delay: 240ms; }
+.victory-panel > *:nth-child(6) { animation-delay: 300ms; }
+.victory-panel > *:nth-child(n + 7) { animation-delay: 360ms; }
+
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
 }
 
 .wordmark {
@@ -456,6 +487,16 @@ body {
   color: var(--text);
   cursor: pointer;
   font: inherit;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.pack-card:hover {
+  transform: translateY(-1px);
+  border-color: rgb(255 255 255 / 0.22);
+}
+
+.pack-card:active {
+  transform: translateY(0) scale(0.99);
 }
 
 .pack-card.selected {
@@ -839,6 +880,8 @@ a.btn {
 }
 
 .stat {
+  display: inline-flex;
+  align-items: center;
   padding: 6px 12px;
   border-radius: var(--radius);
   background: rgb(255 255 255 / 0.06);
@@ -846,6 +889,27 @@ a.btn {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.stat.pop {
+  animation: stat-pop 320ms ease-out;
+}
+
+@keyframes stat-pop {
+  40% {
+    transform: scale(1.14);
+  }
+}
+
+.prompt-name.swap {
+  animation: prompt-swap 260ms ease-out;
+}
+
+@keyframes prompt-swap {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 .stat.time {
@@ -1129,6 +1193,14 @@ a.btn {
   box-shadow: var(--shadow);
   font-size: 14px;
   font-weight: 600;
+  animation: toast-in 220ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 .toast.error {
@@ -1175,11 +1247,17 @@ a.btn {
   .region.miss,
   .region.pop,
   .region.hint,
-  .hint-ring {
+  .hint-ring,
+  .panel,
+  .victory-panel > *,
+  .toast,
+  .prompt-name.swap,
+  .stat.pop {
     animation: none;
   }
 
-  .roll-chip {
+  .roll-chip,
+  .pack-card {
     transition: none;
   }
 }

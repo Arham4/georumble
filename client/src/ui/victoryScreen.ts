@@ -1,6 +1,7 @@
 import type { GameClient, GameState } from "../game/gameClient";
 import { accuracyPercent, el, formatClock, setText, type Screen } from "./dom";
 import { createCarryWheel } from "./carryWheel";
+import { launchConfetti } from "./confetti";
 
 export type VictoryDeps = {
   client: GameClient;
@@ -44,6 +45,7 @@ function scoreRow(state: GameState, index: number): HTMLElement {
  */
 export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): Screen {
   const panel = el("div", "panel victory-panel");
+  launchConfetti();
   const title = el("h2", "victory-title", "Map cleared!");
   const sub = el("p", "victory-sub");
 

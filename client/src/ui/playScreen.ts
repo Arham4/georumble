@@ -59,6 +59,16 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
   hud.append(top, hintChip, ticker, zoomControls);
   container.append(hud);
 
+  let lastTarget: string | null = null;
+  let lastFoundCount = -1;
+
+  /** Re-run a CSS animation by forcing a reflow between class swaps. */
+  function retrigger(node: HTMLElement, className: string): void {
+    node.classList.remove(className);
+    void node.offsetWidth;
+    node.classList.add(className);
+  }
+
   function featureName(pack: MapPack | null, id: string): string {
     return pack?.features.find((feature) => feature.id === id)?.name ?? id;
   }
@@ -78,6 +88,17 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
       accuracyStat.classList.toggle("bad", attempts === 0 || state.correct < state.misses);
       accuracyStat.classList.toggle("good", attempts > 0 && state.correct >= state.misses);
       hintChip.classList.toggle("hidden", !state.hintActive);
+
+      // Motion cues for the two moments players watch for: a new target
+      // sliding in, and the found counter popping when someone scores.
+      if (state.target !== lastTarget) {
+        lastTarget = state.target;
+        retrigger(promptName, "swap");
+      }
+      if (state.foundIds.length > lastFoundCount && lastFoundCount >= 0) {
+        retrigger(foundStat, "pop");
+      }
+      lastFoundCount = state.foundIds.length;
 
       const votes = state.lobbyVotes.length;
       const mine = state.you !== null && state.lobbyVotes.includes(state.you);
