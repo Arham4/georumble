@@ -22,8 +22,14 @@ LIMITS_KV                     optional room-capacity override without redeploy
 - **GameRoom** (`worker/src/room.ts`): owns membership, phase, round state,
   and the vote systems (unanimous leave, democratic map roll — the roll fires
   from the DO alarm at the nomination deadline, so an all-backgrounded room
-  still resolves; client nudges only make it snappier). The hosting
+  still resolves; client nudges only make it snappier). The same alarm sweeps
+  ghost seats (players whose socket died without a close frame) after a grace
+  window, so vanished apps never hold the roster cap. The hosting
   *client* adjudicates guesses; the relay verifies and persists the results.
+- **Snapshot weight policy**: routine snapshots omit the round order (every
+  seat already holds it from their welcome or the starting broadcast), and
+  anything players see simultaneously is decided relay-side and persisted —
+  never derived per-client.
 - **RoomBroker** (`worker/src/broker.ts`): admits new rooms up to a limit,
   sweeps records whose alarm stopped beating. Capacity gates *new* rooms
   only — joiners of a live room always pass.
