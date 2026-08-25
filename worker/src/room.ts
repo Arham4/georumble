@@ -70,10 +70,24 @@ type PersistedRoom = {
   chosenPackId: string | null;
   /** Host's choice at start: does this round grant miss-streak hints. */
   hintsEnabled: boolean;
+  /** Seed for the victory carry-wheel; persisted so a mid-victory refresh crowns the same player. */
+  wheelSeed: number | null;
   startedAt: number | null;
 };
 
 type SocketAttachment = { playerId: string };
+
+/** Vote state scoped to the current lobby/round; every site clears it as a unit. */
+function emptyBallot(): Pick<
+  PersistedRoom,
+  "lobbyVotes" | "packVotes" | "packVoteDeadline" | "chosenPackId"
+> {
+  return { lobbyVotes: [], packVotes: {}, packVoteDeadline: null, chosenPackId: null };
+}
+
+function clearBallot(room: PersistedRoom): void {
+  Object.assign(room, emptyBallot());
+}
 
 export class GameRoom extends DurableObject<Env> {
   private readonly roomId: string;
@@ -119,6 +133,7 @@ export class GameRoom extends DurableObject<Env> {
         packVoteDeadline: null,
         chosenPackId: null,
         hintsEnabled: true,
+        wheelSeed: null,
         startedAt: null,
       };
       await this.persist();
@@ -313,6 +328,9 @@ export class GameRoom extends DurableObject<Env> {
       await this.teardown();
       return;
     }
+    // The alarm may have been set to a nomination deadline rather than the
+    // regular heartbeat; settle the roll before resuming the cadence.
+    await this.resolvePackVotesIfDue();
     await this.heartbeatBroker();
     await this.scheduleAlarm();
   }
@@ -390,9 +408,7 @@ export class GameRoom extends DurableObject<Env> {
     // choice must have failed to load on their end — clear it and hand
     // control back instead of bricking the lobby behind a hidden Start.
     if (room.chosenPackId !== null && packId !== room.chosenPackId) {
-      room.chosenPackId = null;
-      room.packVotes = {};
-      room.packVoteDeadline = null;
+      clearBallot(room);
       await this.persist();
     }
     room.phase = "playing";
@@ -511,6 +527,10 @@ export class GameRoom extends DurableObject<Env> {
     const stampedSeconds =
       room.startedAt !== null ? Math.round((Date.now() - room.startedAt) / 1000) : seconds;
     room.phase = "victory";
+    // The carry wheel must crown the same player on every screen: one relay
+    // rolled seed, persisted and fanned out to all clients, beats N local
+    // Math.randoms — and survives a refresh mid-victory via the snapshot.
+    room.wheelSeed = crypto.getRandomValues(new Uint32Array(1))[0];
     await this.persist();
     console.log(JSON.stringify({
       event: "round_complete",
@@ -519,13 +539,11 @@ export class GameRoom extends DurableObject<Env> {
       seconds: stampedSeconds,
       guesses,
     }));
-    // The carry wheel must crown the same player on every screen: one relay
-    // rolled seed, fanned out to all clients, beats N local Math.randoms.
     this.broadcast({
       t: "win",
       seconds: stampedSeconds,
       guesses,
-      wheelSeed: crypto.getRandomValues(new Uint32Array(1))[0],
+      wheelSeed: room.wheelSeed,
     });
   }
 
@@ -593,6 +611,9 @@ export class GameRoom extends DurableObject<Env> {
     room.packVotes[playerId] = rawPackId;
     if (room.packVoteDeadline === null) {
       room.packVoteDeadline = Date.now() + PACK_VOTE_WINDOW_MS;
+      // The relay rolls at the deadline itself, so an all-backgrounded room
+      // (throttled client timers) still resolves — nudges are just polish.
+      await this.ctx.storage.setAlarm(room.packVoteDeadline);
     }
     if (isUnanimous(new Set(Object.keys(room.packVotes)), room.players.map((p) => p.id))) {
       await this.resolvePackChoice(room);
@@ -602,7 +623,10 @@ export class GameRoom extends DurableObject<Env> {
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }
 
-  /** Clients nudge at the deadline so an idle room still rolls on time. */
+  /**
+   * The alarm fires at the deadline, but a foregrounded client's nudge can
+   * land a beat sooner — same predicate either way.
+   */
   private async resolvePackVotesIfDue(): Promise<void> {
     const room = this.room;
     if (
@@ -652,11 +676,9 @@ export class GameRoom extends DurableObject<Env> {
     room.foundBy = {};
     room.startedAt = null;
     room.roundHostId = null;
-    room.lobbyVotes = [];
-    room.packVotes = {};
-    room.packVoteDeadline = null;
-    room.chosenPackId = null;
+    clearBallot(room);
     room.hintsEnabled = true;
+    room.wheelSeed = null;
     await this.persist();
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }
@@ -678,7 +700,13 @@ export class GameRoom extends DurableObject<Env> {
 
   private async ensureReady(): Promise<void> {
     this.ready ??= (async () => {
-      this.room = (await this.ctx.storage.get<PersistedRoom>("room")) ?? null;
+      const stored = (await this.ctx.storage.get<PersistedRoom>("room")) ?? null;
+      // Rooms persisted by older worker versions predate the vote fields;
+      // fill them in so snapshot/close never dereference undefined.
+      this.room =
+        stored === null
+          ? null
+          : { ...emptyBallot(), ...stored, hintsEnabled: stored.hintsEnabled ?? true };
       for (const ws of this.ctx.getWebSockets()) {
         const attached = ws.deserializeAttachment() as SocketAttachment | null;
         if (attached && typeof attached.playerId === "string") {
@@ -716,6 +744,9 @@ export class GameRoom extends DurableObject<Env> {
         : {}),
       ...(room.chosenPackId !== null ? { chosenPackId: room.chosenPackId } : {}),
       hintsEnabled: room.hintsEnabled,
+      ...(room.wheelSeed !== null && room.phase === "victory"
+        ? { wheelSeed: room.wheelSeed }
+        : {}),
       target:
         room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,
