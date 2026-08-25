@@ -240,6 +240,7 @@ async function boot(): Promise<void> {
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let nameRevealTimer: ReturnType<typeof setTimeout> | null = null;
   let prevPlayerIds = new Set<string>();
+  let joinedMidRoundNotified = false;
   // Discord instances own the room decision outright; browser sessions may opt
   // into an online room only via a well-formed code in the URL. An embedded
   // frame with no instance stays solo rather than showing browser-only UI
@@ -429,6 +430,19 @@ async function boot(): Promise<void> {
       mountScreen(state);
     } else {
       currentScreen.update(state);
+    }
+    // First sight of an already-running round (fresh join or refresh):
+    // one-line orientation instead of a silent map of half-found regions.
+    if (
+      !joinedMidRoundNotified &&
+      state.phase === "playing" &&
+      state.connectionKind === "socket" &&
+      state.foundIds.length > 0
+    ) {
+      joinedMidRoundNotified = true;
+      const note = el("div", "toast", "Joined a round in progress — jump in");
+      toastHolder.replaceChildren(note);
+      setTimeout(() => note.remove(), 4200);
     }
     showToast(state);
   };
