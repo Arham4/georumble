@@ -254,6 +254,10 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     this.room.lobbyVotes = this.room.lobbyVotes.filter((id) => id !== playerId);
+    delete this.room.packVotes[playerId];
+    if (Object.keys(this.room.packVotes).length === 0) {
+      this.room.packVoteDeadline = null;
+    }
     if (this.room.hostId === playerId) {
       this.room.lastHostId = playerId;
       this.room.hostId = this.room.players[0].id;
@@ -263,6 +267,18 @@ export class GameRoom extends DurableObject<Env> {
     // voted is now a unanimous room, so honor it without another click.
     if (this.unanimousLobbyVote(this.room)) {
       await this.resetToLobby(this.room);
+      return;
+    }
+    // Same for nominations: the leaver may have been the last missing pick.
+    const room = this.room;
+    if (
+      room.phase === "lobby" &&
+      room.chosenPackId === null &&
+      room.packVoteDeadline !== null &&
+      room.players.length > 0 &&
+      room.players.every((p) => room.packVotes[p.id] !== undefined)
+    ) {
+      await this.resolvePackChoice(room);
       return;
     }
     await this.persist();
@@ -357,6 +373,12 @@ export class GameRoom extends DurableObject<Env> {
     if (!room) {
       return;
     }
+    // Once the roll has spoken, the reveal owns the start: only the chosen
+    // pack may launch, and starting always closes the nomination window.
+    if (room.chosenPackId !== null && packId !== room.chosenPackId) {
+      this.denyHost(hostId, "start the chosen map");
+      return;
+    }
     room.phase = "playing";
     room.packId = packId;
     room.order = sequence;
@@ -366,6 +388,9 @@ export class GameRoom extends DurableObject<Env> {
     room.tallies = {};
     room.foundBy = {};
     room.lobbyVotes = [];
+    room.packVotes = {};
+    room.packVoteDeadline = null;
+    room.chosenPackId = null;
     room.startedAt = Date.now();
     room.roundHostId = hostId;
     await this.persist();
@@ -659,6 +684,11 @@ export class GameRoom extends DurableObject<Env> {
       tallies: room.tallies,
       foundBy: room.foundBy,
       ...(room.lobbyVotes.length > 0 ? { lobbyVotes: [...room.lobbyVotes] } : {}),
+      ...(Object.keys(room.packVotes).length > 0 ? { packVotes: { ...room.packVotes } } : {}),
+      ...(room.packVoteDeadline !== null && room.chosenPackId === null
+        ? { packVoteDeadline: room.packVoteDeadline }
+        : {}),
+      ...(room.chosenPackId !== null ? { chosenPackId: room.chosenPackId } : {}),
       target:
         room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,
