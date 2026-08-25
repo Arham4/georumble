@@ -55,6 +55,8 @@ export class MapView {
   private readonly halos: SVGPathElement[] = [];
   private readonly helpers = new Map<string, { group: SVGGElement; circle: SVGCircleElement }>();
   private readonly badgeGroups = new Map<string, SVGGElement>();
+  /** Found-finder identity the badge layer was last built from. */
+  private badgeSignature = "";
   private readonly peerLayer = new PeerCursorLayer(() => this.k);
   private dotPack = false;
   private badgeLayer: SVGGElement | null = null;
@@ -289,6 +291,22 @@ export class MapView {
     if (!layer) {
       return;
     }
+    // setFound fires on every state emission — including the per-second tick
+    // and every peer cursor before the emit skip. Rebuilding means tearing
+    // down clipPaths that each carry full path data, so only rebuild when a
+    // finder, name, or avatar actually changed.
+    const signature = [...this.foundIds]
+      .map((id) => {
+        const player = foundBy[id] ? players.get(foundBy[id]) : undefined;
+        return player ? `${id}:${player.name}:${player.avatar ?? ""}` : "";
+      })
+      .filter(Boolean)
+      .sort()
+      .join("|");
+    if (signature === this.badgeSignature) {
+      return;
+    }
+    this.badgeSignature = signature;
     layer.replaceChildren();
     this.badgeGroups.clear();
     for (const id of this.foundIds) {
@@ -510,21 +528,11 @@ export class MapView {
     return layer;
   }
 
-  private rescaleHelperCircles(): void {
-    const r = this.constantWorldSize(HELPER_CIRCLE_PX);
+  private rescaleHelperCircles(scale = this.viewScale()): void {
+    const r = HELPER_CIRCLE_PX / Math.max(1, scale * this.k);
     for (const { circle } of this.helpers.values()) {
       circle.setAttribute("r", String(r));
     }
-  }
-
-  /**
-   * Screen pixels per world unit under the current camera. Every
-   * "constant on-screen size" assist divides its pixel budget by this — one
-   * formula so halos and helper circles stay mutually consistent even when
-   * the svg letterboxes (viewScale < 1 shrinks every world unit).
-   */
-  private constantWorldSize(screenPx: number): number {
-    return screenPx / Math.max(1, this.viewScale() * this.k);
   }
 
   private placeHintRing(): void {
@@ -885,18 +893,22 @@ export class MapView {
 
   private applyTransform(): void {
     this.viewport.setAttribute("transform", `translate(${this.tx} ${this.ty}) scale(${this.k})`);
+    // One layout read per camera frame: halos and helper circles share the
+    // same letterbox scale instead of each re-reading the bounding rect in
+    // the middle of attribute writes.
+    const scale = this.viewScale();
     // Click halos keep their WORLD footprint: constant-screen assists shrink
     // relative to the neighbors zooming spreads apart, which is exactly when
     // specks need a generous target. A screen cap stops extreme zooms from
     // painting the whole viewport clickable.
-    const capWorld = this.constantWorldSize(HALO_MAX_SCREEN_PX);
+    const capWorld = HALO_MAX_SCREEN_PX / Math.max(1, scale * this.k);
     for (const halo of this.halos) {
       const base = Number(halo.dataset.baseStroke ?? 0);
       if (base > 0) {
         halo.setAttribute("stroke-width", String(Math.min(base, capWorld).toFixed(2)));
       }
     }
-    this.rescaleHelperCircles();
+    this.rescaleHelperCircles(scale);
     this.debugDot?.setAttribute("r", String(4 / this.k));
     this.applyDotScale();
     this.refreshHover("camera");
@@ -996,6 +1008,7 @@ export class MapView {
     this.halos.length = 0;
     this.helpers.clear();
     this.badgeGroups.clear();
+    this.badgeSignature = "";
     this.dotPack = false;
     this.badgeLayer = null;
     this.debugDot = null;
