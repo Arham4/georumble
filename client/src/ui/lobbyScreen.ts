@@ -1,6 +1,7 @@
 import type { GameClient, GameState } from "../game/gameClient";
 import { PACK_MANIFEST, type PackStore } from "../game/packs";
 import { el, setText, type Screen } from "./dom";
+import { normalizeAnswer } from "../../../shared/answers";
 import { createDiscordInviteLink, createGithubLink } from "./linkButtons";
 
 export type LobbyDeps = {
@@ -120,17 +121,25 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     world: "World",
   };
   const packsLabel = el("div", "section-label", "Pick a map");
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.placeholder = "Search maps…";
+  searchInput.autocomplete = "off";
+  searchInput.spellcheck = false;
+  searchInput.className = "pack-search";
   const packScroller = el("div", "pack-scroller");
   let selectedPackId = PACK_MANIFEST[0]?.packId ?? null;
   const cards = new Map<string, PackCardRefs>();
   const groups = new Map<string, string[]>();
+  const groupRefs = new Map<string, { label: HTMLElement; grid: HTMLElement }>();
   for (const descriptor of PACK_MANIFEST) {
     const ids = groups.get(descriptor.group) ?? [];
     ids.push(descriptor.packId);
     groups.set(descriptor.group, ids);
   }
   for (const [group, packIds] of groups) {
-    packScroller.append(el("div", "pack-group-label", GROUP_LABELS[group] ?? group));
+    const label = el("div", "pack-group-label", GROUP_LABELS[group] ?? group);
+    packScroller.append(label);
     const packGrid = el("div", "pack-grid");
     for (const packId of packIds) {
       const descriptor = PACK_MANIFEST.find((candidate) => candidate.packId === packId)!;
@@ -169,7 +178,30 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       packGrid.append(card);
     }
     packScroller.append(packGrid);
+    groupRefs.set(group, { label, grid: packGrid });
   }
+
+  /** Substring filter over name+blurb; empty groups fold away entirely. */
+  function applyPackFilter(): void {
+    const query = normalizeAnswer(searchInput.value);
+    for (const [group, refs] of groupRefs) {
+      let visible = 0;
+      for (const packId of groups.get(group) ?? []) {
+        const descriptor = deps.store.byId(packId);
+        const haystack = descriptor
+          ? normalizeAnswer(`${descriptor.displayName} ${descriptor.blurb}`)
+          : "";
+        const match = query === "" || haystack.includes(query);
+        cards.get(packId)?.card.classList.toggle("filtered-out", !match);
+        if (match) {
+          visible += 1;
+        }
+      }
+      refs.label.classList.toggle("hidden", visible === 0);
+      refs.grid.classList.toggle("hidden", visible === 0);
+    }
+  }
+  searchInput.addEventListener("input", applyPackFilter);
 
   const startButton = el("button", "btn full");
   startButton.type = "button";
@@ -221,6 +253,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     playersLabel,
     playerList,
     packsLabel,
+    searchInput,
     packScroller,
     rollBanner,
     hintsToggle,
