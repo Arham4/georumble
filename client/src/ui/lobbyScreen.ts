@@ -14,9 +14,30 @@ export type LobbyDeps = {
 
 type PackCardRefs = {
   count: HTMLElement | null;
-  votes: HTMLElement | null;
+  /** Overlapping voter avatars, bottom-right of the card; null while hidden. */
+  voters: HTMLElement | null;
   card: HTMLButtonElement;
 };
+
+/** Overlapping avatar chips for whoever voted — the social layer of the roll. */
+function avatarStack(state: GameState, voterIds: string[]): HTMLElement {
+  const stack = el("span", "avatar-stack");
+  for (const voterId of voterIds) {
+    const player = state.players.find((candidate) => candidate.id === voterId);
+    const chip = el("span", "avatar-stack-chip");
+    if (player?.avatar) {
+      const image = document.createElement("img");
+      image.src = player.avatar;
+      image.alt = "";
+      image.referrerPolicy = "no-referrer";
+      chip.append(image);
+    } else {
+      chip.textContent = (player?.name.trim()[0] ?? "?").toUpperCase();
+    }
+    stack.append(chip);
+  }
+  return stack;
+}
 
 /**
  * Lobby: roster with host marker, data-driven pack picker, and the host-only
@@ -122,7 +143,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
         .catch(() => {
           // Counts are decoration; the Start path surfaces load failures.
         });
-      cards.set(descriptor.packId, { card, count: null, votes: null });
+      cards.set(descriptor.packId, { card, count: null, voters: null });
       packGrid.append(card);
     }
     packScroller.append(packGrid);
@@ -223,27 +244,39 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
    * same winner because the roll happened server-side; the host then starts
    * it a beat later so the moment lands before the map appears.
    */
-  function showReveal(chosenPackId: string, votes: Record<string, string>): void {
+  function showReveal(
+    chosenPackId: string,
+    votes: Record<string, string>,
+    state: GameState,
+  ): void {
     const candidates = [...new Set(Object.values(votes))];
-    const names = candidates.map(
-      (id) => PACK_MANIFEST.find((pack) => pack.packId === id)?.displayName ?? id,
-    );
+    const entries = candidates.map((id) => ({
+      id,
+      name: PACK_MANIFEST.find((pack) => pack.packId === id)?.displayName ?? id,
+      voters: Object.entries(votes)
+        .filter(([, voted]) => voted === id)
+        .map(([playerId]) => playerId),
+    }));
     const winnerIndex = Math.max(0, candidates.indexOf(chosenPackId));
     overlay = el("div", "roll-overlay");
     const revealPanel = el("div", "roll-panel");
     const chips = el("div", "roll-chips");
-    const chipEls = names.map((name) => el("span", "roll-chip", name));
+    const chipEls = entries.map((entry) => {
+      const chip = el("span", "roll-chip");
+      chip.append(el("span", "roll-chip-name", entry.name), avatarStack(state, entry.voters));
+      return chip;
+    });
     chips.append(...chipEls);
     const reveal = el("div", "roll-reveal");
     revealPanel.append(el("div", "section-label", "The map decides itself"), chips, reveal);
     overlay.append(revealPanel);
     container.append(overlay);
 
-    const ticks = Math.min(26, 10 + names.length * 3);
+    const ticks = Math.min(26, 10 + entries.length * 3);
     let tick = 0;
     let delay = 70;
     const step = (): void => {
-      chipEls.forEach((chip, i) => chip.classList.toggle("hot", i === tick % names.length));
+      chipEls.forEach((chip, i) => chip.classList.toggle("hot", i === tick % entries.length));
       tick += 1;
       if (tick < ticks) {
         delay *= 1.14;
@@ -251,7 +284,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
         return;
       }
       chipEls.forEach((chip, i) => chip.classList.toggle("hot", i === winnerIndex));
-      reveal.textContent = `🗺️ ${names[winnerIndex] ?? chosenPackId}`;
+      reveal.textContent = `🗺️ ${entries[winnerIndex]?.name ?? chosenPackId}`;
       reveal.classList.add("visible");
       if (lastState?.isHost) {
         rollTimers.push(
@@ -322,31 +355,34 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       if (!deps.identityLocked && document.activeElement !== nameInput) {
         nameInput.value = deps.client.playerName;
       }
-      // Nomination badges, roll countdown, and the reveal all hang off relay
+      // Nomination stacks, roll countdown, and the reveal all hang off relay
       // state so every client sees the same story.
       const votes = state.packVotes ?? {};
-      const tally = new Map<string, number>();
-      for (const packId of Object.values(votes)) {
-        tally.set(packId, (tally.get(packId) ?? 0) + 1);
-      }
       for (const [packId, refs] of cards) {
-        const count = tally.get(packId) ?? 0;
-        if (count === 0) {
-          refs.votes?.remove();
-          refs.votes = null;
-        } else if (!refs.votes) {
-          const badge = el("span", "pack-vote-badge", String(count));
-          refs.card.append(badge);
-          refs.votes = badge;
+        const voters = Object.entries(votes)
+          .filter(([, voted]) => voted === packId)
+          .map(([playerId]) => playerId);
+        if (voters.length === 0) {
+          refs.voters?.remove();
+          refs.voters = null;
         } else {
-          refs.votes.textContent = String(count);
+          if (!refs.voters) {
+            refs.voters = el("span", "pack-voters");
+            refs.card.append(refs.voters);
+          }
+          refs.voters.replaceChildren(...avatarStack(state, voters).childNodes);
         }
+        // Amber tint: someone wants this map, but you haven't picked it.
+        refs.card.classList.toggle(
+          "voted-elsewhere",
+          voters.length > 0 && votes[state.you ?? ""] !== packId,
+        );
       }
       const chosen = state.chosenPackId;
       if (chosen !== prevChosenPackId) {
         if (chosen) {
           clearRollTimers();
-          showReveal(chosen, votes);
+          showReveal(chosen, votes, state);
         }
         prevChosenPackId = chosen;
       }
