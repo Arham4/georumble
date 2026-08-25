@@ -224,6 +224,11 @@ export class MapView {
       }
     }
     this.viewport.replaceChildren(bgLayer, hitLayer, regionLayer, helperLayer, badges, cursors);
+    // Entrance fade, replayed per pack switch — the reflow between swaps is
+    // what makes a second load animate instead of silently skipping.
+    this.svg.classList.remove("pack-enter");
+    void this.svg.getBoundingClientRect();
+    this.svg.classList.add("pack-enter");
     if (this.debug) {
       const dot = createElement<SVGCircleElement>("circle");
       dot.classList.add("debug-dot");
