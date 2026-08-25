@@ -189,3 +189,36 @@ test("a refresh mid-victory crowns the same player via the snapshot seed", () =>
   assert.equal(last.win, null);
   h.client.dispose();
 });
+
+test("routine snapshots omit the order and the client carries it forward", () => {
+  const h = harness("Tester");
+  h.send({ t: "welcome", you: "p1", snapshot: { ...baseSnapshot } });
+  h.send({
+    t: "snapshot",
+    snapshot: {
+      ...baseSnapshot,
+      phase: "playing",
+      orderIndex: 0,
+      target: "f1",
+      startedAt: 500,
+    },
+  });
+  // The starting snapshot carried the order; the relay stops re-shipping it.
+  const light = { ...baseSnapshot, order: undefined };
+  delete (light as { order?: unknown }).order;
+  h.send({
+    t: "snapshot",
+    snapshot: { ...light, phase: "playing", orderIndex: 1, target: "f2", startedAt: 500 },
+  });
+  assert.deepEqual(h.states.at(-1)!.foundIds, []);
+  // orderLength feeds HUD stats; dropping it mid-round would zero them.
+  const { orderLength } = h.states.at(-1)!;
+  assert.equal(orderLength, 3);
+  // Back to lobby is a fresh slate: the old round's order must not leak in.
+  h.send({
+    t: "snapshot",
+    snapshot: { ...light, phase: "lobby", orderIndex: null, target: null, startedAt: null },
+  });
+  assert.equal(h.states.at(-1)!.orderLength, 0);
+  h.client.dispose();
+});
