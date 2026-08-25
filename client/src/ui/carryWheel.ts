@@ -27,6 +27,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 type Slice = {
   name: string;
   initial: string;
+  avatar: string | null;
   start: number;
   end: number;
   color: string;
@@ -66,18 +67,14 @@ export function createCarryWheel(): Wheel {
   const result = document.createElement("div");
   result.className = "carry-result";
 
-  const spinButton = document.createElement("button");
-  spinButton.type = "button";
-  spinButton.className = "btn btn-ghost hidden";
-  spinButton.textContent = "Spin again";
-  spinButton.addEventListener("click", () => spin());
-
-  holder.append(svg, result, spinButton);
+  holder.append(svg, result);
 
   let slices: Slice[] = [];
   let signature = "";
   let rotation = 0;
   let spinning = false;
+  let spun = false;
+  let autoTimer: ReturnType<typeof setTimeout> | null = null;
   let raf: number | null = null;
 
   function apply(): void {
@@ -99,6 +96,7 @@ export function createCarryWheel(): Wheel {
       const slice: Slice = {
         name: row.name,
         initial: (row.name.trim()[0] ?? "?").toUpperCase(),
+        avatar: row.avatar ?? null,
         start: angle,
         end,
         color: COLORS[index % COLORS.length],
@@ -109,8 +107,31 @@ export function createCarryWheel(): Wheel {
       path.setAttribute("d", slicePath(slice.start, slice.end));
       path.setAttribute("fill", slice.color);
       wheel.append(path);
-      if (slice.end - slice.start >= LABEL_MIN_SLICE) {
-        const [x, y] = polar((slice.start + slice.end) / 2, RADIUS * 0.62);
+      const [x, y] = polar((slice.start + slice.end) / 2, RADIUS * 0.62);
+      if (slice.avatar) {
+        // Faces read better than letters; the chip shrinks for thin slices
+        // and stays circular via its own clip.
+        const chip = Math.max(14, Math.min(30, (slice.end - slice.start) * RADIUS * 0.5));
+        const clipId = `carry-chip-${index}`;
+        const defs = document.createElementNS(SVG_NS, "defs");
+        const clip = document.createElementNS(SVG_NS, "clipPath");
+        clip.setAttribute("id", clipId);
+        const circle = document.createElementNS(SVG_NS, "circle");
+        circle.setAttribute("cx", x.toFixed(1));
+        circle.setAttribute("cy", y.toFixed(1));
+        circle.setAttribute("r", (chip / 2).toFixed(1));
+        clip.append(circle);
+        defs.append(clip);
+        const image = document.createElementNS(SVG_NS, "image");
+        image.setAttribute("href", slice.avatar);
+        image.setAttribute("x", (x - chip / 2).toFixed(1));
+        image.setAttribute("y", (y - chip / 2).toFixed(1));
+        image.setAttribute("width", String(chip));
+        image.setAttribute("height", String(chip));
+        image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        image.setAttribute("clip-path", `url(#${clipId})`);
+        wheel.append(defs, image);
+      } else if (slice.end - slice.start >= LABEL_MIN_SLICE) {
         const label = document.createElementNS(SVG_NS, "text");
         label.classList.add("carry-slice-label");
         label.setAttribute("x", x.toFixed(1));
@@ -140,12 +161,13 @@ export function createCarryWheel(): Wheel {
   }
 
   function spin(): void {
-    if (spinning || slices.length === 0) {
+    // One spin per victory — the crown is decided the moment the wheel starts.
+    if (spinning || spun || slices.length === 0) {
       return;
     }
+    spun = true;
     spinning = true;
     result.classList.remove("visible");
-    spinButton.disabled = true;
 
     const winner = pickByAngle();
     const mid = (winner.start + winner.end) / 2;
@@ -167,8 +189,6 @@ export function createCarryWheel(): Wheel {
         return;
       }
       spinning = false;
-      spinButton.disabled = false;
-      spinButton.classList.remove("hidden");
       result.textContent = `👑 ${winner.name} carried the team!`;
       result.classList.add("visible");
     };
@@ -180,7 +200,9 @@ export function createCarryWheel(): Wheel {
     update(state: GameState): void {
       const multi = state.players.length > 1;
       holder.classList.toggle("hidden", !multi);
-      if (!multi) {
+      // One moment, frozen: after the spin the wheel ignores roster churn so
+      // somebody leaving can never re-roll the crown.
+      if (!multi || spun) {
         return;
       }
       const next = state.scoreboard.map((row) => `${row.id}:${row.correct}`).join("|");
@@ -190,14 +212,19 @@ export function createCarryWheel(): Wheel {
       signature = next;
       buildSlices(state.scoreboard);
       result.classList.remove("visible");
-      spinButton.classList.add("hidden");
-      // First paint of the victory screen spins by itself; the button is
-      // there because watching a wheel once is never enough.
-      setTimeout(() => spin(), 800);
+      if (autoTimer === null) {
+        autoTimer = setTimeout(() => {
+          autoTimer = null;
+          spin();
+        }, 800);
+      }
     },
     destroy(): void {
       if (raf !== null) {
         cancelAnimationFrame(raf);
+      }
+      if (autoTimer !== null) {
+        clearTimeout(autoTimer);
       }
       holder.remove();
     },
