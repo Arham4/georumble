@@ -83,6 +83,10 @@ export class LocalConnection implements Connection {
       case "vote-lobby":
         this.backToLobby();
         break;
+      // Solo has Start and the dice button; nominations are a crowd feature.
+      case "pack-vote":
+      case "pack-vote-resolve":
+        break;
     }
   }
 

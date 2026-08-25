@@ -21,6 +21,9 @@ const MAX_AVATAR_LENGTH = 512;
 const HELLO_TIMEOUT_MS = 30_000;
 const ALARM_INTERVAL_MS = 5 * 60_000;
 const CURSOR_MIN_INTERVAL_MS = 33;
+// How long lobby map nominations stay open before the relay rolls one at
+// random. Unanimous nominations resolve immediately instead.
+const PACK_VOTE_WINDOW_MS = 15_000;
 
 type StoredPlayer = {
   id: string;
@@ -54,6 +57,12 @@ type PersistedRoom = {
   foundBy: Record<string, string>;
   /** Seats that voted to return to the lobby during the current round. */
   lobbyVotes: string[];
+  /** Lobby map nominations, by player id — the democratic random roll's pool. */
+  packVotes: Record<string, string>;
+  /** Relay-clock ms when nominations roll; null while none are open. */
+  packVoteDeadline: number | null;
+  /** The rolled winner; set exactly once per nomination window. */
+  chosenPackId: string | null;
   startedAt: number | null;
 };
 
@@ -99,6 +108,9 @@ export class GameRoom extends DurableObject<Env> {
         tallies: {},
         foundBy: {},
         lobbyVotes: [],
+        packVotes: {},
+        packVoteDeadline: null,
+        chosenPackId: null,
         startedAt: null,
       };
       await this.persist();
@@ -180,6 +192,12 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case "vote-lobby":
         await this.voteLobby(playerId);
+        break;
+      case "pack-vote":
+        await this.packVote(playerId, message.packId);
+        break;
+      case "pack-vote-resolve":
+        await this.resolvePackVotesIfDue();
         break;
       default:
         this.sendTo(ws, { t: "rejected", reason: "unknown message" });
@@ -505,6 +523,76 @@ export class GameRoom extends DurableObject<Env> {
     return room.players.length > 0 && room.players.every((p) => room.lobbyVotes.includes(p.id));
   }
 
+  /**
+   * Lobby map nomination: every seat (not just the host) names a pack; the
+   * first nomination opens a window, unanimous nominations close it instantly,
+   * and when the window expires the relay rolls a weighted-random winner.
+   * Re-nominating moves the seat's vote.
+   */
+  private async packVote(playerId: string, rawPackId: unknown): Promise<void> {
+    const room = this.room;
+    if (!room || room.phase !== "lobby" || room.chosenPackId !== null) {
+      return;
+    }
+    if (typeof rawPackId !== "string" || !rawPackId || rawPackId.length > 64) {
+      const ws = this.sockets.get(playerId);
+      if (ws) {
+        this.sendTo(ws, { t: "rejected", reason: "invalid pack vote" });
+      }
+      return;
+    }
+    room.packVotes[playerId] = rawPackId;
+    if (room.packVoteDeadline === null) {
+      room.packVoteDeadline = Date.now() + PACK_VOTE_WINDOW_MS;
+    }
+    const unanimous =
+      room.players.length > 0 && room.players.every((p) => room.packVotes[p.id] !== undefined);
+    if (unanimous) {
+      await this.resolvePackChoice(room);
+      return;
+    }
+    await this.persist();
+    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
+  }
+
+  /** Clients nudge at the deadline so an idle room still rolls on time. */
+  private async resolvePackVotesIfDue(): Promise<void> {
+    const room = this.room;
+    if (
+      !room ||
+      room.phase !== "lobby" ||
+      room.chosenPackId !== null ||
+      room.packVoteDeadline === null ||
+      Date.now() < room.packVoteDeadline
+    ) {
+      return;
+    }
+    await this.resolvePackChoice(room);
+  }
+
+  /**
+   * Weighted roll: each nomination is one ticket, so a pack three players
+   * picked is three times as likely — consensus shapes the odds without
+   * taking the choice away from the minority.
+   */
+  private async resolvePackChoice(room: PersistedRoom): Promise<void> {
+    const tickets = Object.values(room.packVotes);
+    if (tickets.length === 0) {
+      room.packVoteDeadline = null;
+      await this.persist();
+      return;
+    }
+    room.chosenPackId = tickets[crypto.getRandomValues(new Uint32Array(1))[0] % tickets.length];
+    await this.persist();
+    console.log(JSON.stringify({
+      event: "pack_chosen",
+      roomId: this.roomId,
+      packId: room.chosenPackId,
+      tickets: tickets.length,
+    }));
+    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
+  }
+
   private async resetToLobby(room: PersistedRoom): Promise<void> {
     room.phase = "lobby";
     room.orderIndex = null;
@@ -515,6 +603,9 @@ export class GameRoom extends DurableObject<Env> {
     room.startedAt = null;
     room.roundHostId = null;
     room.lobbyVotes = [];
+    room.packVotes = {};
+    room.packVoteDeadline = null;
+    room.chosenPackId = null;
     await this.persist();
     this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
   }

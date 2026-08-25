@@ -25,6 +25,12 @@ export type RoomSnapshot = {
   foundBy?: Record<string, string>;
   /** Seats that voted to return to the lobby; unanimous consent ends the round. */
   lobbyVotes?: string[];
+  /** Lobby map nominations, by player id — feeds the democratic random pick. */
+  packVotes?: Record<string, string>;
+  /** Relay-clock ms when the open nominations roll into a random choice. */
+  packVoteDeadline?: number;
+  /** The rolled winner; clients play the reveal, then the host starts it. */
+  chosenPackId?: string;
   /** Derived convenience: order[orderIndex], null when out of game. */
   target: string | null;
   startedAt: number | null;
@@ -56,6 +62,10 @@ export type ClientMessage =
   | { t: "lobby" }
   /** Any player: toggle a vote to send everyone back to the map picker. */
   | { t: "vote-lobby" }
+  /** Lobby: nominate a map for the democratic random roll. */
+  | { t: "pack-vote"; packId: string }
+  /** Lobby: nudge the relay to roll nominations whose deadline has passed. */
+  | { t: "pack-vote-resolve" }
   /** Pointer position in pack coordinates; relayed live, never stored. */
   | { t: "cursor"; x: number; y: number };
 

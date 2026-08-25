@@ -44,6 +44,14 @@ export type GameState = {
   foundBy: Record<string, string>;
   /** Seats currently voted to return to the lobby; unanimous consent ends the round. */
   lobbyVotes: string[];
+  /** Lobby map nominations by player id — feeds the democratic random roll. */
+  packVotes: Record<string, string>;
+  /** Relay-clock ms when nominations roll into a random choice; null while closed. */
+  packVoteDeadline: number | null;
+  /** The rolled winner; clients play the reveal, then the host starts it. */
+  chosenPackId: string | null;
+  /** Relay-clock minus local clock at the last snapshot, for deadline math. */
+  clockOffsetMs: number | null;
   hintActive: boolean;
   ticker: TickerEntry[];
   win: { seconds: number; guesses: number } | null;
@@ -81,6 +89,9 @@ export class GameClient {
   private missedRegions = new Set<string>();
   private foundByRegion: Record<string, string> = {};
   private lobbyVotes: string[] = [];
+  private packVotes: Record<string, string> = {};
+  private packVoteDeadline: number | null = null;
+  private chosenPackId: string | null = null;
   private tallies = new Map<string, PlayerTally>();
   /** Relay-clock minus local-clock at the last snapshot, so elapsed time survives device clock skew. */
   private clockOffset: number | null = null;
@@ -245,6 +256,19 @@ export class GameClient {
     this.send({ t: "vote-lobby" });
   }
 
+  /** Lobby: nominate a map for the democratic random roll (any seat). */
+  votePack(packId: string): void {
+    if (this.snapshot?.phase !== "lobby") {
+      return;
+    }
+    this.send({ t: "pack-vote", packId });
+  }
+
+  /** Nudge the relay once the nomination window expires. */
+  resolvePackVotes(): void {
+    this.send({ t: "pack-vote-resolve" });
+  }
+
   /** False means the click was swallowed locally and needs its own feedback. */
   guess(featureId: string): boolean {
     const snapshot = this.snapshot;
@@ -292,6 +316,9 @@ export class GameClient {
       this.foundByRegion = snapshot.foundBy;
     }
     this.lobbyVotes = snapshot.lobbyVotes ?? [];
+    this.packVotes = snapshot.packVotes ?? {};
+    this.packVoteDeadline = snapshot.packVoteDeadline ?? null;
+    this.chosenPackId = snapshot.chosenPackId ?? null;
     if (typeof snapshot.serverNow === "number") {
       this.clockOffset = snapshot.serverNow - Date.now();
     }
@@ -308,6 +335,9 @@ export class GameClient {
     this.missedRegions.clear();
     this.foundByRegion = {};
     this.lobbyVotes = [];
+    this.packVotes = {};
+    this.packVoteDeadline = null;
+    this.chosenPackId = null;
     this.tallies.clear();
     this.ticker = [];
     this.win = null;
@@ -475,6 +505,10 @@ export class GameClient {
       missesByRegion: Object.fromEntries(this.foundHeat),
       foundBy: this.foundByRegion,
       lobbyVotes: this.lobbyVotes,
+      packVotes: this.packVotes,
+      packVoteDeadline: this.packVoteDeadline,
+      chosenPackId: this.chosenPackId,
+      clockOffsetMs: this.clockOffset,
       hintActive:
         target !== null && (this.missesByTarget.get(target) ?? 0) >= HINT_AFTER_MISSES,
       ticker: this.ticker,

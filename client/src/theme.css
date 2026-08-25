@@ -597,6 +597,96 @@ a.btn {
   opacity: 1;
 }
 
+/* --- Democratic map roll -------------------------------------------------- */
+
+.roll-banner {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-light);
+}
+
+.pack-card {
+  position: relative;
+}
+
+.pack-vote-badge {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.roll-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.72);
+  pointer-events: auto;
+}
+
+.roll-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 32px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow: var(--shadow);
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+.roll-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.roll-chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.05);
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0.65;
+  transition: transform 90ms ease, border-color 90ms ease, background 90ms ease, opacity 90ms ease;
+}
+
+.roll-chip.hot {
+  border-color: var(--accent-light);
+  background: rgb(88 101 242 / 0.25);
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.roll-reveal {
+  min-height: 34px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--accent-light);
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+
+.roll-reveal.visible {
+  opacity: 1;
+}
+
 .name-field {
   display: flex;
   gap: 8px;
@@ -1038,6 +1128,10 @@ a.btn {
   .region.hint,
   .hint-ring {
     animation: none;
+  }
+
+  .roll-chip {
+    transition: none;
   }
 }
 

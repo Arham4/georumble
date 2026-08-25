@@ -14,6 +14,7 @@ export type LobbyDeps = {
 
 type PackCardRefs = {
   count: HTMLElement | null;
+  votes: HTMLElement | null;
   card: HTMLButtonElement;
 };
 
@@ -103,6 +104,9 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
         for (const [id, refs] of cards) {
           refs.card.classList.toggle("selected", id === selectedPackId);
         }
+        // Everyone nominates, not just the host: the roll weights each pick
+        // as one ticket, so consensus raises odds without stealing the choice.
+        deps.client.votePack(descriptor.packId);
         updateStartButton(lastState);
       });
       void deps.store
@@ -118,7 +122,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
         .catch(() => {
           // Counts are decoration; the Start path surfaces load failures.
         });
-      cards.set(descriptor.packId, { card, count: null });
+      cards.set(descriptor.packId, { card, count: null, votes: null });
       packGrid.append(card);
     }
     packScroller.append(packGrid);
@@ -158,7 +162,8 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     void startWith(pick.packId);
   });
   const waitingNote = el("p", "waiting-note hidden");
-  waitingNote.textContent = "Only the host can start — nudge them in voice chat.";
+  waitingNote.textContent = "Pick a map — when everyone has (or time runs out), one wins at random.";
+  const rollBanner = el("p", "roll-banner hidden");
 
   panel.append(
     heading,
@@ -168,6 +173,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     playerList,
     packsLabel,
     packScroller,
+    rollBanner,
     startButton,
     randomButton,
     waitingNote,
@@ -179,6 +185,89 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   container.append(githubLink);
 
   let lastState: GameState | null = null;
+  let prevChosenPackId: string | null = null;
+  let lastDeadline: number | null = null;
+  let resolveSent = false;
+  let overlay: HTMLElement | null = null;
+  let rollTimers: ReturnType<typeof setTimeout>[] = [];
+
+  function clearRollTimers(): void {
+    for (const timer of rollTimers) {
+      clearTimeout(timer);
+    }
+    rollTimers = [];
+  }
+
+  /** Live countdown on the banner; fires the relay nudge once at expiry. */
+  function tickRoll(): void {
+    const state = lastState;
+    if (!state || state.phase !== "lobby" || state.chosenPackId || state.packVoteDeadline === null) {
+      return;
+    }
+    const remaining = state.packVoteDeadline - (Date.now() + (state.clockOffsetMs ?? 0));
+    if (remaining <= 0) {
+      rollBanner.textContent = "🎲 Rolling the map…";
+      if (!resolveSent) {
+        resolveSent = true;
+        deps.client.resolvePackVotes();
+      }
+      return;
+    }
+    const voted = Object.keys(state.packVotes ?? {}).length;
+    rollBanner.textContent = `🎲 Rolling in ${Math.ceil(remaining / 1000)}s — ${voted}/${state.players.length} picked`;
+  }
+
+  /**
+   * The reveal: every nominated map on screen, a highlight sweeping them
+   * slot-machine style before landing on the relay's pick. Everyone sees the
+   * same winner because the roll happened server-side; the host then starts
+   * it a beat later so the moment lands before the map appears.
+   */
+  function showReveal(chosenPackId: string, votes: Record<string, string>): void {
+    const candidates = [...new Set(Object.values(votes))];
+    const names = candidates.map(
+      (id) => PACK_MANIFEST.find((pack) => pack.packId === id)?.displayName ?? id,
+    );
+    const winnerIndex = Math.max(0, candidates.indexOf(chosenPackId));
+    overlay = el("div", "roll-overlay");
+    const revealPanel = el("div", "roll-panel");
+    const chips = el("div", "roll-chips");
+    const chipEls = names.map((name) => el("span", "roll-chip", name));
+    chips.append(...chipEls);
+    const reveal = el("div", "roll-reveal");
+    revealPanel.append(el("div", "section-label", "The map decides itself"), chips, reveal);
+    overlay.append(revealPanel);
+    container.append(overlay);
+
+    const ticks = Math.min(26, 10 + names.length * 3);
+    let tick = 0;
+    let delay = 70;
+    const step = (): void => {
+      chipEls.forEach((chip, i) => chip.classList.toggle("hot", i === tick % names.length));
+      tick += 1;
+      if (tick < ticks) {
+        delay *= 1.14;
+        rollTimers.push(setTimeout(step, delay));
+        return;
+      }
+      chipEls.forEach((chip, i) => chip.classList.toggle("hot", i === winnerIndex));
+      reveal.textContent = `🗺️ ${names[winnerIndex] ?? chosenPackId}`;
+      reveal.classList.add("visible");
+      if (lastState?.isHost) {
+        rollTimers.push(
+          setTimeout(() => {
+            void deps.store
+              .load(chosenPackId)
+              .then((loaded) => deps.client.startGame(loaded.pack))
+              .catch(() => {
+                // Load failed: the room stays in the lobby, Start still works.
+              });
+          }, 1100),
+        );
+      }
+    };
+    step();
+  }
 
   function renderPlayers(state: GameState): void {
     playerList.replaceChildren(
@@ -209,13 +298,18 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
 
   function updateStartButton(state: GameState | null): void {
     const isHost = state?.isHost ?? false;
-    startButton.classList.toggle("hidden", !isHost);
-    randomButton.classList.toggle("hidden", !isHost);
-    waitingNote.classList.toggle("hidden", isHost);
+    const chosen = state?.chosenPackId ?? null;
+    // Once the roll lands, the reveal auto-starts the game — direct controls
+    // would only fight it.
+    startButton.classList.toggle("hidden", !isHost || chosen !== null);
+    randomButton.classList.toggle("hidden", !isHost || chosen !== null);
+    waitingNote.classList.toggle("hidden", isHost || chosen !== null);
     startButton.disabled = !selectedPackId;
     const descriptor = selectedPackId ? deps.store.byId(selectedPackId) : null;
     setText(startButton, `Start${descriptor ? ` — ${descriptor.displayName}` : ""}`);
   }
+
+  const rollTimer = setInterval(() => tickRoll(), 400);
 
   return {
     update(state: GameState): void {
@@ -228,9 +322,54 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       if (!deps.identityLocked && document.activeElement !== nameInput) {
         nameInput.value = deps.client.playerName;
       }
+      // Nomination badges, roll countdown, and the reveal all hang off relay
+      // state so every client sees the same story.
+      const votes = state.packVotes ?? {};
+      const tally = new Map<string, number>();
+      for (const packId of Object.values(votes)) {
+        tally.set(packId, (tally.get(packId) ?? 0) + 1);
+      }
+      for (const [packId, refs] of cards) {
+        const count = tally.get(packId) ?? 0;
+        if (count === 0) {
+          refs.votes?.remove();
+          refs.votes = null;
+        } else if (!refs.votes) {
+          const badge = el("span", "pack-vote-badge", String(count));
+          refs.card.append(badge);
+          refs.votes = badge;
+        } else {
+          refs.votes.textContent = String(count);
+        }
+      }
+      const chosen = state.chosenPackId;
+      if (chosen !== prevChosenPackId) {
+        if (chosen) {
+          clearRollTimers();
+          showReveal(chosen, votes);
+        }
+        prevChosenPackId = chosen;
+      }
+      if (chosen) {
+        rollBanner.classList.add("hidden");
+      } else if (state.packVoteDeadline !== null) {
+        if (state.packVoteDeadline !== lastDeadline) {
+          lastDeadline = state.packVoteDeadline;
+          resolveSent = false;
+        }
+        rollBanner.classList.remove("hidden");
+        tickRoll();
+      } else {
+        lastDeadline = null;
+        resolveSent = false;
+        rollBanner.classList.add("hidden");
+      }
       updateStartButton(state);
     },
     destroy(): void {
+      clearInterval(rollTimer);
+      clearRollTimers();
+      overlay?.remove();
       githubLink.remove();
       panel.remove();
     },
