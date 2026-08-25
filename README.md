@@ -39,6 +39,14 @@ docker compose up --build
 
 Native WSL alternative: `npm run install:all && npm --prefix client run build && npm --prefix worker run dev`.
 
+After changing the relay contract, prove it on the wire — unit tests can't
+catch a field the snapshot serializer forgot:
+
+```sh
+npm run verify:room                          # against production
+node scripts/verify-room.mjs ws://localhost:8787/api/room   # against local dev
+```
+
 ## Map packs
 
 ```sh
