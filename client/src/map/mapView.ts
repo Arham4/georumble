@@ -45,6 +45,10 @@ export class MapView {
   private hintRing: SVGCircleElement | null = null;
   private readonly regions = new Map<string, RegionParts>();
   private readonly geoById = new Map<string, RegionGeo>();
+  /** Bounds-center pivot per region, cached so zoom frames skip the math. */
+  private readonly dotPivots = new Map<string, [number, number]>();
+  /** Zoom level the dot counter-scale was last applied at. */
+  private lastDotK = 1;
   private readonly effectTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly namesById = new Map<string, string>();
   private readonly centroidById = new Map<string, [number, number]>();
@@ -348,6 +352,9 @@ export class MapView {
       this.badgeGroups.set(id, group);
       layer.append(group);
     }
+    // Fresh groups carry no counter-scale — apply it now rather than waiting
+    // for the next camera move, or badges render k× oversized until then.
+    this.applyDotScale(true);
   }
 
   setTarget(id: string | null): void {
@@ -787,8 +794,21 @@ export class MapView {
 
   private onPointerCancel = (event: PointerEvent): void => {
     this.pointers.delete(event.pointerId);
-    if (this.pointers.size < 2) {
-      this.pinch = null;
+    // Same recovery as a pinch finger lifting: keep the surviving pointer
+    // panning instead of stranding the map mid-gesture (palm rejection and
+    // OS interruptions cancel rather than lift).
+    if (this.pinch) {
+      if (this.pointers.size === 1) {
+        this.pinch = null;
+        const remaining = this.pointers.entries().next();
+        if (!remaining.done) {
+          const [pointerId, rest] = remaining.value;
+          this.drag = { pointerId, lastX: rest.x, lastY: rest.y, moved: true };
+        }
+      } else if (this.pointers.size === 0) {
+        this.pinch = null;
+      }
+      return;
     }
     if (this.drag?.pointerId !== event.pointerId) {
       return;
@@ -876,17 +896,22 @@ export class MapView {
    * dense packs. Badges ride the same transform and stay glued to their
    * dots.
    */
-  private applyDotScale(): void {
-    if (!this.dotPack) {
+  private applyDotScale(force = false): void {
+    if (!this.dotPack || (!force && this.k === this.lastDotK)) {
       return;
     }
+    this.lastDotK = this.k;
     for (const [id, parts] of this.regions) {
-      const geo = this.geoById.get(id);
-      if (!geo) {
-        continue;
+      let pivot = this.dotPivots.get(id);
+      if (!pivot) {
+        const geo = this.geoById.get(id);
+        if (!geo) {
+          continue;
+        }
+        pivot = [(geo.bounds[0][0] + geo.bounds[1][0]) / 2, (geo.bounds[0][1] + geo.bounds[1][1]) / 2];
+        this.dotPivots.set(id, pivot);
       }
-      const cx = (geo.bounds[0][0] + geo.bounds[1][0]) / 2;
-      const cy = (geo.bounds[0][1] + geo.bounds[1][1]) / 2;
+      const [cx, cy] = pivot;
       const transform =
         this.k === 1
           ? null
@@ -950,6 +975,8 @@ export class MapView {
     this.effectTimers.clear();
     this.regions.clear();
     this.geoById.clear();
+    this.dotPivots.clear();
+    this.lastDotK = 1;
     this.centroidById.clear();
     this.halos.length = 0;
     this.helpers.clear();
