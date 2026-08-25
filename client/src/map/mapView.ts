@@ -506,10 +506,20 @@ export class MapView {
   }
 
   private rescaleHelperCircles(): void {
-    const r = HELPER_CIRCLE_PX / this.k;
+    const r = this.constantWorldSize(HELPER_CIRCLE_PX);
     for (const { circle } of this.helpers.values()) {
       circle.setAttribute("r", String(r));
     }
+  }
+
+  /**
+   * Screen pixels per world unit under the current camera. Every
+   * "constant on-screen size" assist divides its pixel budget by this — one
+   * formula so halos and helper circles stay mutually consistent even when
+   * the svg letterboxes (viewScale < 1 shrinks every world unit).
+   */
+  private constantWorldSize(screenPx: number): number {
+    return screenPx / Math.max(1, this.viewScale() * this.k);
   }
 
   private placeHintRing(): void {
@@ -874,7 +884,7 @@ export class MapView {
     // relative to the neighbors zooming spreads apart, which is exactly when
     // specks need a generous target. A screen cap stops extreme zooms from
     // painting the whole viewport clickable.
-    const capWorld = HALO_MAX_SCREEN_PX / Math.max(1, this.viewScale() * this.k);
+    const capWorld = this.constantWorldSize(HALO_MAX_SCREEN_PX);
     for (const halo of this.halos) {
       const base = Number(halo.dataset.baseStroke ?? 0);
       if (base > 0) {
