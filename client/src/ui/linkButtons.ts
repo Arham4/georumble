@@ -13,13 +13,32 @@ const GITHUB_MARK =
   "2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 " +
   "2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z";
 
+type ExternalOpener = (url: string) => void;
+
+let openViaSdk: ExternalOpener | null = null;
+
+/**
+ * Discord's activity iframe blocks target=_blank navigation outright; the
+ * embedded SDK's openExternalLink command is the sanctioned way out. The
+ * boot sequence installs this once authenticated — plain browser sessions
+ * never do, and keep native anchor behavior.
+ */
+export function setExternalLinkOpener(opener: ExternalOpener | null): void {
+  openViaSdk = opener;
+}
+
 function externalLink(href: string): HTMLAnchorElement {
   const link = document.createElement("a");
   link.href = href;
-  // External navigation from inside Discord's embedded webview is
-  // best-effort; in a plain browser this always behaves normally.
   link.target = "_blank";
   link.rel = "noopener noreferrer";
+  link.addEventListener("click", (event) => {
+    if (!openViaSdk) {
+      return;
+    }
+    event.preventDefault();
+    openViaSdk(href);
+  });
   return link;
 }
 

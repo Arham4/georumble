@@ -8,7 +8,7 @@ import { LocalConnection } from "./net/localConnection";
 import { newRoomCode, normalizeJoinCode } from "./net/openRooms";
 import { SocketConnection } from "./net/socketConnection";
 import { el, type Screen } from "./ui/dom";
-import { createDiscordInviteLink, createGithubLink } from "./ui/linkButtons";
+import { createDiscordInviteLink, createGithubLink, setExternalLinkOpener } from "./ui/linkButtons";
 import { createLobbyScreen } from "./ui/lobbyScreen";
 import { createPlayScreen } from "./ui/playScreen";
 import { createVictoryScreen } from "./ui/victoryScreen";
@@ -147,6 +147,13 @@ async function resolveIdentity(): Promise<Identity> {
     const { access_token } = (await tokenResponse.json()) as { access_token: string };
     // Response schema drifts between SDK majors; read only the fields we need.
     const auth = (await sdk.commands.authenticate({ access_token })) as AuthenticateShape;
+    // Authenticated embedded session: external links must ride the SDK's
+    // sanctioned command, since the activity iframe eats target=_blank.
+    setExternalLinkOpener((url) => {
+      void sdk.commands.openExternalLink({ url }).catch((error: unknown) => {
+        console.warn("[georumble] openExternalLink failed", error);
+      });
+    });
     let name = auth.user.global_name ?? auth.user.username;
     let avatar = auth.user.avatar ? discordAvatarUrl(auth.user.id, auth.user.avatar) : null;
     // Inside a server, players know each other by the server nickname (and the
