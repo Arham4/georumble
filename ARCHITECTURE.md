@@ -68,6 +68,8 @@ entirely under a capacity signal from `LIMITS_KV`.
 - `shared/pack-manifest.ts` — the single list of shippable packs; the client
   renders its picker from it and the relay validates votes against it, so a
   stale client can never nominate a pack nobody can load.
+- `worker/src/ghost-sweep.ts` — pure ghost-seat eviction/stamp decisions,
+  unit-tested without a DO runtime; `room.ts` only applies the plan.
 - `worker/src/vote-math.ts` — pure decision math (weighted roll, unanimity),
   unit-tested without a DO runtime.
 - `shared/mappack.ts` + `scripts/lib/mappack-contract.mjs` — pack contract
