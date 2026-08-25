@@ -550,6 +550,45 @@ a.btn {
   fill: currentColor;
 }
 
+/* --- Victory carry wheel -------------------------------------------------- */
+
+.carry-wheel {
+  margin: 16px auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.carry-slice {
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.carry-slice-label {
+  fill: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.carry-pointer {
+  fill: var(--text);
+}
+
+.carry-result {
+  min-height: 24px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--accent-light);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.carry-result.visible {
+  opacity: 1;
+}
+
 .name-field {
   display: flex;
   gap: 8px;

@@ -1,5 +1,6 @@
 import type { GameClient, GameState } from "../game/gameClient";
 import { accuracyPercent, el, formatClock, setText, type Screen } from "./dom";
+import { createCarryWheel } from "./carryWheel";
 
 export type VictoryDeps = {
   client: GameClient;
@@ -60,6 +61,7 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
 
   const scoreboardLabel = el("div", "section-label", "Who carried");
   const scoreList = el("ul", "score-list");
+  const carry = createCarryWheel();
 
   let restarting = false;
   const againButton = el("button", "btn full");
@@ -96,6 +98,7 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
     grid,
     scoreboardLabel,
     scoreList,
+    carry.element,
     againButton,
     mapButton,
     voteButton,
@@ -133,6 +136,7 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
       scoreList.replaceChildren(...ranked.map(({ index }) => scoreRow(state, index)));
       scoreboardLabel.classList.toggle("hidden", solo || ranked.length === 0);
       scoreList.classList.toggle("hidden", solo || ranked.length === 0);
+      carry.update(state);
       againButton.classList.toggle("hidden", !state.isHost);
       mapButton.classList.toggle("hidden", !state.isHost);
       const votes = state.lobbyVotes.length;
@@ -146,6 +150,7 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
       waitingNote.classList.toggle("hidden", state.isHost || votes > 0);
     },
     destroy(): void {
+      carry.destroy();
       panel.remove();
     },
   };
