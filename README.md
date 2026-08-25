@@ -16,11 +16,14 @@ also playable in a plain browser (solo practice, or shared rooms via join codes)
 
 ## Gameplay
 
-Co-op rounds: the host picks a pack, the relay holds a deterministic shuffled order, and every
+Co-op rounds: the host picks a pack (or everyone nominates one and the relay rolls a weighted
+random winner with a reveal animation), the relay holds a deterministic shuffled order, and every
 client derives the same prompt. Clicks echo live; the hosting client adjudicates and the relay
 verifies. Found states tint by how many wrong attempts it took to find them, names flash on
-click, tiny regions auto-frame, and hints fire after repeated misses. Victory shows time,
-accuracy, and a per-player scoreboard with Discord avatars.
+click, tiny regions auto-frame, and hints fire after repeated misses (host can disable them per
+round). Anyone can call a unanimous vote to bring the room back to the map picker. Victory shows
+time, accuracy, a per-player scoreboard with Discord avatars, a weighted "who carried" wheel, and
+personal bests per pack.
 
 ## Development (Docker, no local Node required)
 
