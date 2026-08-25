@@ -153,8 +153,14 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   startButton.type = "button";
   const startWith = async (packId: string): Promise<void> => {
     const loaded = await deps.store.load(packId);
-    deps.client.startGame(loaded.pack);
+    deps.client.startGame(loaded.pack, hintsCheck.checked);
   };
+  // Host's call: some rooms want the hint chip, purists want the raw map.
+  const hintsToggle = el("label", "hint-toggle");
+  const hintsCheck = document.createElement("input");
+  hintsCheck.type = "checkbox";
+  hintsCheck.checked = true;
+  hintsToggle.append(hintsCheck, el("span", undefined, "Show hints after 3 misses"));
   startButton.addEventListener("click", async () => {
     if (!selectedPackId) {
       return;
@@ -195,6 +201,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     packsLabel,
     packScroller,
     rollBanner,
+    hintsToggle,
     startButton,
     randomButton,
     waitingNote,
@@ -272,7 +279,12 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     overlay.append(revealPanel);
     container.append(overlay);
 
-    const ticks = Math.min(26, 10 + entries.length * 3);
+    const base = Math.min(26, 10 + entries.length * 3);
+    // The sweep must decelerate ONTO the winner — landing anywhere else and
+    // jumping reads as rigged. Extend the run so the final highlight is
+    // naturally the winner's index.
+    const ticks =
+      base + ((winnerIndex - ((base - 1) % entries.length)) + entries.length) % entries.length;
     let tick = 0;
     let delay = 70;
     const step = (): void => {
@@ -291,7 +303,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
           setTimeout(() => {
             void deps.store
               .load(chosenPackId)
-              .then((loaded) => deps.client.startGame(loaded.pack))
+              .then((loaded) => deps.client.startGame(loaded.pack, hintsCheck.checked))
               .catch(() => {
                 // Load failed: the room stays in the lobby, Start still works.
               });
@@ -336,6 +348,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     // would only fight it.
     startButton.classList.toggle("hidden", !isHost || chosen !== null);
     randomButton.classList.toggle("hidden", !isHost || chosen !== null);
+    hintsToggle.classList.toggle("hidden", !isHost || chosen !== null);
     waitingNote.classList.toggle("hidden", isHost || chosen !== null);
     startButton.disabled = !selectedPackId;
     const descriptor = selectedPackId ? deps.store.byId(selectedPackId) : null;
