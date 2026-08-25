@@ -50,12 +50,13 @@ node scripts/verify-room.mjs ws://localhost:8787/api/room   # against local dev
 ## Map packs
 
 ```sh
-npm run packs:build      # re-derive both packs from public-domain atlases
-npm run packs:validate   # contract-check every pack
+npm run packs:build      # fetch base data, run every pack builder, validate
+npm run packs:validate   # contract-check every shipped pack
 ```
 
-Adding a pack = a builder script's two artifacts plus one entry in `client/src/game/packs.ts`.
-No engine changes. See `docs/mappack-contract.md`.
+Adding a pack = a builder script's two artifacts plus one entry in
+`shared/pack-manifest.ts` (the picker and the relay's vote validation both
+read it). No engine changes. See `docs/mappack-contract.md`.
 
 ## Deploy
 
