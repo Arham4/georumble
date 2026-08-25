@@ -4,6 +4,10 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-01",
   "vars": {
+    // Browser visitors get create/join-by-code rooms. These live in their own
+    // `open:` namespace; Discord instances stay verified and unreachable from
+    // the browser path, and embedded clients never join open rooms.
+    "OPEN_ROOMS": "true",
     "DISCORD_CLIENT_ID": "1540906195752189952"
   },
   "assets": {
