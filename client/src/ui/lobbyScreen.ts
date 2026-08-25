@@ -356,6 +356,18 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       chipEls.forEach((chip, i) => chip.classList.toggle("hot", i === winnerIndex));
       reveal.textContent = `🗺️ ${entries[winnerIndex]?.name ?? chosenPackId}`;
       reveal.classList.add("visible");
+      // If the host never launches (AFK, refresh mid-reveal), the overlay
+      // must not hold the lobby hostage — step aside and say so.
+      rollTimers.push(
+        setTimeout(() => {
+          if (overlay && lastState?.phase === "lobby") {
+            overlay.remove();
+            overlay = null;
+            rollBanner.textContent = `⏳ Waiting for the host to start ${entries[winnerIndex]?.name ?? chosenPackId}…`;
+            rollBanner.classList.remove("hidden");
+          }
+        }, 8000),
+      );
       if (lastState?.isHost) {
         rollTimers.push(
           setTimeout(() => {
