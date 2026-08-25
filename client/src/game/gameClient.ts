@@ -1,7 +1,7 @@
 import type { GuessOutcome, RoomSnapshot, ServerMessage } from "../../../shared/protocol";
 import type { MapPack } from "../../../shared/mappack";
 import type { CloseInfo, Connection } from "../net/connection";
-import { randomSeed, seededShuffle } from "./shuffle";
+import { randomSeed, seededShuffle } from "./shuffle.ts";
 
 const HINT_AFTER_MISSES = 3;
 const TICK_MS = 500;
@@ -104,12 +104,16 @@ export class GameClient {
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
   private tickTimer: ReturnType<typeof setInterval>;
   private disposed = false;
+  // Explicit fields rather than constructor-parameter properties: strip-only
+  // TS runtimes (node --test) reject the shorthand, and testability wins.
+  private readonly events: GameEvents;
+  private name: string;
+  private readonly avatar: string | null;
 
-  constructor(
-    private readonly events: GameEvents,
-    private name: string,
-    private readonly avatar: string | null = null,
-  ) {
+  constructor(events: GameEvents, name: string, avatar: string | null = null) {
+    this.events = events;
+    this.name = name;
+    this.avatar = avatar;
     this.tickTimer = setInterval(() => this.onTick(), TICK_MS);
   }
 
