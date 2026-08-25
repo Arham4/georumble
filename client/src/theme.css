@@ -332,6 +332,20 @@ body {
   color: #6ee7a0;
 }
 
+.chip.code-chip {
+  cursor: pointer;
+  border: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent-light);
+}
+
+.chip.code-chip:hover {
+  background: rgb(88 101 242 / 0.2);
+}
+
 .chip.solo {
   color: var(--accent-light);
 }

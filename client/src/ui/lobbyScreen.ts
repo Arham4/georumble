@@ -10,6 +10,8 @@ export type LobbyDeps = {
   identityLocked?: boolean;
   /** Shown when an embedded Discord sign-in was attempted and failed. */
   signInNotice?: string;
+  /** Join code for browser open rooms; absent in Discord instances/solo. */
+  roomCode?: string;
 };
 
 type PackCardRefs = {
@@ -53,6 +55,26 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   wordmark.append(geoPart, rumblePart);
   const chip = el("span", "chip");
   heading.append(wordmark, chip);
+  // Browser rooms live or die by the code being readable in the room, not
+  // buried in the URL bar — tap to copy the full invite link.
+  const codeChip = el("button", "chip code-chip");
+  codeChip.type = "button";
+  if (deps.roomCode) {
+    codeChip.textContent = `#${deps.roomCode} ⧉`;
+    codeChip.addEventListener("click", () => {
+      const restore = (): void => {
+        codeChip.textContent = `#${deps.roomCode} ⧉`;
+      };
+      navigator.clipboard
+        ?.writeText(window.location.href)
+        .then(() => {
+          codeChip.textContent = "copied link ✓";
+          setTimeout(restore, 1400);
+        })
+        .catch(restore);
+    });
+    heading.append(codeChip);
+  }
 
   const nameLabel = el("div", "section-label", "Your name");
   const nameInput = document.createElement("input");

@@ -263,6 +263,7 @@ async function boot(): Promise<void> {
           client,
           store,
           identityLocked: identity.instanceId !== null,
+          roomCode: socketRoomId?.startsWith("open:") ? socketRoomId.slice("open:".length) : undefined,
           signInNotice:
             identity.signInFailed && !identity.instanceId
               ? `Discord sign-in failed (${identity.signInFailed}) — playing as a guest`
