@@ -7,6 +7,7 @@ import type {
   ServerMessage,
 } from "../../../shared/protocol";
 import { dispatchMessage, type Connection, type ConnectionHandlers } from "./connection";
+import { randomSeed } from "../game/shuffle";
 
 type LocalRoom = {
   players: Player[];
@@ -19,11 +20,12 @@ type LocalRoom = {
   heat: Record<string, number>;
   tallies: Record<string, { correct: number; misses: number }>;
   hintsEnabled: boolean;
+  wheelSeed: number | null;
   startedAt: number | null;
 };
 
 function emptyRoom(): LocalRoom {
-  return { players: [], hostId: null, phase: "lobby", packId: null, order: [], orderIndex: null, found: [], heat: {}, tallies: {}, hintsEnabled: true, startedAt: null };
+  return { players: [], hostId: null, phase: "lobby", packId: null, order: [], orderIndex: null, found: [], heat: {}, tallies: {}, hintsEnabled: true, wheelSeed: null, startedAt: null };
 }
 
 /**
@@ -218,11 +220,12 @@ export class LocalConnection implements Connection {
     // trusting the hosting client.
     const stampedSeconds = Math.round((Date.now() - room.startedAt) / 1000);
     room.phase = "victory";
+    room.wheelSeed = randomSeed();
     this.enqueue({
       t: "win",
       seconds: stampedSeconds,
       guesses,
-      wheelSeed: crypto.getRandomValues(new Uint32Array(1))[0],
+      wheelSeed: room.wheelSeed,
     });
   }
 
@@ -241,6 +244,7 @@ export class LocalConnection implements Connection {
     room.heat = {};
     room.tallies = {};
     room.startedAt = null;
+    room.wheelSeed = null;
     this.enqueue({ t: "snapshot", snapshot: this.snapshot() });
   }
 
@@ -269,6 +273,7 @@ export class LocalConnection implements Connection {
       heat: { ...room.heat },
       tallies: Object.fromEntries(Object.entries(room.tallies).map(([id, t]) => [id, { ...t }])),
       hintsEnabled: room.hintsEnabled,
+      ...(room.wheelSeed !== null && room.phase === "victory" ? { wheelSeed: room.wheelSeed } : {}),
       target: room.orderIndex !== null ? (room.order[room.orderIndex] ?? null) : null,
       startedAt: room.startedAt,
     };

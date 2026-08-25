@@ -33,6 +33,8 @@ export type RoomSnapshot = {
   chosenPackId?: string;
   /** Whether the round grants the miss-streak hint; host's choice at start. */
   hintsEnabled?: boolean;
+  /** Victory-only: relay-rolled carry-wheel seed, so refreshes crown the same player. */
+  wheelSeed?: number;
   /** Derived convenience: order[orderIndex], null when out of game. */
   target: string | null;
   startedAt: number | null;

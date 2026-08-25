@@ -1,4 +1,5 @@
 import type { GameState } from "../game/gameClient";
+import { mulberry32 } from "../game/shuffle";
 
 // Victory carry wheel: each player's slice is their share of the team's
 // finds, and one weighted spin crowns whoever lands under the pointer.
@@ -23,21 +24,6 @@ const COLORS = [
 ];
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-
-/**
- * Tiny seeded PRNG: the relay hands every client the same wheelSeed in the
- * win broadcast, so identical slices + identical stream = identical winner
- * on every screen. Local Math.random would crown different people.
- */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 type Slice = {
   name: string;
@@ -235,7 +221,9 @@ export function createCarryWheel(): Wheel {
       }
       signature = next;
       buildSlices(state.scoreboard);
-      winSeed = state.win?.wheelSeed ?? null;
+      // Snapshot-backed seed first: it survives a refresh mid-victory, where
+      // the one-shot win broadcast was never seen.
+      winSeed = state.wheelSeed ?? state.win?.wheelSeed ?? null;
       result.classList.remove("visible");
       if (autoTimer === null) {
         autoTimer = setTimeout(() => {

@@ -55,6 +55,8 @@ export type GameState = {
   hintActive: boolean;
   /** Host's choice at start: does this round grant miss-streak hints. */
   hintsEnabled: boolean;
+  /** Victory-only relay seed for the carry wheel; survives a mid-victory refresh. */
+  wheelSeed: number | null;
   ticker: TickerEntry[];
   win: { seconds: number; guesses: number; wheelSeed?: number } | null;
   scoreboard: ScoreRow[];
@@ -95,6 +97,7 @@ export class GameClient {
   private packVoteDeadline: number | null = null;
   private chosenPackId: string | null = null;
   private hintsEnabled = true;
+  private wheelSeed: number | null = null;
   private tallies = new Map<string, PlayerTally>();
   /** Relay-clock minus local-clock at the last snapshot, so elapsed time survives device clock skew. */
   private clockOffset: number | null = null;
@@ -327,6 +330,9 @@ export class GameClient {
     this.packVoteDeadline = snapshot.packVoteDeadline ?? null;
     this.chosenPackId = snapshot.chosenPackId ?? null;
     this.hintsEnabled = snapshot.hintsEnabled ?? true;
+    if (snapshot.wheelSeed !== undefined) {
+      this.wheelSeed = snapshot.wheelSeed;
+    }
     if (typeof snapshot.serverNow === "number") {
       this.clockOffset = snapshot.serverNow - Date.now();
     }
@@ -347,6 +353,7 @@ export class GameClient {
     this.packVoteDeadline = null;
     this.chosenPackId = null;
     this.hintsEnabled = true;
+    this.wheelSeed = null;
     this.tallies.clear();
     this.ticker = [];
     this.win = null;
@@ -518,6 +525,7 @@ export class GameClient {
       packVoteDeadline: this.packVoteDeadline,
       chosenPackId: this.chosenPackId,
       hintsEnabled: this.hintsEnabled,
+      wheelSeed: this.wheelSeed ?? this.win?.wheelSeed ?? null,
       clockOffsetMs: this.clockOffset,
       hintActive:
         this.hintsEnabled &&

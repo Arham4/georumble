@@ -369,6 +369,7 @@ async function boot(): Promise<void> {
         chosenPackId: null,
         clockOffsetMs: null,
         hintsEnabled: true,
+        wheelSeed: null,
         hintActive: false,
         ticker: [],
         win: null,

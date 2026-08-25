@@ -12,7 +12,8 @@ export function randomSeed(): number {
   return crypto.getRandomValues(new Uint32Array(1))[0]!;
 }
 
-function mulberry32(seed: number): () => number {
+/** Shared seeded PRNG — the one copy every deterministic animation draws from. */
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) | 0;
