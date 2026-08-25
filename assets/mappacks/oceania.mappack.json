@@ -1,0 +1,343 @@
+{
+  "packId": "oceania",
+  "displayName": "Oceania",
+  "projection": {
+    "kind": "mercator-preprojected",
+    "width": 1000,
+    "height": 651
+  },
+  "source": {
+    "name": "world-atlas countries-50m.json (Natural Earth 1:50m)",
+    "url": "https://github.com/topojson/world-atlas",
+    "license": "Public domain (Natural Earth data)"
+  },
+  "features": [
+    {
+      "id": "AS",
+      "name": "American Samoa",
+      "centroidHint": {
+        "x": 678,
+        "y": 263
+      }
+    },
+    {
+      "id": "AU",
+      "name": "Australia",
+      "centroidHint": {
+        "x": 288,
+        "y": 352
+      }
+    },
+    {
+      "id": "CX",
+      "name": "Christmas and Cocos Islands",
+      "aliases": [
+        "Christmas Island",
+        "Cocos Islands",
+        "Keeling Islands",
+        "Indian Ocean Territories"
+      ],
+      "centroidHint": {
+        "x": 84,
+        "y": 236
+      }
+    },
+    {
+      "id": "CK",
+      "name": "Cook Islands",
+      "aliases": [
+        "Cook Is."
+      ],
+      "centroidHint": {
+        "x": 755,
+        "y": 315
+      }
+    },
+    {
+      "id": "FJ",
+      "name": "Fiji",
+      "centroidHint": {
+        "x": 597,
+        "y": 289
+      }
+    },
+    {
+      "id": "PF",
+      "name": "French Polynesia",
+      "centroidHint": {
+        "x": 829,
+        "y": 288
+      }
+    },
+    {
+      "id": "GU",
+      "name": "Guam",
+      "centroidHint": {
+        "x": 362,
+        "y": 64
+      }
+    },
+    {
+      "id": "KI",
+      "name": "Kiribati",
+      "centroidHint": {
+        "x": 773,
+        "y": 147
+      }
+    },
+    {
+      "id": "MH",
+      "name": "Marshall Islands",
+      "aliases": [
+        "Marshall Is."
+      ],
+      "centroidHint": {
+        "x": 549,
+        "y": 110
+      }
+    },
+    {
+      "id": "FM",
+      "name": "Micronesia",
+      "aliases": [
+        "Federated States of Micronesia"
+      ],
+      "centroidHint": {
+        "x": 457,
+        "y": 112
+      }
+    },
+    {
+      "id": "NR",
+      "name": "Nauru",
+      "centroidHint": {
+        "x": 519,
+        "y": 164
+      }
+    },
+    {
+      "id": "NC",
+      "name": "New Caledonia",
+      "centroidHint": {
+        "x": 509,
+        "y": 316
+      }
+    },
+    {
+      "id": "NZ",
+      "name": "New Zealand",
+      "centroidHint": {
+        "x": 544,
+        "y": 510
+      }
+    },
+    {
+      "id": "NU",
+      "name": "Niue",
+      "centroidHint": {
+        "x": 684,
+        "y": 299
+      }
+    },
+    {
+      "id": "MP",
+      "name": "Northern Mariana Islands",
+      "aliases": [
+        "Northern Marianas",
+        "N. Mariana Is."
+      ],
+      "centroidHint": {
+        "x": 369,
+        "y": 52
+      }
+    },
+    {
+      "id": "PW",
+      "name": "Palau",
+      "centroidHint": {
+        "x": 289,
+        "y": 107
+      }
+    },
+    {
+      "id": "PG",
+      "name": "Papua New Guinea",
+      "centroidHint": {
+        "x": 358,
+        "y": 208
+      }
+    },
+    {
+      "id": "PN",
+      "name": "Pitcairn",
+      "aliases": [
+        "Pitcairn Is.",
+        "Pitcairn Islands"
+      ],
+      "centroidHint": {
+        "x": 979,
+        "y": 339
+      }
+    },
+    {
+      "id": "WS",
+      "name": "Samoa",
+      "centroidHint": {
+        "x": 666,
+        "y": 258
+      }
+    },
+    {
+      "id": "SB",
+      "name": "Solomon Islands",
+      "aliases": [
+        "Solomon Is."
+      ],
+      "centroidHint": {
+        "x": 471,
+        "y": 229
+      }
+    },
+    {
+      "id": "TO",
+      "name": "Tonga",
+      "centroidHint": {
+        "x": 646,
+        "y": 315
+      }
+    },
+    {
+      "id": "VU",
+      "name": "Vanuatu",
+      "centroidHint": {
+        "x": 518,
+        "y": 270
+      }
+    },
+    {
+      "id": "WF",
+      "name": "Wallis and Futuna",
+      "aliases": [
+        "Wallis and Futuna Is."
+      ],
+      "centroidHint": {
+        "x": 625,
+        "y": 263
+      }
+    }
+  ],
+  "helpers": [
+    {
+      "id": "PW",
+      "anchor": {
+        "x": 295,
+        "y": 111
+      }
+    },
+    {
+      "id": "NR",
+      "anchor": {
+        "x": 512,
+        "y": 164
+      }
+    },
+    {
+      "id": "KI",
+      "anchor": {
+        "x": 571,
+        "y": 196
+      }
+    },
+    {
+      "id": "FM",
+      "anchor": {
+        "x": 471,
+        "y": 101
+      }
+    },
+    {
+      "id": "MH",
+      "anchor": {
+        "x": 547,
+        "y": 122
+      }
+    },
+    {
+      "id": "GU",
+      "anchor": {
+        "x": 353,
+        "y": 74
+      }
+    },
+    {
+      "id": "MP",
+      "anchor": {
+        "x": 356,
+        "y": 35
+      }
+    },
+    {
+      "id": "CX",
+      "anchor": {
+        "x": 52,
+        "y": 242
+      }
+    },
+    {
+      "id": "WS",
+      "anchor": {
+        "x": 662,
+        "y": 244
+      }
+    },
+    {
+      "id": "AS",
+      "anchor": {
+        "x": 689,
+        "y": 273
+      }
+    },
+    {
+      "id": "WF",
+      "anchor": {
+        "x": 622,
+        "y": 248
+      }
+    },
+    {
+      "id": "TO",
+      "anchor": {
+        "x": 638,
+        "y": 329
+      }
+    },
+    {
+      "id": "NU",
+      "anchor": {
+        "x": 674,
+        "y": 313
+      }
+    },
+    {
+      "id": "CK",
+      "anchor": {
+        "x": 750,
+        "y": 312
+      }
+    },
+    {
+      "id": "PF",
+      "anchor": {
+        "x": 821,
+        "y": 273
+      }
+    },
+    {
+      "id": "PN",
+      "anchor": {
+        "x": 975,
+        "y": 343
+      }
+    }
+  ]
+}

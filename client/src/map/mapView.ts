@@ -203,7 +203,25 @@ export class MapView {
     const badges = createElement<SVGGElement>("g");
     badges.classList.add("badge-layer");
     this.badgeLayer = badges;
-    this.viewport.replaceChildren(hitLayer, regionLayer, helperLayer, badges, cursors);
+    // Dot packs ship a land underlay as a background object; it renders as
+    // pure decoration beneath every interactive layer.
+    const bgLayer = createElement<SVGGElement>("g");
+    bgLayer.classList.add("map-bg-layer");
+    const bgObject = (topo as Topology).objects.background;
+    if (bgObject && bgObject.type === "GeometryCollection" && bgObject.geometries?.length) {
+      const bgCollection = feature(topo as Topology, bgObject) as FeatureCollection<GeometryObject>;
+      for (const bgFeature of bgCollection.features) {
+        const d = path(bgFeature);
+        if (!d) {
+          continue;
+        }
+        const bgPath = createElement<SVGPathElement>("path");
+        bgPath.setAttribute("d", d);
+        bgPath.classList.add("map-bg");
+        bgLayer.append(bgPath);
+      }
+    }
+    this.viewport.replaceChildren(bgLayer, hitLayer, regionLayer, helperLayer, badges, cursors);
     if (this.debug) {
       const dot = createElement<SVGCircleElement>("circle");
       dot.classList.add("debug-dot");

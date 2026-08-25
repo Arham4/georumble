@@ -166,10 +166,34 @@ export function splitRingAtAntimeridian(ring) {
  *   features                  — [{ id, name, aliases?, parts }] where parts is an
  *                               array of lon/lat polygons, each an array of
  *                               outer-only rings [[[lon,lat],...],...]
+ *   background                — optional parts in the same shape, emitted as a
+ *                               non-interactive "background" object (land
+ *                               underlay for dot packs) the renderer draws
+ *                               beneath the regions
  */
 export async function buildWorldPack(config) {
   const { canvas, toPixel } = await worldFrame();
   const { arcs, toArcIndexes } = encodeArcsFromRings();
+
+  let backgroundGeometry = null;
+  if (config.background?.length) {
+    const backgroundRings = config.background
+      .flat()
+      .flatMap(splitRingAtAntimeridian)
+      .map((ring) =>
+        ring.map(toPixel).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1])),
+      )
+      .filter((ring) => ring.length >= 4);
+    if (backgroundRings.length === 0) {
+      throw new Error("background geometry collapsed under projection");
+    }
+    const backgroundArcs = backgroundRings.map((ring) => toArcIndexes(ring));
+    backgroundGeometry = {
+      id: "background",
+      type: backgroundArcs.length > 1 ? "MultiPolygon" : "Polygon",
+      arcs: backgroundArcs.length > 1 ? backgroundArcs : backgroundArcs[0],
+    };
+  }
 
   const geometries = [];
   const features = [];
@@ -229,7 +253,12 @@ export async function buildWorldPack(config) {
 
   const outTopology = {
     type: "Topology",
-    objects: { countries: { type: "GeometryCollection", geometries } },
+    objects: {
+      countries: { type: "GeometryCollection", geometries },
+      ...(backgroundGeometry
+        ? { background: { type: "GeometryCollection", geometries: [backgroundGeometry] } }
+        : {}),
+    },
     arcs,
     transform: { scale: [1, 1], translate: [0, 0] },
   };

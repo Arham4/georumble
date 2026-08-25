@@ -20,6 +20,8 @@ async function loadD3Geo() {
  *   radiusDegrees               — dot radius in degrees (default 2.5 ≈ 7px
  *                                 on the 1000-wide world frame); the client's
  *                                 fat-stroke halos keep small dots clickable
+ *   background                  — optional lon/lat polygon parts (land underlay)
+ *                                 emitted as the non-interactive background object
  */
 export async function buildPoiPack(config) {
   const points = config.points;
@@ -45,6 +47,7 @@ export async function buildPoiPack(config) {
     packId: config.packId,
     displayName: config.displayName,
     source: config.source,
+    background: config.background,
     features: points.map(({ lon, lat, ...meta }) => ({
       ...meta,
       parts: [circle.center([lon, lat])().coordinates],

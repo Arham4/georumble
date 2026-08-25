@@ -67,41 +67,60 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   const playersLabel = el("div", "section-label", "In this room");
   const playerList = el("ul", "player-list");
 
+  // Packs render as labeled sections inside one scrollable area, so the
+  // picker scales to dozens of packs while Start stays on screen.
+  const GROUP_LABELS: Record<string, string> = {
+    countries: "Countries",
+    usa: "USA",
+    world: "World",
+  };
   const packsLabel = el("div", "section-label", "Pick a map");
-  const packGrid = el("div", "pack-grid");
+  const packScroller = el("div", "pack-scroller");
   let selectedPackId = PACK_MANIFEST[0]?.packId ?? null;
   const cards = new Map<string, PackCardRefs>();
+  const groups = new Map<string, string[]>();
   for (const descriptor of PACK_MANIFEST) {
-    const card = el("button", "pack-card");
-    card.type = "button";
-    const name = el("div", "pack-name", descriptor.displayName);
-    const blurb = el("div", "pack-blurb", descriptor.blurb);
-    card.append(name, blurb);
-    if (selectedPackId === descriptor.packId) {
-      card.classList.add("selected");
-    }
-    card.addEventListener("click", () => {
-      selectedPackId = descriptor.packId;
-      for (const [id, refs] of cards) {
-        refs.card.classList.toggle("selected", id === selectedPackId);
+    const ids = groups.get(descriptor.group) ?? [];
+    ids.push(descriptor.packId);
+    groups.set(descriptor.group, ids);
+  }
+  for (const [group, packIds] of groups) {
+    packScroller.append(el("div", "pack-group-label", GROUP_LABELS[group] ?? group));
+    const packGrid = el("div", "pack-grid");
+    for (const packId of packIds) {
+      const descriptor = PACK_MANIFEST.find((candidate) => candidate.packId === packId)!;
+      const card = el("button", "pack-card");
+      card.type = "button";
+      const name = el("div", "pack-name", descriptor.displayName);
+      const blurb = el("div", "pack-blurb", descriptor.blurb);
+      card.append(name, blurb);
+      if (selectedPackId === descriptor.packId) {
+        card.classList.add("selected");
       }
-      updateStartButton(lastState);
-    });
-    void deps.store
-      .load(descriptor.packId)
-      .then((loaded) => {
-        const count = el("div", "pack-count", `${loaded.pack.features.length} regions`);
-        card.append(count);
-        const refs = cards.get(descriptor.packId);
-        if (refs) {
-          refs.count = count;
+      card.addEventListener("click", () => {
+        selectedPackId = descriptor.packId;
+        for (const [id, refs] of cards) {
+          refs.card.classList.toggle("selected", id === selectedPackId);
         }
-      })
-      .catch(() => {
-        // Counts are decoration; the Start path surfaces load failures.
+        updateStartButton(lastState);
       });
-    cards.set(descriptor.packId, { card, count: null });
-    packGrid.append(card);
+      void deps.store
+        .load(descriptor.packId)
+        .then((loaded) => {
+          const count = el("div", "pack-count", `${loaded.pack.features.length} regions`);
+          card.append(count);
+          const refs = cards.get(descriptor.packId);
+          if (refs) {
+            refs.count = count;
+          }
+        })
+        .catch(() => {
+          // Counts are decoration; the Start path surfaces load failures.
+        });
+      cards.set(descriptor.packId, { card, count: null });
+      packGrid.append(card);
+    }
+    packScroller.append(packGrid);
   }
 
   const startButton = el("button", "btn full");
@@ -128,7 +147,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     playersLabel,
     playerList,
     packsLabel,
-    packGrid,
+    packScroller,
     startButton,
     waitingNote,
     el("p", "lobby-footer", "Everyone hunts the same region at once. Fewest wrong clicks wins bragging rights."),

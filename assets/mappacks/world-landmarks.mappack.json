@@ -7,8 +7,8 @@
     "height": 494
   },
   "source": {
-    "name": "Hand-authored landmark coordinates",
-    "license": "Original data"
+    "name": "Hand-authored landmark coordinates; land underlay from world-atlas land-110m (Natural Earth, public domain)",
+    "license": "Original data; underlay public domain (Natural Earth)"
   },
   "features": [
     {

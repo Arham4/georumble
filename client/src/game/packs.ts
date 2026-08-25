@@ -1,9 +1,13 @@
 import type { MapPack } from "../../../shared/mappack";
 
+export type PackGroup = "countries" | "usa" | "world";
+
 export type PackDescriptor = {
   packId: string;
   displayName: string;
   blurb: string;
+  /** Lobby picker section; new groups render automatically. */
+  group: PackGroup;
   mappackUrl: string;
   topoUrl: string;
 };
@@ -17,6 +21,7 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     packId: "us-states",
     displayName: "US States",
     blurb: "50 states plus DC on the classic albers map",
+    group: "usa",
     mappackUrl: "/mappacks/us-states.mappack.json",
     topoUrl: "/mappacks/us-states.topojson",
   },
@@ -24,6 +29,7 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     packId: "europe",
     displayName: "Europe",
     blurb: "47 countries from Portugal to Russia, microstates included",
+    group: "countries",
     mappackUrl: "/mappacks/europe.mappack.json",
     topoUrl: "/mappacks/europe.topojson",
   },
@@ -31,6 +37,7 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     packId: "asia",
     displayName: "Asia",
     blurb: "49 countries from the Mediterranean to the Pacific",
+    group: "countries",
     mappackUrl: "/mappacks/asia.mappack.json",
     topoUrl: "/mappacks/asia.topojson",
   },
@@ -38,6 +45,7 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     packId: "south-america",
     displayName: "South America",
     blurb: "12 countries from the Caribbean coast to Cape Horn",
+    group: "countries",
     mappackUrl: "/mappacks/south-america.mappack.json",
     topoUrl: "/mappacks/south-america.topojson",
   },
@@ -45,13 +53,31 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     packId: "africa",
     displayName: "Africa",
     blurb: "56 countries from the Maghreb to Madagascar",
+    group: "countries",
     mappackUrl: "/mappacks/africa.mappack.json",
     topoUrl: "/mappacks/africa.topojson",
+  },
+  {
+    packId: "north-america",
+    displayName: "North America",
+    blurb: "23 countries and Greenland, Arctic to Caribbean",
+    group: "countries",
+    mappackUrl: "/mappacks/north-america.mappack.json",
+    topoUrl: "/mappacks/north-america.topojson",
+  },
+  {
+    packId: "oceania",
+    displayName: "Oceania",
+    blurb: "23 islands and nations across the Pacific",
+    group: "countries",
+    mappackUrl: "/mappacks/oceania.mappack.json",
+    topoUrl: "/mappacks/oceania.topojson",
   },
   {
     packId: "continents",
     displayName: "Continents",
     blurb: "The seven continents on one world map",
+    group: "world",
     mappackUrl: "/mappacks/continents.mappack.json",
     topoUrl: "/mappacks/continents.topojson",
   },
@@ -59,20 +85,15 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     packId: "oceans",
     displayName: "Oceans",
     blurb: "Five oceans on the same world frame",
+    group: "world",
     mappackUrl: "/mappacks/oceans.mappack.json",
     topoUrl: "/mappacks/oceans.topojson",
-  },
-  {
-    packId: "north-america",
-    displayName: "North America",
-    blurb: "23 countries and Greenland, Arctic to Caribbean",
-    mappackUrl: "/mappacks/north-america.mappack.json",
-    topoUrl: "/mappacks/north-america.topojson",
   },
   {
     packId: "world-landmarks",
     displayName: "World Landmarks",
     blurb: "46 famous landmarks — click where they stand",
+    group: "world",
     mappackUrl: "/mappacks/world-landmarks.mappack.json",
     topoUrl: "/mappacks/world-landmarks.topojson",
   },
