@@ -17,6 +17,7 @@ type TopoShape = {
 export class PackStore {
   private readonly inflight = new Map<string, Promise<LoadedPack>>();
   private readonly settled = new Map<string, LoadedPack>();
+  private readonly counts = new Map<string, Promise<number>>();
 
   byId(packId: string): PackDescriptor | null {
     return PACK_MANIFEST.find((p) => p.packId === packId) ?? null;
@@ -24,6 +25,30 @@ export class PackStore {
 
   cached(packId: string): LoadedPack | null {
     return this.settled.get(packId) ?? null;
+  }
+
+  /**
+   * Region count for picker decoration. The mappack manifest is a few KB,
+   * while a full load drags every topology (MBs, kept forever) into memory
+   * for packs the lobby visitor may never play.
+   */
+  count(packId: string): Promise<number> {
+    const existing = this.counts.get(packId);
+    if (existing) {
+      return existing;
+    }
+    const descriptor = this.byId(packId);
+    if (!descriptor) {
+      return Promise.reject(new Error(`Unknown pack: ${packId}`));
+    }
+    const pending = fetchJson<MapPack>(descriptor.mappackUrl)
+      .then((pack) => pack.features.length)
+      .catch((error) => {
+        this.counts.delete(packId);
+        throw error;
+      });
+    this.counts.set(packId, pending);
+    return pending;
   }
 
   load(packId: string): Promise<LoadedPack> {

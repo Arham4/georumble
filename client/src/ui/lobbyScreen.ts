@@ -163,9 +163,9 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
         updateStartButton(lastState);
       });
       void deps.store
-        .load(descriptor.packId)
-        .then((loaded) => {
-          const count = el("div", "pack-count", `${loaded.pack.features.length} regions`);
+        .count(descriptor.packId)
+        .then((regions) => {
+          const count = el("div", "pack-count", `${regions} regions`);
           card.append(count);
           const refs = cards.get(descriptor.packId);
           if (refs) {
