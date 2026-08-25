@@ -46,6 +46,8 @@ const HELPERS = [
   { id: "VC", at: [-63.2, 12.7] }, // Caribbean west of St Vincent
   { id: "GD", at: [-65.3, 11.8] }, // open Caribbean, clear of Grenada and Venezuela
   { id: "BB", at: [-57.8, 12.3] }, // open Atlantic southeast of Barbados
+  { id: "TT", at: [-62.5, 9.8] }, // Atlantic off Trinidad's north coast, clear of Venezuela
+  { id: "JM", at: [-76.2, 19.5] }, // Atlantic north of Jamaica, clear of Cuba
 ];
 
 await buildContinentPack({
