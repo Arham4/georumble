@@ -1,6 +1,7 @@
 import type { GameClient, GameState } from "../game/gameClient";
 import { PACK_MANIFEST, type PackStore } from "../game/packs";
 import { el, setText, type Screen } from "./dom";
+import { createDiscordInviteLink } from "./discordInvite";
 
 export type LobbyDeps = {
   client: GameClient;
@@ -170,6 +171,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     startButton,
     randomButton,
     waitingNote,
+    createDiscordInviteLink(),
     el("p", "lobby-footer", "Everyone hunts the same region at once. Fewest wrong clicks wins bragging rights."),
   );
   container.append(panel);

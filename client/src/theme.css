@@ -521,6 +521,10 @@ body {
   color: var(--accent-light);
 }
 
+a.btn {
+  text-decoration: none;
+}
+
 .name-field {
   display: flex;
   gap: 8px;

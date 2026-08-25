@@ -8,6 +8,7 @@ import { LocalConnection } from "./net/localConnection";
 import { newRoomCode, normalizeJoinCode } from "./net/openRooms";
 import { SocketConnection } from "./net/socketConnection";
 import { el, type Screen } from "./ui/dom";
+import { createDiscordInviteLink } from "./ui/discordInvite";
 import { createLobbyScreen } from "./ui/lobbyScreen";
 import { createPlayScreen } from "./ui/playScreen";
 import { createVictoryScreen } from "./ui/victoryScreen";
@@ -523,7 +524,7 @@ async function boot(): Promise<void> {
     const joinField = el("div", "name-field");
     joinField.append(joinInput, joinButton);
 
-    bootPanel.append(title, onlineButton, joinLabel, joinField, soloButton);
+    bootPanel.append(title, onlineButton, joinLabel, joinField, soloButton, createDiscordInviteLink());
   }
 
   const bootPanel = el("div", "panel boot-panel");
