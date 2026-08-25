@@ -11,6 +11,7 @@ import {
 } from "../../shared/protocol";
 import { BROKER_SINGLETON } from "./broker";
 import { rejectUpgrade } from "./upgrade";
+import { isUnanimous, pickTicket } from "./vote-math";
 
 // Matches the design-patterns guidance that voice channels are the real ceiling.
 const MAX_PARTICIPANTS = 30;
@@ -20,7 +21,10 @@ const MAX_NAME_LENGTH = 32;
 const MAX_AVATAR_LENGTH = 512;
 const HELLO_TIMEOUT_MS = 30_000;
 const ALARM_INTERVAL_MS = 5 * 60_000;
-const CURSOR_MIN_INTERVAL_MS = 33;
+// Every webSocketMessage on a hibernating DO is a billable request, and
+// cursors are the bulk of live traffic; clients lerp between updates, so
+// ~16/s per player reads just as smoothly as 30/s at a fraction of the cost.
+const CURSOR_MIN_INTERVAL_MS = 60;
 // How long lobby map nominations stay open before the relay rolls one at
 // random. Unanimous nominations resolve immediately instead.
 const PACK_VOTE_WINDOW_MS = 15_000;
@@ -212,6 +216,11 @@ export class GameRoom extends DurableObject<Env> {
     if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) {
       return;
     }
+    // A cursor with no audience is pure cost: solo embedded sessions would
+    // otherwise bill relay requests that nobody can ever receive.
+    if (this.ctx.getWebSockets().length <= 1) {
+      return;
+    }
     const now = Date.now();
     if (now - (this.lastCursorAt.get(playerId) ?? 0) < CURSOR_MIN_INTERVAL_MS) {
       return;
@@ -278,8 +287,7 @@ export class GameRoom extends DurableObject<Env> {
       room.phase === "lobby" &&
       room.chosenPackId === null &&
       room.packVoteDeadline !== null &&
-      room.players.length > 0 &&
-      room.players.every((p) => room.packVotes[p.id] !== undefined)
+      isUnanimous(new Set(Object.keys(room.packVotes)), room.players.map((p) => p.id))
     ) {
       await this.resolvePackChoice(room);
       return;
@@ -556,7 +564,7 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   private unanimousLobbyVote(room: PersistedRoom): boolean {
-    return room.players.length > 0 && room.players.every((p) => room.lobbyVotes.includes(p.id));
+    return isUnanimous(new Set(room.lobbyVotes), room.players.map((p) => p.id));
   }
 
   /**
@@ -581,9 +589,7 @@ export class GameRoom extends DurableObject<Env> {
     if (room.packVoteDeadline === null) {
       room.packVoteDeadline = Date.now() + PACK_VOTE_WINDOW_MS;
     }
-    const unanimous =
-      room.players.length > 0 && room.players.every((p) => room.packVotes[p.id] !== undefined);
-    if (unanimous) {
+    if (isUnanimous(new Set(Object.keys(room.packVotes)), room.players.map((p) => p.id))) {
       await this.resolvePackChoice(room);
       return;
     }
@@ -618,7 +624,10 @@ export class GameRoom extends DurableObject<Env> {
       await this.persist();
       return;
     }
-    room.chosenPackId = tickets[crypto.getRandomValues(new Uint32Array(1))[0] % tickets.length];
+    room.chosenPackId = pickTicket(
+      tickets,
+      () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32,
+    );
     await this.persist();
     console.log(JSON.stringify({
       event: "pack_chosen",
