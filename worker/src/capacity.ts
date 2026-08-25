@@ -24,7 +24,10 @@ const PLAN_LIMITS: Record<string, PlanTier> = {
 };
 const DEFAULT_TIER = PLAN_LIMITS.free;
 
-const CACHE_TTL_MS = 60_000;
+// Plan tier and month-to-date usage move on day scales; refreshing each
+// isolate a few times an hour keeps the two Cloudflare API calls per refresh
+// off the admission path without staleness that matters.
+const CACHE_TTL_MS = 10 * 60_000;
 const LIMITS_KV_KEY = "limits";
 
 type GraphQLResponse = {

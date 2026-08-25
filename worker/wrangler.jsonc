@@ -25,7 +25,7 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom", "RoomBroker"] }],
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1
+    "head_sampling_rate": 0.25
   },
   // Optional: bind a KV namespace and write a number or {"maxRooms": N} to the
   // "limits" key to retune the room-capacity gate without a redeploy. Unbound

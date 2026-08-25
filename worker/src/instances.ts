@@ -2,6 +2,9 @@ import type { Env } from "./env";
 
 const POSITIVE_CACHE_TTL_MS = 60_000;
 
+/** Insert-time trigger to sweep expired positives instead of growing forever. */
+const VERIFIED_SWEEP_SIZE = 256;
+
 const verifiedUntil = new Map<string, number>();
 
 /**
@@ -27,6 +30,16 @@ export async function verifyInstance(roomId: string, env: Env): Promise<boolean>
       { headers: { Authorization: `Bot ${token}` } },
     );
     if (response.ok) {
+      // Entries only expire logically; without this sweep the map grows for
+      // the isolate's whole life (room ids reach 128 chars each).
+      if (verifiedUntil.size >= VERIFIED_SWEEP_SIZE) {
+        const now = Date.now();
+        for (const [id, until] of verifiedUntil) {
+          if (until <= now) {
+            verifiedUntil.delete(id);
+          }
+        }
+      }
       verifiedUntil.set(roomId, Date.now() + POSITIVE_CACHE_TTL_MS);
       return true;
     }

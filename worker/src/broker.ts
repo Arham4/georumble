@@ -16,7 +16,12 @@ type RoomRecord = {
 // Generous on purpose: a room whose alarm keeps firing while occupied is
 // refreshed well inside this window, so only genuinely orphaned records
 // (e.g. a room that died mid-deploy without releasing) get swept.
-const ROOM_TTL_MS = 15 * 60_000;
+// Must stay a comfortable multiple of ALARM_INTERVAL_MS in room.ts — three
+// beats of missed-heartbeat tolerance.
+const ROOM_TTL_MS = 30 * 60_000;
+
+/** Beats closer than this to the last refresh skip their registry rewrite. */
+const HEARTBEAT_COALESCE_MS = 5 * 60_000;
 
 export class RoomBroker extends DurableObject<Env> {
   private readonly limits: RoomLimitSource;
@@ -46,7 +51,10 @@ export class RoomBroker extends DurableObject<Env> {
     } else if (url.pathname === "/heartbeat") {
       const rooms = await this.registry();
       const record = rooms.get(roomId);
-      if (record) {
+      // Every occupied room beats on the same interval; coalescing beats
+      // inside half that window collapses N rooms' rewrites of the one
+      // registry blob without ever letting a live record age toward the TTL.
+      if (record && Date.now() - record.lastSeen > HEARTBEAT_COALESCE_MS) {
         record.lastSeen = Date.now();
         await this.persist(rooms);
       }
@@ -62,8 +70,12 @@ export class RoomBroker extends DurableObject<Env> {
     const existing = rooms.get(roomId);
     if (existing) {
       // Capacity gates NEW rooms only: joiners of a live room always pass.
-      existing.lastSeen = Date.now();
-      await this.persist(rooms);
+      // Same coalescing as /heartbeat — a join burst must not rewrite the
+      // registry once per joiner.
+      if (Date.now() - existing.lastSeen > HEARTBEAT_COALESCE_MS) {
+        existing.lastSeen = Date.now();
+        await this.persist(rooms);
+      }
       return { ok: true };
     }
 

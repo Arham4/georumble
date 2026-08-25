@@ -661,6 +661,11 @@ export class GameRoom extends DurableObject<Env> {
       }
       return;
     }
+    if (room.packVotes[playerId] === rawPackId && room.packVoteDeadline !== null) {
+      // The picker UI invites re-clicks of an already-nominated card; state is
+      // provably unchanged, so skip the blob write and snapshot fan-out.
+      return;
+    }
     room.packVotes[playerId] = rawPackId;
     if (room.packVoteDeadline === null) {
       room.packVoteDeadline = Date.now() + PACK_VOTE_WINDOW_MS;
