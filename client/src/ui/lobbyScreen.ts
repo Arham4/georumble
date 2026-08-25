@@ -1,7 +1,7 @@
 import type { GameClient, GameState } from "../game/gameClient";
 import { PACK_MANIFEST, type PackStore } from "../game/packs";
 import { el, setText, type Screen } from "./dom";
-import { createDiscordInviteLink } from "./discordInvite";
+import { createDiscordInviteLink, createGithubLink } from "./linkButtons";
 
 export type LobbyDeps = {
   client: GameClient;
@@ -175,6 +175,8 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     el("p", "lobby-footer", "Everyone hunts the same region at once. Fewest wrong clicks wins bragging rights."),
   );
   container.append(panel);
+  const githubLink = createGithubLink();
+  container.append(githubLink);
 
   let lastState: GameState | null = null;
 
@@ -229,6 +231,7 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
       updateStartButton(state);
     },
     destroy(): void {
+      githubLink.remove();
       panel.remove();
     },
   };

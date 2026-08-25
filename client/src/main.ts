@@ -8,7 +8,7 @@ import { LocalConnection } from "./net/localConnection";
 import { newRoomCode, normalizeJoinCode } from "./net/openRooms";
 import { SocketConnection } from "./net/socketConnection";
 import { el, type Screen } from "./ui/dom";
-import { createDiscordInviteLink } from "./ui/discordInvite";
+import { createDiscordInviteLink, createGithubLink } from "./ui/linkButtons";
 import { createLobbyScreen } from "./ui/lobbyScreen";
 import { createPlayScreen } from "./ui/playScreen";
 import { createVictoryScreen } from "./ui/victoryScreen";
@@ -279,7 +279,10 @@ async function boot(): Promise<void> {
       case "boot":
         currentScreen = {
           update: () => undefined,
-          destroy: () => bootPanel.remove(),
+          destroy: () => {
+            bootPanel.remove();
+            modeChoiceGithub?.remove();
+          },
         };
         break;
     }
@@ -476,6 +479,8 @@ async function boot(): Promise<void> {
 
   function mountModeChoice(): void {
     bootPanel.replaceChildren();
+    modeChoiceGithub = createGithubLink();
+    screenHolder.append(modeChoiceGithub);
     const title = el("div", "section-label");
     title.textContent = "How do you want to play?";
     const soloButton = el("button", "btn btn-ghost full");
@@ -529,6 +534,7 @@ async function boot(): Promise<void> {
 
   const bootPanel = el("div", "panel boot-panel");
   bootPanel.textContent = "Connecting…";
+  let modeChoiceGithub: HTMLAnchorElement | null = null;
 
   mapView.onGuess((featureId) => {
     mapView.pressFeedback(featureId);
