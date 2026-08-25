@@ -964,6 +964,35 @@ a.btn {
   color: var(--text-muted);
 }
 
+.answer-field {
+  pointer-events: auto;
+  align-self: center;
+  margin-top: 10px;
+  width: min(340px, calc(100vw - 32px));
+}
+
+.answer-field input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid rgb(255 255 255 / 0.14);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text);
+  font-size: 16px;
+  font-family: inherit;
+  text-align: center;
+}
+
+.answer-field input:focus {
+  outline: none;
+  border-color: var(--accent-light);
+}
+
+.answer-field input.shake {
+  border-color: var(--wrong);
+  animation: region-shake 480ms ease-in-out;
+}
+
 .hud-hint {
   align-self: center;
   margin-top: 10px;

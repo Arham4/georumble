@@ -1,5 +1,6 @@
 import type { GameClient, GameState } from "../game/gameClient";
 import type { MapPack } from "../../../shared/mappack";
+import { normalizeAnswer } from "../../../shared/answers";
 import type { MapView } from "../map/mapView";
 import { sfx } from "../audio/sfx";
 import { accuracyPercent, el, formatClock, setText, type Screen } from "./dom";
@@ -8,6 +9,12 @@ export type PlayDeps = {
   mapView: MapView;
   client: GameClient;
   packOf(): MapPack | null;
+  /**
+   * Runs a named feature through the same click pipeline. Returns false
+   * when the guess was swallowed (already found or ruled out) so the field
+   * can flash instead of waiting in silence.
+   */
+  answerSubmit(featureId: string): boolean;
 };
 
 /**
@@ -48,6 +55,43 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
   const hintChip = el("div", "hud-hint hidden");
   hintChip.textContent = "Tough one? The answer is outlined on the map.";
 
+  // Type-to-answer: names resolve through the same pipeline as clicks, so
+  // aliases and scoring behave identically. A name that matches no feature
+  // just shakes the field — no penalty for creative spelling.
+  const answerField = el("div", "answer-field");
+  const answerInput = document.createElement("input");
+  answerInput.type = "text";
+  answerInput.placeholder = "…or type the answer";
+  answerInput.autocomplete = "off";
+  answerInput.spellcheck = false;
+  answerInput.enterKeyHint = "done";
+  answerInput.maxLength = 64;
+  answerInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    const query = normalizeAnswer(answerInput.value);
+    if (!query) {
+      return;
+    }
+    const pack = deps.packOf();
+    const match = pack?.features.find(
+      (feature) =>
+        normalizeAnswer(feature.name) === query ||
+        (feature.aliases ?? []).some((alias) => normalizeAnswer(alias) === query),
+    );
+    if (match && deps.answerSubmit(match.id)) {
+      answerInput.value = "";
+      answerInput.classList.remove("invalid");
+    } else {
+      answerInput.classList.remove("shake");
+      void answerInput.offsetWidth;
+      answerInput.classList.add("shake");
+    }
+  });
+  answerInput.addEventListener("input", () => answerInput.classList.remove("invalid"));
+  answerField.append(answerInput);
+
   const ticker = el("div", "hud-ticker");
 
   const zoomControls = el("div", "zoom-controls");
@@ -68,7 +112,7 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
   zoomReset.addEventListener("click", () => deps.mapView.resetView());
   zoomControls.append(zoomIn, zoomOut, zoomReset);
 
-  hud.append(top, hintChip, ticker, zoomControls);
+  hud.append(top, answerField, hintChip, ticker, zoomControls);
   container.append(hud);
 
   let lastTarget: string | null = null;

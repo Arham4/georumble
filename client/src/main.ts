@@ -297,6 +297,11 @@ async function boot(): Promise<void> {
           mapView,
           client,
           packOf: () => currentPack?.pack ?? null,
+          answerSubmit: (featureId) => {
+            mapView.pressFeedback(featureId);
+            revealRegionName(featureId);
+            return client.guess(featureId);
+          },
         });
         break;
       case "victory":
