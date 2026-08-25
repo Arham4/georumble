@@ -53,8 +53,10 @@ export type GameState = {
   /** Relay-clock minus local clock at the last snapshot, for deadline math. */
   clockOffsetMs: number | null;
   hintActive: boolean;
+  /** Host's choice at start: does this round grant miss-streak hints. */
+  hintsEnabled: boolean;
   ticker: TickerEntry[];
-  win: { seconds: number; guesses: number } | null;
+  win: { seconds: number; guesses: number; wheelSeed?: number } | null;
   scoreboard: ScoreRow[];
   notice: { text: string; kind: "info" | "error" } | null;
 };
@@ -92,6 +94,7 @@ export class GameClient {
   private packVotes: Record<string, string> = {};
   private packVoteDeadline: number | null = null;
   private chosenPackId: string | null = null;
+  private hintsEnabled = true;
   private tallies = new Map<string, PlayerTally>();
   /** Relay-clock minus local-clock at the last snapshot, so elapsed time survives device clock skew. */
   private clockOffset: number | null = null;
@@ -169,7 +172,7 @@ export class GameClient {
         this.events.onPeerCursor(message.byPlayer, message.x, message.y);
         break;
       case "win":
-        this.win = { seconds: message.seconds, guesses: message.guesses };
+        this.win = { seconds: message.seconds, guesses: message.guesses, wheelSeed: message.wheelSeed };
         if (this.snapshot) {
           this.snapshot = { ...this.snapshot, phase: "victory" };
         }
@@ -223,7 +226,7 @@ export class GameClient {
     this.emit();
   }
 
-  startGame(pack: MapPack): void {
+  startGame(pack: MapPack, hints = true): void {
     if (!this.isHost()) {
       return;
     }
@@ -233,7 +236,7 @@ export class GameClient {
       pack.features.map((feature) => feature.id),
       randomSeed(),
     );
-    this.send({ t: "start", packId: pack.packId, order });
+    this.send({ t: "start", packId: pack.packId, order, hints });
   }
 
   /** Host-only: leave victory (or abort the round) and reopen the map picker. */
@@ -319,6 +322,7 @@ export class GameClient {
     this.packVotes = snapshot.packVotes ?? {};
     this.packVoteDeadline = snapshot.packVoteDeadline ?? null;
     this.chosenPackId = snapshot.chosenPackId ?? null;
+    this.hintsEnabled = snapshot.hintsEnabled ?? true;
     if (typeof snapshot.serverNow === "number") {
       this.clockOffset = snapshot.serverNow - Date.now();
     }
@@ -338,6 +342,7 @@ export class GameClient {
     this.packVotes = {};
     this.packVoteDeadline = null;
     this.chosenPackId = null;
+    this.hintsEnabled = true;
     this.tallies.clear();
     this.ticker = [];
     this.win = null;
@@ -508,9 +513,12 @@ export class GameClient {
       packVotes: this.packVotes,
       packVoteDeadline: this.packVoteDeadline,
       chosenPackId: this.chosenPackId,
+      hintsEnabled: this.hintsEnabled,
       clockOffsetMs: this.clockOffset,
       hintActive:
-        target !== null && (this.missesByTarget.get(target) ?? 0) >= HINT_AFTER_MISSES,
+        this.hintsEnabled &&
+        target !== null &&
+        (this.missesByTarget.get(target) ?? 0) >= HINT_AFTER_MISSES,
       ticker: this.ticker,
       win: this.win,
       scoreboard: (snapshot?.players ?? []).map((player) => {

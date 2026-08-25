@@ -607,6 +607,25 @@ a.btn {
   color: var(--accent-light);
 }
 
+.hint-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.hint-toggle input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+
 .pack-card {
   position: relative;
 }

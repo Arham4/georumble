@@ -24,6 +24,21 @@ const COLORS = [
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+/**
+ * Tiny seeded PRNG: the relay hands every client the same wheelSeed in the
+ * win broadcast, so identical slices + identical stream = identical winner
+ * on every screen. Local Math.random would crown different people.
+ */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 type Slice = {
   name: string;
   initial: string;
@@ -74,6 +89,7 @@ export function createCarryWheel(): Wheel {
   let rotation = 0;
   let spinning = false;
   let spun = false;
+  let winSeed: number | null = null;
   let autoTimer: ReturnType<typeof setTimeout> | null = null;
   let raf: number | null = null;
 
@@ -155,8 +171,8 @@ export function createCarryWheel(): Wheel {
   }
 
   /** Weighted by geometry: a uniform angle lands in a slice with its odds. */
-  function pickByAngle(): Slice {
-    let angle = START + Math.random() * TAU;
+  function pickByAngle(random: () => number): Slice {
+    let angle = START + random() * TAU;
     if (angle >= START + TAU) {
       angle -= TAU;
     }
@@ -177,7 +193,7 @@ export function createCarryWheel(): Wheel {
     spinning = true;
     result.classList.remove("visible");
 
-    const winner = pickByAngle();
+    const winner = pickByAngle(winSeed === null ? Math.random : mulberry32(winSeed));
     const mid = (winner.start + winner.end) / 2;
     const current = ((rotation % TAU) + TAU) % TAU;
     let delta = (START - mid - current) % TAU;
@@ -219,6 +235,7 @@ export function createCarryWheel(): Wheel {
       }
       signature = next;
       buildSlices(state.scoreboard);
+      winSeed = state.win?.wheelSeed ?? null;
       result.classList.remove("visible");
       if (autoTimer === null) {
         autoTimer = setTimeout(() => {

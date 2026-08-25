@@ -339,6 +339,7 @@ async function boot(): Promise<void> {
         packVoteDeadline: null,
         chosenPackId: null,
         clockOffsetMs: null,
+        hintsEnabled: true,
         hintActive: false,
         ticker: [],
         win: null,
@@ -355,7 +356,7 @@ async function boot(): Promise<void> {
     }
     try {
       const loaded = await store.load(packId);
-      client.startGame(loaded.pack);
+      client.startGame(loaded.pack, lastState?.hintsEnabled ?? true);
     } catch {
       // Swallowed here so the victory button's finally-driven re-enable isn't
       // followed by an unhandled rejection; a fresh click retries.
