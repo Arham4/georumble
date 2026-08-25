@@ -44,6 +44,23 @@ bob.ws.send(JSON.stringify({ t: "pack-vote-resolve" }));
 await sleep(800);
 check("resolve before the deadline is refused", latest(alice.log)?.chosenPackId === undefined);
 
+// The roll must fire from the relay's own alarm at the deadline: nobody
+// sends another nudge here, and both sockets sit idle past expiry. This is
+// what resolves an all-backgrounded room.
+const deadline = latest(alice.log)?.packVoteDeadline;
+check("deadline still pending before expiry", typeof deadline === "number");
+await sleep(Math.max(0, deadline - Date.now() + 6000));
+check(
+  "relay alarm rolls the map at the deadline with no client nudge",
+  typeof latest(alice.log)?.chosenPackId === "string",
+);
+check(
+  "rolled choice lands on the other seat too",
+  latest(bob.log)?.chosenPackId === latest(alice.log)?.chosenPackId,
+);
+// NOTE: the rolled winner pins this room's ballot until its DO state is
+// cleared — wipe worker/.wrangler/state before re-verifying locally.
+
 // Unanimous vote-to-lobby is a no-op in the lobby phase; verify the message
 // is at least accepted without a rejection broadcast.
 const before = alice.log.length;

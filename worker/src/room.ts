@@ -388,6 +388,9 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   async alarm(): Promise<void> {
+    // Alarms wake a hibernated DO with no in-memory state; every predicate
+    // below reads persisted state, so hydrate before deciding anything.
+    await this.ensureReady();
     const now = Date.now();
     for (const [ws, joinedAt] of this.pending) {
       if (now - joinedAt > HELLO_TIMEOUT_MS) {
