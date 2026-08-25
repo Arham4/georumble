@@ -3,8 +3,9 @@ import type { FeatureCollection, GeometryObject } from "geojson";
 import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { MapPack } from "../../../shared/mappack";
+import { createElement, sanitizeClipId } from "./svgElement";
+import { PeerCursorLayer } from "./peerCursors";
 
-const SVG_NS = "http://www.w3.org/2000/svg";
 // Effective minimum click extent in viewBox units; smaller regions get an
 // invisible fat-stroke halo so micro-regions stay clickable without zooming,
 // and count as "tiny" for auto-framing helpers.
@@ -19,8 +20,6 @@ const PRESS_MS = 260;
 const ZOOM_TWEEN_MS = 480;
 const CURSOR_SEND_MS = 80;
 const CURSOR_SEND_MIN_UNITS = 1.5;
-const CURSOR_LERP = 0.28;
-const CURSOR_STALE_MS = 4000;
 const HELPER_CIRCLE_PX = 18;
 // Upper bound on a click halo's on-screen diameter at extreme zoom, so the
 // world-footprint assists can never paint the whole viewport clickable.
@@ -38,15 +37,6 @@ type RegionGeo = {
   minDim: number;
 };
 
-type PeerCursor = {
-  group: SVGGElement;
-  x: number;
-  y: number;
-  renderX: number;
-  renderY: number;
-  seenAt: number;
-};
-
 export class MapView {
   readonly svg: SVGSVGElement;
 
@@ -61,11 +51,10 @@ export class MapView {
   private readonly halos: SVGPathElement[] = [];
   private readonly helpers = new Map<string, { group: SVGGElement; circle: SVGCircleElement }>();
   private readonly badgeGroups = new Map<string, SVGGElement>();
+  private readonly peerLayer = new PeerCursorLayer(() => this.k);
   private dotPack = false;
   private badgeLayer: SVGGElement | null = null;
   private debugDot: SVGCircleElement | null = null;
-  private readonly peers = new Map<string, PeerCursor>();
-  private peerRaf: number | null = null;
   private lastCursorSentAt = 0;
   private lastCursorSentPoint: [number, number] = [NaN, NaN];
   private foundIds = new Set<string>();
@@ -118,23 +107,11 @@ export class MapView {
   }
 
   updatePeerCursor(playerId: string, name: string, avatarUrl: string | null, x: number, y: number): void {
-    let peer = this.peers.get(playerId);
-    if (!peer || peer.group.dataset.name !== name || peer.group.dataset.avatar !== (avatarUrl ?? "")) {
-      peer?.group.remove();
-      const group = buildCursorChip(playerId, name, avatarUrl);
-      this.cursorLayer?.append(group);
-      peer = { group, x, y, renderX: x, renderY: y, seenAt: Date.now() };
-      this.peers.set(playerId, peer);
-      this.startPeerLoop();
-    }
-    peer.x = x;
-    peer.y = y;
-    peer.seenAt = Date.now();
+    this.peerLayer.upsert(playerId, name, avatarUrl, x, y);
   }
 
   dropPeerCursor(playerId: string): void {
-    this.peers.get(playerId)?.group.remove();
-    this.peers.delete(playerId);
+    this.peerLayer.drop(playerId);
   }
 
   loadPack(pack: MapPack, topo: unknown): void {
@@ -219,6 +196,7 @@ export class MapView {
     const cursors = createElement<SVGGElement>("g");
     cursors.classList.add("cursor-layer");
     this.cursorLayer = cursors;
+    this.peerLayer.setLayer(cursors);
     const helperLayer = this.buildHelperLayer(pack);
     const badges = createElement<SVGGElement>("g");
     badges.classList.add("badge-layer");
@@ -257,9 +235,6 @@ export class MapView {
       clearTimeout(timer);
     }
     this.effectTimers.clear();
-    if (this.peerRaf !== null) {
-      cancelAnimationFrame(this.peerRaf);
-    }
     if (this.tweenRaf !== null) {
       cancelAnimationFrame(this.tweenRaf);
     }
@@ -656,33 +631,6 @@ export class MapView {
     }
   }
 
-  private startPeerLoop(): void {
-    if (this.peerRaf !== null) {
-      return;
-    }
-    const step = (): void => {
-      const now = Date.now();
-      for (const [playerId, peer] of this.peers) {
-        if (now - peer.seenAt > CURSOR_STALE_MS) {
-          peer.group.remove();
-          this.peers.delete(playerId);
-          continue;
-        }
-        peer.renderX += (peer.x - peer.renderX) * CURSOR_LERP;
-        peer.renderY += (peer.y - peer.renderY) * CURSOR_LERP;
-        // Counter-scale with the camera so chips hold a constant on-screen
-        // size — same contract as dot-pack dots — instead of ballooning
-        // while zoomed into a dense map.
-        peer.group.setAttribute(
-          "transform",
-          `translate(${peer.renderX} ${peer.renderY}) scale(${(1 / this.k).toFixed(4)})`,
-        );
-      }
-      this.peerRaf = this.peers.size > 0 ? requestAnimationFrame(step) : null;
-    };
-    this.peerRaf = requestAnimationFrame(step);
-  }
-
   private onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0) {
       return;
@@ -1009,10 +957,7 @@ export class MapView {
     this.dotPack = false;
     this.badgeLayer = null;
     this.debugDot = null;
-    for (const peer of this.peers.values()) {
-      peer.group.remove();
-    }
-    this.peers.clear();
+    this.peerLayer.dispose();
     this.hintRing = null;
     this.cursorLayer = null;
     this.viewport.replaceChildren();
@@ -1031,67 +976,6 @@ function heatTier(misses: number): string {
 
 function easeInOut(t: number): number {
   return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-}
-
-function buildCursorChip(playerId: string, name: string, avatarUrl: string | null): SVGGElement {
-  const group = createElement<SVGGElement>("g");
-  group.classList.add("cursor-chip");
-  group.dataset.playerId = playerId;
-  group.dataset.name = name;
-  group.dataset.avatar = avatarUrl ?? "";
-
-  const dotRadius = 11;
-  const clipId = `cursor-clip-${sanitizeClipId(playerId)}`;
-  if (avatarUrl) {
-    const clip = createElement<SVGClipPathElement>("clipPath");
-    clip.setAttribute("id", clipId);
-    const shape = createElement<SVGCircleElement>("circle");
-    shape.setAttribute("r", String(dotRadius));
-    clip.append(shape);
-    const defs = createElement<SVGElement>("defs");
-    defs.append(clip);
-    group.append(defs);
-
-    const image = createElement<SVGImageElement>("image");
-    image.setAttribute("href", avatarUrl);
-    image.setAttribute("x", String(-dotRadius));
-    image.setAttribute("y", String(-dotRadius));
-    image.setAttribute("width", String(dotRadius * 2));
-    image.setAttribute("height", String(dotRadius * 2));
-    image.setAttribute("clip-path", `url(#${clipId})`);
-    image.setAttribute("preserveAspectRatio", "xMidYMid slice");
-    group.append(image);
-
-    const rim = createElement<SVGCircleElement>("circle");
-    rim.classList.add("cursor-rim");
-    rim.setAttribute("r", String(dotRadius));
-    group.append(rim);
-  } else {
-    const dot = createElement<SVGCircleElement>("circle");
-    dot.classList.add("cursor-dot");
-    dot.setAttribute("r", String(dotRadius));
-    group.append(dot);
-
-    const initial = createElement<SVGTextElement>("text");
-    initial.classList.add("cursor-initial");
-    initial.setAttribute("text-anchor", "middle");
-    initial.setAttribute("dominant-baseline", "central");
-    initial.setAttribute("y", "1");
-    initial.textContent = (name.trim()[0] ?? "?").toUpperCase();
-    group.append(initial);
-  }
-
-  const label = createElement<SVGTextElement>("text");
-  label.classList.add("cursor-name");
-  label.setAttribute("x", String(dotRadius + 5));
-  label.setAttribute("y", String(-dotRadius - 2));
-  label.textContent = name;
-  group.append(label);
-  return group;
-}
-
-function sanitizeClipId(playerId: string): string {
-  return playerId.replace(/[^A-Za-z0-9_-]/g, "") || "anon";
 }
 
 function extractLargestCollection(topo: unknown): FeatureCollection<GeometryObject> {
@@ -1118,7 +1002,4 @@ function regionIdAtPoint(clientX: number, clientY: number): string | null {
 }
 
 // createElementNS's overloads only resolve for literal tag names, so callers
-// pin the element type instead.
-function createElement<T extends SVGElement = SVGElement>(tag: string): T {
-  return document.createElementNS(SVG_NS, tag) as T;
-}
+// pin the element type instead — the shared factory lives in svgElement.ts.
