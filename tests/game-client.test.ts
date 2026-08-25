@@ -174,3 +174,18 @@ test("pack votes and the chosen pack ride snapshots into state", () => {
   assert.equal(last.chosenPackId, "asia");
   h.client.dispose();
 });
+
+test("a refresh mid-victory crowns the same player via the snapshot seed", () => {
+  const h = harness("Tester");
+  // The rejoined client never saw the one-shot win broadcast; the victory
+  // snapshot must carry the relay's seed on its own.
+  h.send({
+    t: "welcome",
+    you: "p1",
+    snapshot: { ...baseSnapshot, phase: "victory", wheelSeed: 987654321 },
+  });
+  const last = h.states.at(-1)!;
+  assert.equal(last.wheelSeed, 987654321);
+  assert.equal(last.win, null);
+  h.client.dispose();
+});
