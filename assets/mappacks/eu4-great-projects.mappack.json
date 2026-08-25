@@ -1,0 +1,1408 @@
+{
+  "packId": "eu4-great-projects",
+  "displayName": "Great Projects (EU4)",
+  "projection": {
+    "kind": "equirectangular-geo",
+    "width": 1000,
+    "height": 494
+  },
+  "source": {
+    "name": "Monument list from eu4.paradoxwikis.com (EU4 Leviathan great projects); coordinates hand-authored; land underlay from world-atlas land-110m (Natural Earth, public domain)",
+    "license": "Original data; underlay public domain (Natural Earth)"
+  },
+  "features": [
+    {
+      "id": "cahokia",
+      "name": "Cahokia",
+      "aliases": [
+        "Monks Mound"
+      ],
+      "centroidHint": {
+        "x": 254,
+        "y": 134
+      }
+    },
+    {
+      "id": "mesa-verde",
+      "name": "Mesa Verde",
+      "aliases": [
+        "Cliff Palace"
+      ],
+      "centroidHint": {
+        "x": 204,
+        "y": 139
+      }
+    },
+    {
+      "id": "san-antonio-missions",
+      "name": "San Antonio Missions",
+      "aliases": [
+        "Alamo",
+        "Mission San Jose"
+      ],
+      "centroidHint": {
+        "x": 231,
+        "y": 160
+      }
+    },
+    {
+      "id": "tenochtitlan",
+      "name": "Tenochtitlan",
+      "aliases": [
+        "Templo Mayor"
+      ],
+      "centroidHint": {
+        "x": 229,
+        "y": 187
+      }
+    },
+    {
+      "id": "tzintzuntzan",
+      "name": "Tzintzuntzan",
+      "centroidHint": {
+        "x": 222,
+        "y": 187
+      }
+    },
+    {
+      "id": "zacatecas-mine-city",
+      "name": "Zacatecas Mine City",
+      "aliases": [
+        "Zacatecas"
+      ],
+      "centroidHint": {
+        "x": 220,
+        "y": 178
+      }
+    },
+    {
+      "id": "fuerte-del-morro",
+      "name": "Fuerte del Morro",
+      "aliases": [
+        "El Morro",
+        "Castillo San Felipe del Morro"
+      ],
+      "centroidHint": {
+        "x": 319,
+        "y": 190
+      }
+    },
+    {
+      "id": "tortuga-island",
+      "name": "Tortuga Island",
+      "aliases": [
+        "Ile de la Tortue"
+      ],
+      "centroidHint": {
+        "x": 301,
+        "y": 185
+      }
+    },
+    {
+      "id": "white-house",
+      "name": "The White House",
+      "centroidHint": {
+        "x": 289,
+        "y": 134
+      }
+    },
+    {
+      "id": "inukshuk",
+      "name": "Inukshuk",
+      "aliases": [
+        "Inuksuk"
+      ],
+      "centroidHint": {
+        "x": 224,
+        "y": 73
+      }
+    },
+    {
+      "id": "panama-canal",
+      "name": "Panama Canal",
+      "centroidHint": {
+        "x": 282,
+        "y": 215
+      }
+    },
+    {
+      "id": "chichen-itza",
+      "name": "Chichen Itza",
+      "centroidHint": {
+        "x": 258,
+        "y": 184
+      }
+    },
+    {
+      "id": "tikal",
+      "name": "Tikal",
+      "centroidHint": {
+        "x": 255,
+        "y": 193
+      }
+    },
+    {
+      "id": "chan-chan-citadel",
+      "name": "Chan Chan Citadel",
+      "aliases": [
+        "Chan Chan"
+      ],
+      "centroidHint": {
+        "x": 284,
+        "y": 262
+      }
+    },
+    {
+      "id": "cartagena-de-indias-forts",
+      "name": "Cartagena de Indias Fort System",
+      "aliases": [
+        "San Felipe de Barajas",
+        "Cartagena Forts"
+      ],
+      "centroidHint": {
+        "x": 294,
+        "y": 212
+      }
+    },
+    {
+      "id": "cerro-rico-del-potosi",
+      "name": "Cerro Rico del Potosí",
+      "aliases": [
+        "Potosi"
+      ],
+      "centroidHint": {
+        "x": 320,
+        "y": 294
+      }
+    },
+    {
+      "id": "machu-picchu",
+      "name": "Machu Picchu",
+      "centroidHint": {
+        "x": 302,
+        "y": 276
+      }
+    },
+    {
+      "id": "qhapaq-nan",
+      "name": "Qhapaq Nan",
+      "aliases": [
+        "Qhapaq Ñan",
+        "Inca Road System"
+      ],
+      "centroidHint": {
+        "x": 285,
+        "y": 241
+      }
+    },
+    {
+      "id": "salvador-da-bahia",
+      "name": "Salvador da Bahia",
+      "centroidHint": {
+        "x": 395,
+        "y": 276
+      }
+    },
+    {
+      "id": "tiwanaku",
+      "name": "Tiwanaku",
+      "aliases": [
+        "Tiahuanaco"
+      ],
+      "centroidHint": {
+        "x": 312,
+        "y": 285
+      }
+    },
+    {
+      "id": "alhambra",
+      "name": "Alhambra",
+      "centroidHint": {
+        "x": 490,
+        "y": 139
+      }
+    },
+    {
+      "id": "aljaferia-palace",
+      "name": "Aljafería Palace",
+      "aliases": [
+        "Aljaferia Palace"
+      ],
+      "centroidHint": {
+        "x": 498,
+        "y": 126
+      }
+    },
+    {
+      "id": "ambras-castle",
+      "name": "Ambras Castle",
+      "centroidHint": {
+        "x": 531,
+        "y": 111
+      }
+    },
+    {
+      "id": "amsterdam-bourse",
+      "name": "Amsterdam Bourse",
+      "aliases": [
+        "Amsterdam Exchange"
+      ],
+      "centroidHint": {
+        "x": 513,
+        "y": 97
+      }
+    },
+    {
+      "id": "belem-tower",
+      "name": "Belem Tower",
+      "centroidHint": {
+        "x": 475,
+        "y": 134
+      }
+    },
+    {
+      "id": "bibliotheca-corviniana",
+      "name": "Bibliotheca Corviniana",
+      "aliases": [
+        "Buda Castle",
+        "Corvina Library"
+      ],
+      "centroidHint": {
+        "x": 552,
+        "y": 110
+      }
+    },
+    {
+      "id": "bran-castle",
+      "name": "Bran Castle",
+      "aliases": [
+        "Dracula's Castle"
+      ],
+      "centroidHint": {
+        "x": 569,
+        "y": 116
+      }
+    },
+    {
+      "id": "brandenburg-gate",
+      "name": "Brandenburg Gate",
+      "centroidHint": {
+        "x": 537,
+        "y": 97
+      }
+    },
+    {
+      "id": "city-of-sarai",
+      "name": "City of Sarai",
+      "aliases": [
+        "Sarai Batu"
+      ],
+      "centroidHint": {
+        "x": 630,
+        "y": 111
+      }
+    },
+    {
+      "id": "cologne-cathedral",
+      "name": "Cologne Cathedral",
+      "aliases": [
+        "Kölner Dom",
+        "Kolner Dom"
+      ],
+      "centroidHint": {
+        "x": 519,
+        "y": 101
+      }
+    },
+    {
+      "id": "divrigi-hospital-mosque",
+      "name": "Divrigi Hospital & Mosque",
+      "aliases": [
+        "Divrigi Great Mosque"
+      ],
+      "centroidHint": {
+        "x": 604,
+        "y": 133
+      }
+    },
+    {
+      "id": "doges-palace",
+      "name": "Doge's Palace",
+      "aliases": [
+        "Palazzo Ducale"
+      ],
+      "centroidHint": {
+        "x": 534,
+        "y": 116
+      }
+    },
+    {
+      "id": "duomo-di-milano",
+      "name": "Duomo di Milano",
+      "aliases": [
+        "Milan Cathedral"
+      ],
+      "centroidHint": {
+        "x": 525,
+        "y": 116
+      }
+    },
+    {
+      "id": "dutch-polders",
+      "name": "Dutch Polders",
+      "aliases": [
+        "Beemster Polder"
+      ],
+      "centroidHint": {
+        "x": 513,
+        "y": 96
+      }
+    },
+    {
+      "id": "edinburgh-castle",
+      "name": "Edinburgh Castle",
+      "centroidHint": {
+        "x": 491,
+        "y": 87
+      }
+    },
+    {
+      "id": "el-escorial",
+      "name": "El Escorial",
+      "centroidHint": {
+        "x": 489,
+        "y": 129
+      }
+    },
+    {
+      "id": "falun-copper-mine",
+      "name": "Falun Copper Mine",
+      "aliases": [
+        "Falun Mine"
+      ],
+      "centroidHint": {
+        "x": 543,
+        "y": 74
+      }
+    },
+    {
+      "id": "hagia-sophia",
+      "name": "Hagia Sophia",
+      "aliases": [
+        "Aya Sofya"
+      ],
+      "centroidHint": {
+        "x": 579,
+        "y": 128
+      }
+    },
+    {
+      "id": "heddal-stave-church",
+      "name": "Heddal Stave Church",
+      "centroidHint": {
+        "x": 525,
+        "y": 77
+      }
+    },
+    {
+      "id": "historical-center-prague",
+      "name": "Historical Center of Prague",
+      "aliases": [
+        "Prague Old Town"
+      ],
+      "centroidHint": {
+        "x": 539,
+        "y": 103
+      }
+    },
+    {
+      "id": "kazan-kremlin",
+      "name": "Kazan Kremlin",
+      "centroidHint": {
+        "x": 634,
+        "y": 88
+      }
+    },
+    {
+      "id": "kiel-canal",
+      "name": "Kiel Canal",
+      "centroidHint": {
+        "x": 526,
+        "y": 92
+      }
+    },
+    {
+      "id": "kiev-pechersk-lavra",
+      "name": "Kiev Pechersk Lavra",
+      "aliases": [
+        "Kyiv Pechersk Lavra",
+        "Monastery of the Caves"
+      ],
+      "centroidHint": {
+        "x": 583,
+        "y": 102
+      }
+    },
+    {
+      "id": "krakow-cloth-hall",
+      "name": "Kraków Cloth Hall",
+      "aliases": [
+        "Sukiennice"
+      ],
+      "centroidHint": {
+        "x": 554,
+        "y": 103
+      }
+    },
+    {
+      "id": "kronborg",
+      "name": "Kronborg",
+      "aliases": [
+        "Elsinore"
+      ],
+      "centroidHint": {
+        "x": 534,
+        "y": 87
+      }
+    },
+    {
+      "id": "malbork-castle",
+      "name": "Malbork Castle",
+      "aliases": [
+        "Marienburg Castle"
+      ],
+      "centroidHint": {
+        "x": 552,
+        "y": 92
+      }
+    },
+    {
+      "id": "malta-forts",
+      "name": "Malta Forts",
+      "aliases": [
+        "Fort St Angelo"
+      ],
+      "centroidHint": {
+        "x": 540,
+        "y": 142
+      }
+    },
+    {
+      "id": "mausoleum-at-halicarnassus",
+      "name": "Mausoleum at Halicarnassus",
+      "aliases": [
+        "Tomb of Mausolus"
+      ],
+      "centroidHint": {
+        "x": 575,
+        "y": 139
+      }
+    },
+    {
+      "id": "moscow-kremlin",
+      "name": "Moscow Kremlin",
+      "centroidHint": {
+        "x": 603,
+        "y": 88
+      }
+    },
+    {
+      "id": "notre-dame-cathedral",
+      "name": "Notre-Dame Cathedral",
+      "aliases": [
+        "Notre Dame"
+      ],
+      "centroidHint": {
+        "x": 506,
+        "y": 107
+      }
+    },
+    {
+      "id": "palace-of-the-popes",
+      "name": "Palace of the Popes",
+      "aliases": [
+        "Palais des Papes"
+      ],
+      "centroidHint": {
+        "x": 513,
+        "y": 120
+      }
+    },
+    {
+      "id": "parthenon",
+      "name": "Parthenon",
+      "centroidHint": {
+        "x": 565,
+        "y": 136
+      }
+    },
+    {
+      "id": "rila-monasteries",
+      "name": "Rila Monasteries",
+      "aliases": [
+        "Rila Monastery"
+      ],
+      "centroidHint": {
+        "x": 564,
+        "y": 125
+      }
+    },
+    {
+      "id": "royal-palace-of-caserta",
+      "name": "Royal Palace of Caserta",
+      "aliases": [
+        "Reggia di Caserta"
+      ],
+      "centroidHint": {
+        "x": 539,
+        "y": 128
+      }
+    },
+    {
+      "id": "saint-basil-cathedral",
+      "name": "Saint Basil Cathedral",
+      "centroidHint": {
+        "x": 603,
+        "y": 88
+      }
+    },
+    {
+      "id": "saint-peters-basilica",
+      "name": "Saint Peter's Basilica",
+      "centroidHint": {
+        "x": 534,
+        "y": 126
+      }
+    },
+    {
+      "id": "santa-maria-del-fiore",
+      "name": "Santa Maria del Fiore",
+      "aliases": [
+        "Florence Cathedral",
+        "Duomo di Firenze"
+      ],
+      "centroidHint": {
+        "x": 531,
+        "y": 120
+      }
+    },
+    {
+      "id": "schonbrunn-palace",
+      "name": "Schönbrunn Palace",
+      "aliases": [
+        "Schonbrunn Palace"
+      ],
+      "centroidHint": {
+        "x": 545,
+        "y": 108
+      }
+    },
+    {
+      "id": "stonehenge",
+      "name": "Stonehenge",
+      "centroidHint": {
+        "x": 495,
+        "y": 100
+      }
+    },
+    {
+      "id": "sultan-ahmed-mosque",
+      "name": "Sultan Ahmed Mosque",
+      "aliases": [
+        "Blue Mosque"
+      ],
+      "centroidHint": {
+        "x": 579,
+        "y": 128
+      }
+    },
+    {
+      "id": "the-golden-city",
+      "name": "The Golden City",
+      "aliases": [
+        "Kremnica"
+      ],
+      "centroidHint": {
+        "x": 551,
+        "y": 107
+      }
+    },
+    {
+      "id": "tower-of-london",
+      "name": "Tower of London",
+      "centroidHint": {
+        "x": 500,
+        "y": 99
+      }
+    },
+    {
+      "id": "trakai-castle",
+      "name": "Trakai Castle",
+      "aliases": [
+        "Trakai Island Castle"
+      ],
+      "centroidHint": {
+        "x": 568,
+        "y": 91
+      }
+    },
+    {
+      "id": "ulm-minster",
+      "name": "Ulm Minster",
+      "centroidHint": {
+        "x": 527,
+        "y": 108
+      }
+    },
+    {
+      "id": "venetian-arsenal",
+      "name": "Venetian Arsenal",
+      "centroidHint": {
+        "x": 534,
+        "y": 116
+      }
+    },
+    {
+      "id": "versailles",
+      "name": "Versailles",
+      "aliases": [
+        "Palace of Versailles"
+      ],
+      "centroidHint": {
+        "x": 506,
+        "y": 107
+      }
+    },
+    {
+      "id": "visby-city",
+      "name": "Visby City",
+      "centroidHint": {
+        "x": 550,
+        "y": 83
+      }
+    },
+    {
+      "id": "winter-palace",
+      "name": "Winter Palace",
+      "aliases": [
+        "Hermitage"
+      ],
+      "centroidHint": {
+        "x": 583,
+        "y": 76
+      }
+    },
+    {
+      "id": "ait-benhaddou",
+      "name": "Aït Benhaddou",
+      "aliases": [
+        "Ait Benhaddou"
+      ],
+      "centroidHint": {
+        "x": 481,
+        "y": 155
+      }
+    },
+    {
+      "id": "al-azhar-university",
+      "name": "Al-Azhar University",
+      "centroidHint": {
+        "x": 585,
+        "y": 158
+      }
+    },
+    {
+      "id": "bam-citadel",
+      "name": "Bam Citadel",
+      "aliases": [
+        "Arg-e Bam"
+      ],
+      "centroidHint": {
+        "x": 660,
+        "y": 161
+      }
+    },
+    {
+      "id": "citadel-of-aleppo",
+      "name": "Citadel of Aleppo",
+      "centroidHint": {
+        "x": 602,
+        "y": 141
+      }
+    },
+    {
+      "id": "city-of-sanaa",
+      "name": "City of Sana'a",
+      "centroidHint": {
+        "x": 621,
+        "y": 198
+      }
+    },
+    {
+      "id": "golestan-palace",
+      "name": "Golestan Palace",
+      "centroidHint": {
+        "x": 641,
+        "y": 143
+      }
+    },
+    {
+      "id": "great-mosque-djenne",
+      "name": "Great Mosque of Djenné",
+      "aliases": [
+        "Djenne Mosque"
+      ],
+      "centroidHint": {
+        "x": 488,
+        "y": 202
+      }
+    },
+    {
+      "id": "harar-jugol",
+      "name": "Harar Jugol",
+      "centroidHint": {
+        "x": 615,
+        "y": 215
+      }
+    },
+    {
+      "id": "holy-city-jerusalem",
+      "name": "Holy City of Jerusalem",
+      "aliases": [
+        "Jerusalem"
+      ],
+      "centroidHint": {
+        "x": 596,
+        "y": 153
+      }
+    },
+    {
+      "id": "holy-city-kairouan",
+      "name": "Holy City of Kairouan",
+      "aliases": [
+        "Great Mosque of Kairouan"
+      ],
+      "centroidHint": {
+        "x": 528,
+        "y": 143
+      }
+    },
+    {
+      "id": "imam-hussein-al-abbas-shrines",
+      "name": "Imam Hussein and Al-Abbas Holy Shrines",
+      "centroidHint": {
+        "x": 620,
+        "y": 151
+      }
+    },
+    {
+      "id": "kaaba",
+      "name": "Kaaba",
+      "centroidHint": {
+        "x": 609,
+        "y": 182
+      }
+    },
+    {
+      "id": "city-of-khami",
+      "name": "City of Khami",
+      "aliases": [
+        "Khami Ruins"
+      ],
+      "centroidHint": {
+        "x": 578,
+        "y": 295
+      }
+    },
+    {
+      "id": "kilwa-city",
+      "name": "Kilwa City",
+      "aliases": [
+        "Kilwa Kisiwani"
+      ],
+      "centroidHint": {
+        "x": 608,
+        "y": 265
+      }
+    },
+    {
+      "id": "maidan-e-naqsh-e-jahan",
+      "name": "Maidan-e Naqsh-e Jahan",
+      "aliases": [
+        "Naqsh-e Jahan Square",
+        "Imam Square"
+      ],
+      "centroidHint": {
+        "x": 641,
+        "y": 151
+      }
+    },
+    {
+      "id": "mbanza-kongo",
+      "name": "M'banza-Kongo",
+      "aliases": [
+        "Mbanza Kongo"
+      ],
+      "centroidHint": {
+        "x": 539,
+        "y": 257
+      }
+    },
+    {
+      "id": "nizwa-fort",
+      "name": "Nizwa Fort",
+      "centroidHint": {
+        "x": 658,
+        "y": 177
+      }
+    },
+    {
+      "id": "petra",
+      "name": "Petra",
+      "centroidHint": {
+        "x": 597,
+        "y": 157
+      }
+    },
+    {
+      "id": "pyramid-of-cheops",
+      "name": "Pyramid of Cheops",
+      "aliases": [
+        "Cheops Pyramid",
+        "Great Pyramid"
+      ],
+      "centroidHint": {
+        "x": 585,
+        "y": 158
+      }
+    },
+    {
+      "id": "rock-hewn-churches-lalibela",
+      "name": "Rock-Hewn Churches at Lalibela",
+      "aliases": [
+        "Lalibela"
+      ],
+      "centroidHint": {
+        "x": 607,
+        "y": 207
+      }
+    },
+    {
+      "id": "sankore-madrasah",
+      "name": "Sankore Madrasah",
+      "aliases": [
+        "Sankore"
+      ],
+      "centroidHint": {
+        "x": 492,
+        "y": 194
+      }
+    },
+    {
+      "id": "spiral-minaret-samarra",
+      "name": "Spiral Minaret of Samarra",
+      "aliases": [
+        "Malwiya Minaret"
+      ],
+      "centroidHint": {
+        "x": 620,
+        "y": 147
+      }
+    },
+    {
+      "id": "suez-canal",
+      "name": "Suez Canal",
+      "centroidHint": {
+        "x": 588,
+        "y": 157
+      }
+    },
+    {
+      "id": "walls-of-benin",
+      "name": "Walls of Benin",
+      "aliases": [
+        "Benin City Walls"
+      ],
+      "centroidHint": {
+        "x": 515,
+        "y": 223
+      }
+    },
+    {
+      "id": "afaq-khoja-mausoleum",
+      "name": "Afaq Khoja Mausoleum",
+      "aliases": [
+        "Abakh Hoja Tomb"
+      ],
+      "centroidHint": {
+        "x": 708,
+        "y": 132
+      }
+    },
+    {
+      "id": "angkor-wat",
+      "name": "Angkor Wat",
+      "centroidHint": {
+        "x": 784,
+        "y": 203
+      }
+    },
+    {
+      "id": "bagan-temples",
+      "name": "Bagan Temples",
+      "aliases": [
+        "Pagan Temples"
+      ],
+      "centroidHint": {
+        "x": 759,
+        "y": 182
+      }
+    },
+    {
+      "id": "baiturrahman-grand-mosque",
+      "name": "Baiturrahman Grand Mosque",
+      "centroidHint": {
+        "x": 761,
+        "y": 225
+      }
+    },
+    {
+      "id": "bara-katra",
+      "name": "Bara Katra",
+      "centroidHint": {
+        "x": 747,
+        "y": 175
+      }
+    },
+    {
+      "id": "baku-ateshgah",
+      "name": "Baku Ateshgah",
+      "aliases": [
+        "Ateshgah Fire Temple"
+      ],
+      "centroidHint": {
+        "x": 637,
+        "y": 130
+      }
+    },
+    {
+      "id": "borobudur-temple",
+      "name": "Borobudur Temple",
+      "centroidHint": {
+        "x": 801,
+        "y": 261
+      }
+    },
+    {
+      "id": "buddha-statues",
+      "name": "Buddha Statues",
+      "aliases": [
+        "Bamiyan Buddhas"
+      ],
+      "centroidHint": {
+        "x": 685,
+        "y": 145
+      }
+    },
+    {
+      "id": "dujiangyan",
+      "name": "Dujiangyan",
+      "centroidHint": {
+        "x": 783,
+        "y": 155
+      }
+    },
+    {
+      "id": "ellora-caves",
+      "name": "Ellora Caves",
+      "aliases": [
+        "Kailasa Temple"
+      ],
+      "centroidHint": {
+        "x": 705,
+        "y": 185
+      }
+    },
+    {
+      "id": "erdene-zuu",
+      "name": "Erdene Zuu",
+      "aliases": [
+        "Kharkhorin",
+        "Karakorum"
+      ],
+      "centroidHint": {
+        "x": 781,
+        "y": 111
+      }
+    },
+    {
+      "id": "etchmiadzin-cathedral",
+      "name": "Etchmiadzin Cathedral",
+      "aliases": [
+        "Echmiadzin"
+      ],
+      "centroidHint": {
+        "x": 620,
+        "y": 130
+      }
+    },
+    {
+      "id": "chola-temples",
+      "name": "Great Living Chola Temples",
+      "aliases": [
+        "Brihadisvara Temple",
+        "Thanjavur Temple"
+      ],
+      "centroidHint": {
+        "x": 716,
+        "y": 211
+      }
+    },
+    {
+      "id": "gomateshwara-statue",
+      "name": "Gomateshwara Statue",
+      "aliases": [
+        "Shravanabelagola",
+        "Bahubali Statue"
+      ],
+      "centroidHint": {
+        "x": 709,
+        "y": 205
+      }
+    },
+    {
+      "id": "gyeongbok-palace",
+      "name": "Gyeongbok Palace",
+      "aliases": [
+        "Gyeongbokgung"
+      ],
+      "centroidHint": {
+        "x": 847,
+        "y": 137
+      }
+    },
+    {
+      "id": "hampi",
+      "name": "Hampi",
+      "aliases": [
+        "Vijayanagara"
+      ],
+      "centroidHint": {
+        "x": 709,
+        "y": 198
+      }
+    },
+    {
+      "id": "hangzhou-grand-canal",
+      "name": "Hangzhou Grand Canal",
+      "centroidHint": {
+        "x": 828,
+        "y": 157
+      }
+    },
+    {
+      "id": "harmandir-sahib",
+      "name": "Harmandir Sahib",
+      "aliases": [
+        "Golden Temple",
+        "Darbar Sahib"
+      ],
+      "centroidHint": {
+        "x": 705,
+        "y": 154
+      }
+    },
+    {
+      "id": "himeji-castle",
+      "name": "Himeji Castle",
+      "aliases": [
+        "White Heron Castle"
+      ],
+      "centroidHint": {
+        "x": 868,
+        "y": 145
+      }
+    },
+    {
+      "id": "imperial-city-hue",
+      "name": "Imperial City of Hue",
+      "aliases": [
+        "Hue Citadel"
+      ],
+      "centroidHint": {
+        "x": 794,
+        "y": 195
+      }
+    },
+    {
+      "id": "imperial-city-kyoto",
+      "name": "Imperial City of Kyoto",
+      "aliases": [
+        "Kyoto Imperial Palace"
+      ],
+      "centroidHint": {
+        "x": 871,
+        "y": 144
+      }
+    },
+    {
+      "id": "itchan-kala",
+      "name": "Itchan Kala",
+      "aliases": [
+        "Khiva"
+      ],
+      "centroidHint": {
+        "x": 665,
+        "y": 127
+      }
+    },
+    {
+      "id": "jokhang-temple",
+      "name": "Jokhang Temple",
+      "centroidHint": {
+        "x": 749,
+        "y": 159
+      }
+    },
+    {
+      "id": "kanbawzathadi-palace",
+      "name": "Kanbawzathadi Palace",
+      "centroidHint": {
+        "x": 764,
+        "y": 193
+      }
+    },
+    {
+      "id": "kashi-vishwanath-temple",
+      "name": "Kashi Vishwanath Temple",
+      "centroidHint": {
+        "x": 727,
+        "y": 171
+      }
+    },
+    {
+      "id": "khajuraho",
+      "name": "Khajuraho",
+      "centroidHint": {
+        "x": 718,
+        "y": 172
+      }
+    },
+    {
+      "id": "mehrangarh-fort",
+      "name": "Mehrangarh Fort",
+      "centroidHint": {
+        "x": 700,
+        "y": 168
+      }
+    },
+    {
+      "id": "mount-fuji",
+      "name": "Mount Fuji",
+      "centroidHint": {
+        "x": 879,
+        "y": 143
+      }
+    },
+    {
+      "id": "murud-janjira-fort",
+      "name": "Murud-Janjira Fort",
+      "aliases": [
+        "Janjira Fort"
+      ],
+      "centroidHint": {
+        "x": 699,
+        "y": 190
+      }
+    },
+    {
+      "id": "nanjing-grand-canal",
+      "name": "Nanjing Grand Canal",
+      "centroidHint": {
+        "x": 825,
+        "y": 153
+      }
+    },
+    {
+      "id": "porcelain-tower-nanjing",
+      "name": "Porcelain Tower of Nanjing",
+      "aliases": [
+        "Porcelain Pagoda"
+      ],
+      "centroidHint": {
+        "x": 825,
+        "y": 153
+      }
+    },
+    {
+      "id": "prambanan-temple",
+      "name": "Prambanan Temple",
+      "centroidHint": {
+        "x": 802,
+        "y": 261
+      }
+    },
+    {
+      "id": "pura-besakih",
+      "name": "Pura Besakih",
+      "centroidHint": {
+        "x": 816,
+        "y": 263
+      }
+    },
+    {
+      "id": "registan-square",
+      "name": "Registan Square",
+      "aliases": [
+        "Registan"
+      ],
+      "centroidHint": {
+        "x": 683,
+        "y": 132
+      }
+    },
+    {
+      "id": "sankin-kotai-palaces",
+      "name": "Sankin-kotai Palaces",
+      "aliases": [
+        "Edo Castle"
+      ],
+      "centroidHint": {
+        "x": 882,
+        "y": 143
+      }
+    },
+    {
+      "id": "shwedagon-pagoda",
+      "name": "Shwedagon Pagoda",
+      "centroidHint": {
+        "x": 763,
+        "y": 194
+      }
+    },
+    {
+      "id": "sun-temple-konarak",
+      "name": "Sun Temple in Konârak",
+      "aliases": [
+        "Konark Sun Temple",
+        "Sun Temple Konark"
+      ],
+      "centroidHint": {
+        "x": 735,
+        "y": 186
+      }
+    },
+    {
+      "id": "suzhou-grand-canal",
+      "name": "Suzhou Grand Canal",
+      "centroidHint": {
+        "x": 830,
+        "y": 155
+      }
+    },
+    {
+      "id": "swayambhunath",
+      "name": "Swayambhunath",
+      "aliases": [
+        "Monkey Temple"
+      ],
+      "centroidHint": {
+        "x": 733,
+        "y": 164
+      }
+    },
+    {
+      "id": "taj-mahal",
+      "name": "Taj Mahal",
+      "centroidHint": {
+        "x": 713,
+        "y": 166
+      }
+    },
+    {
+      "id": "temple-of-confucius",
+      "name": "Temple of Confucius",
+      "aliases": [
+        "Confucius Temple"
+      ],
+      "centroidHint": {
+        "x": 820,
+        "y": 143
+      }
+    },
+    {
+      "id": "the-forbidden-city",
+      "name": "The Forbidden City",
+      "aliases": [
+        "Palace Museum"
+      ],
+      "centroidHint": {
+        "x": 818,
+        "y": 131
+      }
+    },
+    {
+      "id": "the-grand-palace-bangkok",
+      "name": "The Grand Palace of Bangkok",
+      "aliases": [
+        "Grand Palace",
+        "Wat Phra Kaew"
+      ],
+      "centroidHint": {
+        "x": 775,
+        "y": 203
+      }
+    },
+    {
+      "id": "the-great-wall-of-china",
+      "name": "The Great Wall of China",
+      "centroidHint": {
+        "x": 819,
+        "y": 130
+      }
+    },
+    {
+      "id": "tomb-of-shah-rukn-e-alam",
+      "name": "Tomb of Shah Rukn-e-Alam",
+      "aliases": [
+        "Rukn-e-Alam"
+      ],
+      "centroidHint": {
+        "x": 695,
+        "y": 158
+      }
+    },
+    {
+      "id": "narikala-fortress",
+      "name": "Narikala Fortress",
+      "centroidHint": {
+        "x": 622,
+        "y": 126
+      }
+    },
+    {
+      "id": "zhenjiang-grand-canal",
+      "name": "Zhenjiang Grand Canal",
+      "centroidHint": {
+        "x": 826,
+        "y": 152
+      }
+    },
+    {
+      "id": "moai",
+      "name": "Moai",
+      "centroidHint": {
+        "x": 201,
+        "y": 314
+      }
+    },
+    {
+      "id": "nan-madol",
+      "name": "Nan Madol",
+      "centroidHint": {
+        "x": 933,
+        "y": 221
+      }
+    }
+  ]
+}

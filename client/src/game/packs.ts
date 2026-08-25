@@ -97,6 +97,14 @@ export const PACK_MANIFEST: PackDescriptor[] = [
     mappackUrl: "/mappacks/world-landmarks.mappack.json",
     topoUrl: "/mappacks/world-landmarks.topojson",
   },
+  {
+    packId: "eu4-great-projects",
+    displayName: "Great Projects (EU4)",
+    blurb: "Every EU4 monument — click its real-world site",
+    group: "world",
+    mappackUrl: "/mappacks/eu4-great-projects.mappack.json",
+    topoUrl: "/mappacks/eu4-great-projects.topojson",
+  },
 ];
 
 export type LoadedPack = {
