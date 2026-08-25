@@ -68,7 +68,10 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
   zoomReset.addEventListener("click", () => deps.mapView.resetView());
   zoomControls.append(zoomIn, zoomOut, zoomReset);
 
-  hud.append(top, hintChip, ticker, zoomControls);
+  // Prompt bar lives at the BOTTOM of the stack: mobile embeds lose the top
+  // of the viewport to platform chrome, and the target name is the one thing
+  // every player must always see.
+  hud.append(hintChip, ticker, zoomControls, top);
   container.append(hud);
 
   let lastTarget: string | null = null;
