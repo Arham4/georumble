@@ -29,6 +29,27 @@ const NAME_REVEAL_MS = 1100;
 // user agent is the other tell.
 const DISCORD_UA = /discord/i.test(navigator.userAgent);
 
+/** Refusals players can act on deserve plain words, not close codes. */
+function friendlyCloseReason(code: number, reason: string): string | null {
+  switch (reason || code) {
+    case "room-full":
+    case 4003:
+      return "that room is full";
+    case "capacity":
+    case 4002:
+      return "the servers are at capacity right now — try again in a bit";
+    case "invalid-room":
+    case "invalid-room-id":
+      return "that room code doesn't exist";
+    case "unknown-instance":
+      return "this activity link is no longer valid";
+    case "open-rooms-disabled":
+      return "browser rooms are turned off right now";
+    default:
+      return null;
+  }
+}
+
 type Identity = {
   userId: string;
   name: string;
@@ -431,7 +452,7 @@ async function boot(): Promise<void> {
       reconnectAttempts < RECONNECT_MAX_ATTEMPTS;
     if (!retryable) {
       const detail = info.reason || (info.code > 0 ? `code ${info.code}` : "unreachable");
-      client.degradeToSolo(detail);
+      client.degradeToSolo(friendlyCloseReason(info.code, info.reason) ?? detail);
       mode = "local";
       openLocalRoom();
       return;
