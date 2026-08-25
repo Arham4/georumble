@@ -21,11 +21,24 @@ const MAX_NAME_LENGTH = 32;
 // every real Discord avatar and rendered everyone as initials.
 const MAX_AVATAR_LENGTH = 512;
 const HELLO_TIMEOUT_MS = 30_000;
-const ALARM_INTERVAL_MS = 5 * 60_000;
+// Doubles as the broker heartbeat cadence; ROOM_TTL_MS in broker.ts must
+// stay a comfortable multiple of this.
+const ALARM_INTERVAL_MS = 10 * 60_000;
 // Every webSocketMessage on a hibernating DO is a billable request, and
 // cursors are the bulk of live traffic; clients lerp between updates, so
 // ~16/s per player reads just as smoothly as 30/s at a fraction of the cost.
 const CURSOR_MIN_INTERVAL_MS = 60;
+// Cursor fan-out is O(seats²): the per-sender floor stretches with the
+// roster so a full voice channel cannot multiply request volume quadratically.
+const CURSOR_FLOOR_PER_SEAT_MS = 50;
+// Host-supplied round orders come from pack features; anything larger is a
+// bug or abuse and would ride inside every snapshot and persist all round.
+const MAX_ORDER_LENGTH = 1000;
+const MAX_ORDER_ID_LENGTH = 64;
+// Non-cursor messages are player-paced; the bucket only exists so a hostile
+// client cannot convert one socket into unbounded billable invocations.
+const MESSAGE_BURST_LIMIT = 25;
+const MESSAGE_BURST_WINDOW_MS = 1_000;
 // How long lobby map nominations stay open before the relay rolls one at
 // random. Unanimous nominations resolve immediately instead.
 const PACK_VOTE_WINDOW_MS = 15_000;
@@ -95,6 +108,7 @@ export class GameRoom extends DurableObject<Env> {
   private sockets = new Map<string, WebSocket>();
   private pending = new Map<WebSocket, number>();
   private lastCursorAt = new Map<string, number>();
+  private msgBuckets = new Map<string, { windowStart: number; count: number }>();
   private ready: Promise<void> | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -186,6 +200,9 @@ export class GameRoom extends DurableObject<Env> {
       this.sendTo(ws, { t: "rejected", reason: "hello required" });
       return;
     }
+    if (this.exceedsMessageBudget(playerId)) {
+      return;
+    }
 
     switch (message.t) {
       case "guess":
@@ -227,6 +244,22 @@ export class GameRoom extends DurableObject<Env> {
     }
   }
 
+  /**
+   * Sliding one-second bucket per seat. Cursors are floored well under the
+   * limit, so legitimate play never touches it — this only caps hostile
+   * floods of billable invocations.
+   */
+  private exceedsMessageBudget(playerId: string): boolean {
+    const now = Date.now();
+    let bucket = this.msgBuckets.get(playerId);
+    if (!bucket || now - bucket.windowStart >= MESSAGE_BURST_WINDOW_MS) {
+      bucket = { windowStart: now, count: 0 };
+      this.msgBuckets.set(playerId, bucket);
+    }
+    bucket.count += 1;
+    return bucket.count > MESSAGE_BURST_LIMIT;
+  }
+
   /** Live pointer positions are pure relay traffic: no storage, sender excluded. */
   private relayCursor(sender: WebSocket, playerId: string, x: unknown, y: unknown): void {
     if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) {
@@ -238,7 +271,11 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     const now = Date.now();
-    if (now - (this.lastCursorAt.get(playerId) ?? 0) < CURSOR_MIN_INTERVAL_MS) {
+    const floor = Math.max(
+      CURSOR_MIN_INTERVAL_MS,
+      CURSOR_FLOOR_PER_SEAT_MS * (this.room?.players.length ?? 0),
+    );
+    if (now - (this.lastCursorAt.get(playerId) ?? 0) < floor) {
       return;
     }
     this.lastCursorAt.set(playerId, now);
@@ -264,6 +301,8 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     this.sockets.delete(playerId);
+    this.lastCursorAt.delete(playerId);
+    this.msgBuckets.delete(playerId);
     if (!this.room) {
       return;
     }
@@ -377,7 +416,9 @@ export class GameRoom extends DurableObject<Env> {
     if (electedHost || reclaimable) {
       this.broadcast({ t: "host", hostId: playerId });
     }
-    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
+    // The joiner already holds the freshest state via welcome; re-sending
+    // the identical snapshot to that socket doubles its parse for nothing.
+    this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) }, ws);
   }
 
   private async start(hostId: string, packId: unknown, order: unknown, hints: unknown): Promise<void> {
@@ -389,7 +430,8 @@ export class GameRoom extends DurableObject<Env> {
       !packId ||
       !Array.isArray(order) ||
       order.length === 0 ||
-      order.some((id) => typeof id !== "string" || !id)
+      order.length > MAX_ORDER_LENGTH ||
+      order.some((id) => typeof id !== "string" || !id || id.length > MAX_ORDER_ID_LENGTH)
     ) {
       this.denyHost(hostId, "invalid start");
       return;
@@ -409,7 +451,6 @@ export class GameRoom extends DurableObject<Env> {
     // control back instead of bricking the lobby behind a hidden Start.
     if (room.chosenPackId !== null && packId !== room.chosenPackId) {
       clearBallot(room);
-      await this.persist();
     }
     room.phase = "playing";
     room.packId = packId;
@@ -419,10 +460,7 @@ export class GameRoom extends DurableObject<Env> {
     room.heat = {};
     room.tallies = {};
     room.foundBy = {};
-    room.lobbyVotes = [];
-    room.packVotes = {};
-    room.packVoteDeadline = null;
-    room.chosenPackId = null;
+    clearBallot(room);
     room.hintsEnabled = hints !== false;
     room.startedAt = Date.now();
     room.roundHostId = hostId;
@@ -452,6 +490,21 @@ export class GameRoom extends DurableObject<Env> {
       this.denyHost(hostId, "unknown player");
       return;
     }
+    const remaining = Math.max(0, room.order.length - room.found.length);
+    if (parsed.correct && room.found.includes(parsed.featureId)) {
+      // Duplicate verdict for an already-found feature: nothing to record,
+      // but clients still want the echo for click feedback. Skip the write.
+      this.broadcast({
+        t: "verdict",
+        outcome: {
+          featureId: parsed.featureId,
+          byPlayer: parsed.byPlayer,
+          correct: true,
+          remaining,
+        },
+      });
+      return;
+    }
     // The relay owns round bookkeeping (heat + per-player tallies) so
     // rejoined clients recover the full history, not just their tenure.
     const tally = room.tallies[parsed.byPlayer] ?? { correct: 0, misses: 0 };
@@ -473,7 +526,7 @@ export class GameRoom extends DurableObject<Env> {
       featureId: parsed.featureId,
       byPlayer: parsed.byPlayer,
       correct: parsed.correct,
-      remaining: Math.max(0, room.order.length - room.found.length),
+      remaining,
     };
     await this.persist();
     this.broadcast({ t: "verdict", outcome: verified });
@@ -771,10 +824,10 @@ export class GameRoom extends DurableObject<Env> {
     }
   }
 
-  private broadcast(message: ServerMessage): void {
+  private broadcast(message: ServerMessage, except?: WebSocket): void {
     const encoded = JSON.stringify(message);
     for (const ws of this.ctx.getWebSockets()) {
-      if (ws.readyState === WebSocket.READY_STATE_OPEN) {
+      if (ws !== except && ws.readyState === WebSocket.READY_STATE_OPEN) {
         ws.send(encoded);
       }
     }
@@ -795,6 +848,8 @@ export class GameRoom extends DurableObject<Env> {
       ws.close(CLOSE_HELLO_TIMEOUT, "room-closed");
     }
     this.pending.clear();
+    this.lastCursorAt.clear();
+    this.msgBuckets.clear();
     await this.ctx.storage.deleteAll();
     await this.ctx.storage.deleteAlarm();
     this.room = null;
