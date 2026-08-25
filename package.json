@@ -8,6 +8,6 @@
     "test": "node --test tests/*.test.mjs tests/*.test.ts",
     "packs:validate": "node scripts/validate-mappack.mjs assets/mappacks/*.mappack.json",
     "deploy": "npm --prefix client run build && npx --prefix worker wrangler deploy --config worker/wrangler.jsonc && node scripts/post-patch-notes.mjs",
-    "packs:build": "node scripts/build-all-packs.mjs"
+    "packs:build": "node scripts/run-packs-build.mjs"
   }
 }

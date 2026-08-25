@@ -4,6 +4,8 @@
 // pack means dropping one file here — no manifest edits to forget. Base
 // data always downloads first, validation always sweeps last; builders in
 // between write disjoint outputs, so alphabetical order is as good as any.
+// This runner is deliberately NOT named build-*: it would otherwise match
+// its own discovery glob and recurse into itself forever.
 import { readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";

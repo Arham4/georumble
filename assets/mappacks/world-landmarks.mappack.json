@@ -10,6 +10,7 @@
     "name": "Hand-authored landmark coordinates; land underlay from world-atlas land-110m (Natural Earth, public domain)",
     "license": "Original data; underlay public domain (Natural Earth)"
   },
+  "dotPack": true,
   "features": [
     {
       "id": "statue-of-liberty",
