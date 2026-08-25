@@ -14,7 +14,13 @@ const PACKS_DIR = path.resolve(SCRIPTS_DIR, "../assets/mappacks");
 function run(script, args = []) {
   const result = spawnSync(process.execPath, [path.join(SCRIPTS_DIR, script), ...args], {
     stdio: "inherit",
+    // Builders fetch from CDNs; a hung connection must fail loudly instead
+    // of stalling the whole pipeline silently forever.
+    timeout: 120_000,
   });
+  if (result.error?.code === "ETIMEDOUT" || result.signal === "SIGTERM") {
+    throw new Error(`${script} timed out after 120s (hung fetch?)`);
+  }
   if (result.status !== 0) {
     throw new Error(`${script} failed (exit ${result.status ?? result.signal})`);
   }
