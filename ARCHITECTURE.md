@@ -41,10 +41,10 @@ LIMITS_KV                     optional room-capacity override without redeploy
 
 | Cost                       | Driver                                   | Mitigation in place |
 | -------------------------- | ---------------------------------------- | ------------------- |
-| DO requests                | every handled WS message bills once      | pings answered by `setWebSocketAutoResponse` (free); cursors floored at 80ms client / 60ms relay, and not relayed at all without an audience |
+| DO requests                | every handled WS message bills once      | pings answered by `setWebSocketAutoResponse` (free); cursors floored at 150ms client / 150ms relay (stretching with roster), and not relayed at all without an audience; non-cursor floods hit a burst bucket |
 | DO duration                | wall-clock while awake                   | hibernation: idle sockets cost nothing between messages |
-| DO storage writes          | one `persist()` per state mutation       | whole-room blob per put; mutations are player-paced (guesses, votes), not machine-paced |
-| Alarms                     | one per occupied room per 5 min          | doubles as orphan sweep + broker heartbeat |
+| DO storage writes          | one `persist()` per state mutation       | whole-room blob per put; mutations are player-paced (guesses, votes), not machine-paced; no-op mutations (repeat nominations, duplicate verdicts) skip the write |
+| Alarms                     | one per occupied room per 10 min         | doubles as ghost-seat sweep + broker heartbeat; hello deadlines and nomination rolls arm sooner beats that stay write-free |
 | Worker requests            | asset + API traffic                      | static assets are cached; API surface is tiny |
 
 The dominant live cost is cursor relaying during active rounds — hence the
@@ -56,10 +56,10 @@ entirely under a capacity signal from `LIMITS_KV`.
 
 1. **DO request volume** from simultaneous active rooms — mitigated as above;
    the broker's capacity gate is the circuit breaker.
-2. **Snapshot payload size** — snapshots carry the full feature order
-   (~141 ids). Negligible today; if packs grow ~10x, send the order once at
-   round start and reference it by index afterwards.
-3. **Broker registry growth** — TTL sweep bounds it; records die 15 min
+2. **Snapshot payload size** — routine snapshots already omit the round
+   order (shipped once per seat in the welcome / starting broadcast); what
+   remains scales with roster and found-list length. Fine today.
+3. **Broker registry growth** — TTL sweep bounds it; records die 30 min
    after their last heartbeat.
 
 ## Module seams

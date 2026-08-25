@@ -905,7 +905,13 @@ export class MapView {
     for (const halo of this.halos) {
       const base = Number(halo.dataset.baseStroke ?? 0);
       if (base > 0) {
-        halo.setAttribute("stroke-width", String(Math.min(base, capWorld).toFixed(2)));
+        // Most pinch frames clamp identically; skipping the attribute write
+        // keeps them out of the style recalc entirely.
+        const width = Math.min(base, capWorld).toFixed(2);
+        if (halo.dataset.lastWidth !== width) {
+          halo.dataset.lastWidth = width;
+          halo.setAttribute("stroke-width", width);
+        }
       }
     }
     this.rescaleHelperCircles(scale);
