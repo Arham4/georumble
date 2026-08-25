@@ -4,6 +4,11 @@
 // (tag `patchnotes/last`) and drops them into the updates channel via a
 // channel webhook. No bot process, no token — one webhook URL.
 //
+// The marker tag lives on ORIGIN, not just locally: each run fetches it
+// before computing the range and pushes it back after posting, so any
+// developer (or CI) deploying derives the same "already announced" line
+// instead of re-announcing each other's releases.
+//
 // Webhook resolution: $PATCHNOTES_WEBHOOK_URL, else a gitignored
 // `.patchnotes-webhook` file at the repo root. Unconfigured machines skip
 // silently so deploys never depend on this posting.
@@ -47,6 +52,27 @@ async function lastPostedSha() {
   }
 }
 
+/** Adopt origin's marker so a second machine never re-announces posted work. */
+async function pullMarker() {
+  try {
+    await execFile("git", [
+      "-C", ROOT, "fetch", "--force", "origin", `+refs/tags/${TAG}:refs/tags/${TAG}`,
+    ]);
+  } catch {
+    // No marker on origin yet, or offline: local state is the best we know.
+  }
+}
+
+async function pushMarker() {
+  try {
+    await execFile("git", ["-C", ROOT, "push", "--force", "origin", `refs/tags/${TAG}`]);
+  } catch (error) {
+    console.error(
+      `[patch-notes] could not push ${TAG} (${String(error.message).split("\n")[0]}) — other machines may re-announce these changes`,
+    );
+  }
+}
+
 async function subjectRange(base) {
   const raw = await git("log", "--reverse", "--format=%s", `${base}..HEAD`);
   return raw.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -77,6 +103,9 @@ async function main() {
     return;
   }
 
+  if (!dryRun) {
+    await pullMarker();
+  }
   const tagSha = await lastPostedSha();
   let base;
   if (tagSha) {
@@ -128,6 +157,7 @@ async function main() {
     return;
   }
   await git("tag", "-f", TAG, "HEAD");
+  await pushMarker();
   console.log(`[patch-notes] posted ${subjects.length} change(s) to Discord`);
 }
 
