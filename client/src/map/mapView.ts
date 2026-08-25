@@ -83,6 +83,9 @@ export class MapView {
   private ty = 0;
   private tweenRaf: number | null = null;
   private drag: { pointerId: number; lastX: number; lastY: number; moved: boolean } | null = null;
+  /** Live pointers for multi-touch; two of these turn drag into pinch-zoom. */
+  private readonly pointers = new Map<number, { x: number; y: number }>();
+  private pinch: { dist: number; midX: number; midY: number } | null = null;
   private lastPointer: { x: number; y: number } | null = null;
   private debug = false;
   private guessHandler: (featureId: string) => void = () => {};
@@ -631,12 +634,51 @@ export class MapView {
     if (event.button !== 0) {
       return;
     }
-    this.drag = { pointerId: event.pointerId, lastX: event.clientX, lastY: event.clientY, moved: false };
+    this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     this.svg.setPointerCapture(event.pointerId);
     this.svg.classList.add("dragging");
+    if (this.pointers.size === 2) {
+      // Second finger down: pan-drag becomes a pinch, re-anchored on the pair.
+      this.drag = null;
+      this.beginPinch();
+    } else if (this.pointers.size === 1) {
+      this.drag = { pointerId: event.pointerId, lastX: event.clientX, lastY: event.clientY, moved: false };
+    }
   };
 
+  private beginPinch(): void {
+    const [a, b] = [...this.pointers.values()];
+    this.pinch = {
+      dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+      midX: (a.x + b.x) / 2,
+      midY: (a.y + b.y) / 2,
+    };
+  }
+
   private onPointerMove = (event: PointerEvent): void => {
+    const tracked = this.pointers.get(event.pointerId);
+    if (tracked) {
+      tracked.x = event.clientX;
+      tracked.y = event.clientY;
+    }
+    if (this.pinch && this.pointers.size >= 2) {
+      const [a, b] = [...this.pointers.values()];
+      const dist = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+      const midX = (a.x + b.x) / 2;
+      const midY = (a.y + b.y) / 2;
+      // Zoom anchored under the pinch midpoint; midpoint travel pans, so
+      // two fingers behave like every other map app.
+      const [ax, ay] = this.clientToView(this.pinch.midX, this.pinch.midY);
+      this.userZoomed = true;
+      this.zoomAt(dist / this.pinch.dist, ax, ay);
+      const scale = this.viewScale();
+      this.tx += (midX - this.pinch.midX) / scale;
+      this.ty += (midY - this.pinch.midY) / scale;
+      this.clampPan();
+      this.applyTransform();
+      this.pinch = { dist, midX, midY };
+      return;
+    }
     const drag = this.drag;
     if (drag && event.pointerId === drag.pointerId) {
       const dx = event.clientX - drag.lastX;
@@ -709,6 +751,24 @@ export class MapView {
   }
 
   private onPointerUp = (event: PointerEvent): void => {
+    this.pointers.delete(event.pointerId);
+    if (this.pinch) {
+      if (this.pointers.size < 2) {
+        this.pinch = null;
+        // A finger lifted from a pinch: the remaining one drags from here
+        // instead of teleporting the map on its next move. `moved` stays
+        // true so the lift never reads as a click.
+        const remaining = this.pointers.entries().next();
+        if (!remaining.done) {
+          const [pointerId, rest] = remaining.value;
+          this.drag = { pointerId, lastX: rest.x, lastY: rest.y, moved: true };
+        }
+      }
+      if (this.pointers.size === 0) {
+        this.releaseDrag(event.pointerId);
+      }
+      return;
+    }
     const drag = this.drag;
     if (!drag || event.pointerId !== drag.pointerId) {
       return;
@@ -725,6 +785,10 @@ export class MapView {
   };
 
   private onPointerCancel = (event: PointerEvent): void => {
+    this.pointers.delete(event.pointerId);
+    if (this.pointers.size < 2) {
+      this.pinch = null;
+    }
     if (this.drag?.pointerId !== event.pointerId) {
       return;
     }
