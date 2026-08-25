@@ -89,7 +89,6 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
       answerInput.classList.add("shake");
     }
   });
-  answerInput.addEventListener("input", () => answerInput.classList.remove("invalid"));
   answerField.append(answerInput);
 
   const ticker = el("div", "hud-ticker");

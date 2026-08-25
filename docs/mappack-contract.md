@@ -9,20 +9,28 @@ Protocol tie-in (`shared/protocol.ts`): `RoomSnapshot.packId` selects the pack,
 
 ## Artifacts
 
+Every pack is a committed pair in `assets/mappacks/` — a pre-projected
+TopoJSON render source plus a contract-shaped metadata pack — built by one
+convention-named `scripts/build-*.mjs` builder per pack. `npm run packs:build`
+downloads base data, runs every builder, and validates the lot; adding a pack
+means adding one builder script.
+
 | File | Role |
 | --- | --- |
-| `assets/mappacks/us-states.topojson` | Raw TopoJSON geometry (`objects.states`), pre-projected with d3 `geoAlbersUsa`. Render source; committed. |
-| `assets/mappacks/us-states.mappack.json` | Contract-shaped metadata pack derived by `scripts/fetch-mappacks.mjs`. |
-| `assets/mappacks/europe.topojson` | European countries pre-projected with a conic conformal projection, built by `scripts/build-europe.mjs`. |
-| `assets/mappacks/europe.mappack.json` | Europe metadata pack (39 countries, ISO alpha-2 ids). |
-| `scripts/fetch-mappacks.mjs` | Downloads us-atlas, writes the us-states files above. |
-| `scripts/build-europe.mjs` | Downloads world-atlas, selects and pre-projects Europe, writes the europe files above. |
+| `assets/mappacks/<pack>.topojson` | Pre-projected geometry per pack (albers-usa, conic conformal, mercator, or equirectangular). Render source; committed. |
+| `assets/mappacks/<pack>.mappack.json` | Contract-shaped metadata pack for the same pack id. |
+| `scripts/fetch-mappacks.mjs` | Downloads us-atlas, writes the us-states pair (runs first in the pipeline). |
+| `scripts/build-*.mjs` | One builder per pack; discovered automatically by the runner. |
+| `scripts/run-packs-build.mjs` | Pipeline runner: base data → all builders → validation. Deliberately not named `build-*` (it would match its own glob). |
 | `scripts/lib/topo-utils.mjs` | TopoJSON decode/centroid/bounds/encode math shared by every builder. |
+| `scripts/lib/continent-builder.mjs` | Shared conic/mercator builder (windowed ring splitting, helpers, ring moves). |
+| `scripts/lib/world-builder.mjs` | Shared equirectangular world frame (continents, oceans, dot packs). |
+| `scripts/lib/poi-builder.mjs` | Dot-pack builder: a data table of points becomes geodesic-circle targets. |
 | `scripts/validate-mappack.mjs` | Checks any `*.mappack.json` against this contract; nonzero exit on violation. |
 
 ## Type definitions
 
-These are the exact types the future `shared/mappack.ts` should declare:
+`shared/mappack.ts` declares the contract types:
 
 ```ts
 export type ProjectionKind =
