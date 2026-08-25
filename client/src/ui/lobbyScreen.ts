@@ -324,7 +324,9 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
     const remaining = state.packVoteDeadline - (Date.now() + (state.clockOffsetMs ?? 0));
     if (remaining <= 0) {
       rollBanner.textContent = "🎲 Rolling the map…";
-      if (!resolveSent) {
+      // The relay's own alarm resolves the roll at the deadline; the host's
+      // nudge just covers alarm lag. One nudge, not one per client.
+      if (!resolveSent && state.isHost) {
         resolveSent = true;
         deps.client.resolvePackVotes();
       }
