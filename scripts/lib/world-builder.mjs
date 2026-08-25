@@ -177,21 +177,28 @@ export async function buildWorldPack(config) {
 
   let backgroundGeometry = null;
   if (config.background?.length) {
-    const backgroundRings = config.background
-      .flat()
-      .flatMap(splitRingAtAntimeridian)
-      .map((ring) =>
-        ring.map(toPixel).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1])),
-      )
-      .filter((ring) => ring.length >= 4);
-    if (backgroundRings.length === 0) {
+    // Parts stay polygon-grouped: MultiPolygon arcs need the full
+    // polygon → ring → arc-index nesting, and flattening here produces a
+    // structure d3 cannot stream.
+    const backgroundPolygons = [];
+    for (const part of config.background) {
+      const rings = part
+        .flatMap(splitRingAtAntimeridian)
+        .map((ring) =>
+          ring.map(toPixel).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1])),
+        )
+        .filter((ring) => ring.length >= 4);
+      if (rings.length > 0) {
+        backgroundPolygons.push(rings.map((ring) => toArcIndexes(ring)));
+      }
+    }
+    if (backgroundPolygons.length === 0) {
       throw new Error("background geometry collapsed under projection");
     }
-    const backgroundArcs = backgroundRings.map((ring) => toArcIndexes(ring));
     backgroundGeometry = {
       id: "background",
-      type: backgroundArcs.length > 1 ? "MultiPolygon" : "Polygon",
-      arcs: backgroundArcs.length > 1 ? backgroundArcs : backgroundArcs[0],
+      type: backgroundPolygons.length > 1 ? "MultiPolygon" : "Polygon",
+      arcs: backgroundPolygons.length > 1 ? backgroundPolygons : backgroundPolygons[0],
     };
   }
 
