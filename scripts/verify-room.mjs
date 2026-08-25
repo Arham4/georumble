@@ -1,0 +1,78 @@
+#!/usr/bin/env node
+// Live relay verification against a running worker (local dev or production).
+// Exercises the message contracts that TypeScript cannot check: pack-vote
+// snapshots, deadline presence, resolve-before-deadline refusal, unanimous
+// vote-to-lobby, and the open-room / Discord-instance namespace split.
+//
+// Usage: node scripts/verify-room.mjs [wsBase]
+//   wsBase default: wss://georumble.losers-lab.workers.dev/api/room
+//   Local dev:      ws://localhost:8787/api/room  (wrangler dev --var OPEN_ROOMS:true)
+//
+// Exits 0 only when every assertion holds.
+const BASE = process.argv[2] ?? "wss://georumble.losers-lab.workers.dev/api/room";
+const ROOM = `${BASE}/open:VER234`;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function connect(playerId, name) {
+  const ws = new WebSocket(`${ROOM}?player=${playerId}`);
+  const log = [];
+  ws.addEventListener("open", () => ws.send(JSON.stringify({ t: "hello", name })));
+  ws.addEventListener("message", (event) => log.push(JSON.parse(event.data)));
+  return { ws, log };
+}
+
+const latest = (log) => log.filter((m) => m.t === "welcome" || m.t === "snapshot").at(-1)?.snapshot;
+
+let failures = 0;
+function check(label, ok, detail = "") {
+  console.log(`${ok ? "✔" : "✖"} ${label}${detail ? ` (${detail})` : ""}`);
+  if (!ok) failures += 1;
+}
+
+const alice = connect("vrAlice", "Alice");
+const bob = connect("vrBob", "Bob");
+await sleep(2000);
+
+bob.ws.send(JSON.stringify({ t: "pack-vote", packId: "europe" }));
+await sleep(1000);
+let snap = latest(alice.log);
+check("pack vote reaches the other seat", snap?.packVotes?.vrBob === "europe");
+check("nomination window opens with a relay deadline", typeof snap?.packVoteDeadline === "number");
+
+bob.ws.send(JSON.stringify({ t: "pack-vote-resolve" }));
+await sleep(800);
+check("resolve before the deadline is refused", latest(alice.log)?.chosenPackId === undefined);
+
+// Unanimous vote-to-lobby is a no-op in the lobby phase; verify the message
+// is at least accepted without a rejection broadcast.
+const before = alice.log.length;
+alice.ws.send(JSON.stringify({ t: "vote-lobby" }));
+await sleep(600);
+check(
+  "vote-lobby in lobby phase is absorbed silently",
+  alice.log.slice(before).every((m) => m.t !== "rejected"),
+);
+
+// Namespace split: a fabricated Discord instance id must never admit. The
+// upgrade completes before the worker closes it, so the signal is the CLOSE
+// code — resolving on "open" would race and always lose.
+const intruder = new WebSocket(`${BASE}/fake-instance-xyz?player=vrMallory`);
+const intruderClose = await new Promise((resolve) => {
+  intruder.addEventListener("close", (event) => resolve(`${event.code} ${event.reason}`));
+  setTimeout(() => resolve("timeout"), 8000);
+});
+check(
+  "fake instance id is refused at the door",
+  intruderClose.startsWith("4004"),
+  `got "${intruderClose}"`,
+);
+
+alice.ws.close();
+bob.ws.close();
+
+if (failures > 0) {
+  console.error(`\n${failures} check(s) failed`);
+  process.exit(1);
+}
+console.log("\nroom contract verified");
