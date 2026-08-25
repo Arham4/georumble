@@ -611,7 +611,13 @@ export class MapView {
         }
         peer.renderX += (peer.x - peer.renderX) * CURSOR_LERP;
         peer.renderY += (peer.y - peer.renderY) * CURSOR_LERP;
-        peer.group.setAttribute("transform", `translate(${peer.renderX} ${peer.renderY})`);
+        // Counter-scale with the camera so chips hold a constant on-screen
+        // size — same contract as dot-pack dots — instead of ballooning
+        // while zoomed into a dense map.
+        peer.group.setAttribute(
+          "transform",
+          `translate(${peer.renderX} ${peer.renderY}) scale(${(1 / this.k).toFixed(4)})`,
+        );
       }
       this.peerRaf = this.peers.size > 0 ? requestAnimationFrame(step) : null;
     };
