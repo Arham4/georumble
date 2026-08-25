@@ -561,6 +561,7 @@ async function boot(): Promise<void> {
       mapView.flashMiss(featureId);
     }
   });
+  window.addEventListener("keydown", (event) => mapView.handleShortcut(event));
   mapView.onLocalCursor((x, y) => client.sendCursor(x, y));
 
   function revealRegionName(featureId: string): void {

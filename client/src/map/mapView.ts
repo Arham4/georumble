@@ -405,6 +405,59 @@ export class MapView {
     this.zoomAt(factor, this.width / 2, this.height / 2);
   }
 
+  /**
+   * Keyboard camera control: arrows pan, +/- zoom, Home resets. Ignored
+   * outside active play and while typing in a field.
+   */
+  handleShortcut(event: KeyboardEvent): void {
+    if (!this.interactive) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+      return;
+    }
+    const pan = 60 / this.viewScale();
+    switch (event.key) {
+      case "ArrowLeft":
+        this.nudge(-pan, 0);
+        break;
+      case "ArrowRight":
+        this.nudge(pan, 0);
+        break;
+      case "ArrowUp":
+        this.nudge(0, -pan);
+        break;
+      case "ArrowDown":
+        this.nudge(0, pan);
+        break;
+      case "+":
+      case "=":
+        this.userZoomed = true;
+        this.zoomStep(1.4);
+        break;
+      case "-":
+      case "_":
+        this.userZoomed = true;
+        this.zoomStep(1 / 1.4);
+        break;
+      case "Home":
+        this.resetView();
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+  }
+
+  private nudge(dx: number, dy: number): void {
+    this.tx += dx;
+    this.ty += dy;
+    this.clampPan();
+    this.applyTransform();
+    this.refreshHover("camera");
+  }
+
   resetView(): void {
     this.userZoomed = false;
     this.tweenView({ k: 1, tx: 0, ty: 0 }, 0);

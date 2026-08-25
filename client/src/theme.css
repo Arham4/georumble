@@ -1155,6 +1155,13 @@ a.btn {
   color: var(--accent-light);
 }
 
+.victory-best {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6ee7a0;
+}
+
 .victory-title {
   margin: 0;
   font-size: 34px;

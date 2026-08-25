@@ -4,6 +4,25 @@ import { createCarryWheel } from "./carryWheel";
 import { launchConfetti } from "./confetti";
 import { sfx } from "../audio/sfx";
 
+const BEST_PREFIX = "georumble:best:";
+
+function loadBest(packId: string): number | null {
+  try {
+    const stored = localStorage.getItem(BEST_PREFIX + packId);
+    return stored === null ? null : Number(stored);
+  } catch {
+    return null;
+  }
+}
+
+function saveBest(packId: string, seconds: number): void {
+  try {
+    localStorage.setItem(BEST_PREFIX + packId, String(seconds));
+  } catch {
+    // A full/private storage mode just means no personal bests.
+  }
+}
+
 export type VictoryDeps = {
   client: GameClient;
   restart(): Promise<void>;
@@ -66,6 +85,10 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
   const scoreboardLabel = el("div", "section-label", "Who carried");
   const scoreList = el("ul", "score-list");
   const carry = createCarryWheel();
+  const bestLine = el("p", "victory-best");
+  let bestRecorded = false;
+  let bestImproved = false;
+  let bestSeconds: number | null = null;
 
   let restarting = false;
   const againButton = el("button", "btn full");
@@ -100,6 +123,7 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
     title,
     sub,
     grid,
+    bestLine,
     scoreboardLabel,
     scoreList,
     carry.element,
@@ -119,6 +143,29 @@ export function createVictoryScreen(container: HTMLElement, deps: VictoryDeps): 
         accuracyValue,
         accuracyPercent(state.correct, state.correct + state.misses),
       );
+      // Personal best: recorded once per victory from the relay-stamped time.
+      if (!bestRecorded && state.win && state.packId) {
+        bestRecorded = true;
+        const previous = loadBest(state.packId);
+        bestImproved = previous === null || seconds < previous;
+        if (bestImproved) {
+          saveBest(state.packId, seconds);
+          bestSeconds = seconds;
+        } else {
+          bestSeconds = previous;
+        }
+      }
+      if (bestRecorded && bestSeconds !== null) {
+        setText(
+          bestLine,
+          bestImproved
+            ? `⚡ New personal best — ${formatClock(seconds)}!`
+            : `Personal best: ${formatClock(bestSeconds)}`,
+        );
+        bestLine.classList.remove("hidden");
+      } else {
+        bestLine.classList.add("hidden");
+      }
       const solo = state.players.length <= 1;
       setText(
         sub,
