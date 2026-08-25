@@ -8,6 +8,7 @@ import { LocalConnection } from "./net/localConnection";
 import { newRoomCode, normalizeJoinCode } from "./net/openRooms";
 import { SocketConnection } from "./net/socketConnection";
 import { el, type Screen } from "./ui/dom";
+import { sfx } from "./audio/sfx";
 import { createDiscordInviteLink, createGithubLink, setExternalLinkOpener } from "./ui/linkButtons";
 import { createLobbyScreen } from "./ui/lobbyScreen";
 import { createPlayScreen } from "./ui/playScreen";
@@ -367,8 +368,10 @@ async function boot(): Promise<void> {
   const onVerdict = (outcome: GuessOutcome): void => {
     if (outcome.correct) {
       mapView.flashCorrect(outcome.featureId);
+      sfx.correct();
     } else {
       mapView.flashMiss(outcome.featureId);
+      sfx.miss();
     }
   };
 

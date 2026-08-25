@@ -1,6 +1,7 @@
 import type { GameClient, GameState } from "../game/gameClient";
 import type { MapPack } from "../../../shared/mappack";
 import type { MapView } from "../map/mapView";
+import { sfx } from "../audio/sfx";
 import { accuracyPercent, el, formatClock, setText, type Screen } from "./dom";
 
 export type PlayDeps = {
@@ -31,7 +32,18 @@ export function createPlayScreen(container: HTMLElement, deps: PlayDeps): Screen
   menuButton.type = "button";
   menuButton.title = "Vote to return to the menu — it happens once everyone votes";
   menuButton.addEventListener("click", () => deps.client.voteLobby());
-  top.append(prompt, stats, menuButton);
+  const sfxButton = el("button", "btn-ghost sfx-btn");
+  sfxButton.type = "button";
+  const renderSfx = (): void => {
+    sfxButton.textContent = sfx.muted ? "🔇" : "🔊";
+    sfxButton.setAttribute("aria-label", sfx.muted ? "Unmute sounds" : "Mute sounds");
+  };
+  renderSfx();
+  sfxButton.addEventListener("click", () => {
+    sfx.toggle();
+    renderSfx();
+  });
+  top.append(prompt, stats, menuButton, sfxButton);
 
   const hintChip = el("div", "hud-hint hidden");
   hintChip.textContent = "Tough one? The answer is outlined on the map.";
