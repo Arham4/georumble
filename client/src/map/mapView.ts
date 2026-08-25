@@ -22,6 +22,9 @@ const CURSOR_SEND_MIN_UNITS = 1.5;
 const CURSOR_LERP = 0.28;
 const CURSOR_STALE_MS = 4000;
 const HELPER_CIRCLE_PX = 18;
+// Upper bound on a click halo's on-screen diameter at extreme zoom, so the
+// world-footprint assists can never paint the whole viewport clickable.
+const HALO_MAX_SCREEN_PX = 90;
 
 type RegionParts = {
   path: SVGPathElement;
@@ -202,8 +205,8 @@ export class MapView {
         hit.setAttribute("d", d);
         hit.setAttribute("data-region-id", id);
         hit.classList.add("hit-area");
-        hit.dataset.baseStroke = String((HIT_MIN_UNITS - minDim) * 1.5 + 6);
-        hit.setAttribute("stroke-width", String((HIT_MIN_UNITS - minDim) * 1.5 + 6));
+        hit.dataset.baseStroke = String((HIT_MIN_UNITS - minDim) * 2 + 8);
+        hit.setAttribute("stroke-width", String((HIT_MIN_UNITS - minDim) * 2 + 8));
         this.halos.push(hit);
         hitLayer.append(hit);
       }
@@ -782,12 +785,15 @@ export class MapView {
 
   private applyTransform(): void {
     this.viewport.setAttribute("transform", `translate(${this.tx} ${this.ty}) scale(${this.k})`);
-    // Click halos are sized in canvas units for the unzoomed map; rescale them
-    // so the on-screen assist stays constant instead of ballooning with zoom.
+    // Click halos keep their WORLD footprint: constant-screen assists shrink
+    // relative to the neighbors zooming spreads apart, which is exactly when
+    // specks need a generous target. A screen cap stops extreme zooms from
+    // painting the whole viewport clickable.
+    const capWorld = HALO_MAX_SCREEN_PX / Math.max(1, this.viewScale() * this.k);
     for (const halo of this.halos) {
       const base = Number(halo.dataset.baseStroke ?? 0);
       if (base > 0) {
-        halo.setAttribute("stroke-width", String(base / this.k));
+        halo.setAttribute("stroke-width", String(Math.min(base, capWorld).toFixed(2)));
       }
     }
     this.rescaleHelperCircles();
