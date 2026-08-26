@@ -194,15 +194,9 @@ export class MapView {
         // bigger region, hoverable and clickable as itself, not an assist
         // marker beside it. The stroke divides by the same factor so the
         // outline reads identical to every other region's.
-        const scale = Math.min(TINY_MAX_SCALE, HIT_MIN_UNITS / minDim);
-        const cx = (bounds[0][0] + bounds[1][0]) / 2;
-        const cy = (bounds[0][1] + bounds[1][1]) / 2;
         wrap = createElement<SVGGElement>("g");
-        wrap.setAttribute(
-          "transform",
-          `translate(${cx} ${cy}) scale(${scale.toFixed(3)}) translate(${-cx} ${-cy})`,
-        );
-        region.setAttribute("stroke-width", String((0.7 / scale).toFixed(3)));
+        wrap.setAttribute("transform", this.enlargeTransformForBounds(bounds, minDim));
+        region.setAttribute("stroke-width", String((0.7 / this.enlargeScaleFor(minDim)).toFixed(3)));
         wrap.append(region);
         this.enlarged.add(id);
       }
@@ -396,6 +390,15 @@ export class MapView {
         clipped.append(initial);
       }
       const group = createElement<SVGGElement>("g");
+      // An enlarged region's badge rides the same enlargement, so the chip
+      // clips against the shape the player actually sees — not the speck
+      // underneath it.
+      const enlarge = this.enlarged.has(id)
+        ? this.enlargeTransformFor(id, this.geoById.get(id)?.minDim ?? Infinity)
+        : null;
+      if (enlarge) {
+        group.setAttribute("transform", enlarge);
+      }
       group.append(defs, clipped);
       this.badgeGroups.set(id, group);
       layer.append(group);
@@ -532,6 +535,29 @@ export class MapView {
     return (this.geoById.get(id)?.minDim ?? Infinity) < HIT_MIN_UNITS;
   }
 
+  private enlargeScaleFor(minDim: number): number {
+    return Math.min(TINY_MAX_SCALE, HIT_MIN_UNITS / minDim);
+  }
+
+  /** Static about-center enlargement for a too-small region; callers treat non-tiny ids as null. */
+  private enlargeTransformFor(id: string, minDim: number): string | null {
+    const bounds = this.geoById.get(id)?.bounds;
+    if (!bounds) {
+      return null;
+    }
+    return this.enlargeTransformForBounds(bounds, minDim);
+  }
+
+  private enlargeTransformForBounds(
+    bounds: [[number, number], [number, number]],
+    minDim: number,
+  ): string {
+    const scale = this.enlargeScaleFor(minDim);
+    const cx = (bounds[0][0] + bounds[1][0]) / 2;
+    const cy = (bounds[0][1] + bounds[1][1]) / 2;
+    return `translate(${cx} ${cy}) scale(${scale.toFixed(3)}) translate(${-cx} ${-cy})`;
+  }
+
   /**
    * Seterra-style helpers: for regions too small to click fairly, a translucent
    * circle floats in open space beside them — the pack bakes each anchor
@@ -605,11 +631,16 @@ export class MapView {
     const cx = hint ? hint[0] : (min[0] + max[0]) / 2;
     const cy = hint ? hint[1] : (min[1] + max[1]) / 2;
     const minDim = Math.min(max[0] - min[0], max[1] - min[1]);
+    // Size the ring against what the player sees: enlarged islands draw
+    // bigger than their raw geometry, and the hint should hug that outline.
+    const drawnDim = this.enlarged.has(id)
+      ? minDim * this.enlargeScaleFor(minDim)
+      : minDim;
     const ring = createElement<SVGCircleElement>("circle");
     ring.classList.add("hint-ring");
     ring.setAttribute("cx", String(cx));
     ring.setAttribute("cy", String(cy));
-    ring.setAttribute("r", String(Math.min(30, Math.max(8, minDim * 0.45))));
+    ring.setAttribute("r", String(Math.min(30, Math.max(8, drawnDim * 0.45))));
     this.viewport.append(ring);
     this.hintRing = ring;
   }
