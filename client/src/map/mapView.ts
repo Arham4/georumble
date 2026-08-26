@@ -189,7 +189,6 @@ export class MapView {
       if (this.dotPack) {
         wrap = createElement<SVGGElement>("g");
         wrap.append(region);
-        regionLayer.append(wrap);
       } else if (minDim < HIT_MIN_UNITS) {
         // A micro-island is drawn ENLARGED about its own center — a genuinely
         // bigger region, hoverable and clickable as itself, not an assist
@@ -205,9 +204,11 @@ export class MapView {
         );
         region.setAttribute("stroke-width", String((0.7 / scale).toFixed(3)));
         wrap.append(region);
-        regionLayer.append(wrap);
         this.enlarged.add(id);
       }
+      // Every region reaches the DOM exactly once — wrapped when it needs a
+      // transform, bare otherwise.
+      regionLayer.append(wrap ?? region);
 
       let hit: SVGPathElement | null = null;
       if (minDim < HIT_MIN_UNITS) {
