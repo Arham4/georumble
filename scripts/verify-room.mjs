@@ -33,6 +33,24 @@ function check(label, ok, detail = "") {
 const alice = connect("vrAlice", "Alice");
 await sleep(1500);
 
+// The canary room persists between runs; a prior run ends with its ballot
+// pinned to a rolled pack. Recover to a clean picker before asserting:
+// start the pinned pack, then abandon it — a lone seat's vote-to-lobby is
+// trivially unanimous.
+{
+  const stale = latest(alice.log)?.chosenPackId;
+  if (typeof stale === "string") {
+    alice.ws.send(JSON.stringify({ t: "start", packId: stale, order: ["f1"] }));
+    await sleep(800);
+    alice.ws.send(JSON.stringify({ t: "vote-lobby" }));
+    await sleep(800);
+  }
+  check(
+    "canary room recovered to a clean picker",
+    latest(alice.log)?.phase === "lobby" && latest(alice.log)?.chosenPackId === undefined,
+  );
+}
+
 // A lone seat nominating is a pre-selection, not a countdown: no window,
 // no roll — they just press Start on their own pick.
 alice.ws.send(JSON.stringify({ t: "pack-vote", packId: "europe" }));
