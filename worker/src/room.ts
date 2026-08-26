@@ -358,6 +358,11 @@ export class GameRoom extends DurableObject<Env> {
     if (Object.keys(room.packVotes).length === 0) {
       room.packVoteDeadline = null;
     }
+    if (room.players.length <= 1 && room.chosenPackId === null) {
+      // Back down to a solo seat: a rolling window has no audience left to
+      // race, so it closes and the nomination reverts to a pre-selection.
+      room.packVoteDeadline = null;
+    }
     if (room.hostId === playerId) {
       room.lastHostId = playerId;
       room.hostId = room.players[0].id;
@@ -452,6 +457,18 @@ export class GameRoom extends DurableObject<Env> {
       (room.phase === "lobby" ? room.lastHostId === playerId : room.roundHostId === playerId);
     if (electedHost || reclaimable) {
       room.hostId = playerId;
+    }
+    // A solo nomination sat windowless waiting for company (see packVote):
+    // this join is that company, so the countdown starts now.
+    if (
+      room.phase === "lobby" &&
+      room.chosenPackId === null &&
+      room.packVoteDeadline === null &&
+      Object.keys(room.packVotes).length > 0 &&
+      room.players.length > 1
+    ) {
+      room.packVoteDeadline = Date.now() + PACK_VOTE_WINDOW_MS;
+      await this.ctx.storage.setAlarm(room.packVoteDeadline);
     }
     await this.persist();
     this.sendTo(ws, { t: "welcome", you: playerId, snapshot: this.snapshot(room, true) });
@@ -711,6 +728,14 @@ export class GameRoom extends DurableObject<Env> {
       return;
     }
     room.packVotes[playerId] = rawPackId;
+    if (room.players.length <= 1) {
+      // Solo: a nomination is just a pre-selection. No window, no roll — the
+      // lone seat starts their own pick with the Start button. The countdown
+      // begins only when a second seat arrives (see join()).
+      await this.persist();
+      this.broadcast({ t: "snapshot", snapshot: this.snapshot(room) });
+      return;
+    }
     if (room.packVoteDeadline === null) {
       room.packVoteDeadline = Date.now() + PACK_VOTE_WINDOW_MS;
       // The relay rolls at the deadline itself, so an all-backgrounded room

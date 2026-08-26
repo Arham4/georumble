@@ -31,14 +31,62 @@ function check(label, ok, detail = "") {
 }
 
 const alice = connect("vrAlice", "Alice");
+await sleep(1500);
+
+// A lone seat nominating is a pre-selection, not a countdown: no window,
+// no roll — they just press Start on their own pick.
+alice.ws.send(JSON.stringify({ t: "pack-vote", packId: "europe" }));
+await sleep(800);
+{
+  const snap = latest(alice.log);
+  check(
+    "solo nomination sits windowless",
+    snap?.packVotes?.vrAlice === "europe" && typeof snap?.packVoteDeadline !== "number",
+  );
+}
+
 const bob = connect("vrBob", "Bob");
 await sleep(2000);
+check(
+  "the second seat starts the countdown",
+  typeof latest(alice.log)?.packVoteDeadline === "number",
+);
 
-bob.ws.send(JSON.stringify({ t: "pack-vote", packId: "europe" }));
+bob.ws.send(JSON.stringify({ t: "pack-vote", packId: "asia" }));
 await sleep(1000);
-let snap = latest(alice.log);
-check("pack vote reaches the other seat", snap?.packVotes?.vrBob === "europe");
-check("nomination window opens with a relay deadline", typeof snap?.packVoteDeadline === "number");
+{
+  // With every seat having voted, participation is complete and the roll
+  // fires immediately (weighted, so differing picks are fine).
+  const a = latest(alice.log);
+  check("pack vote reaches the other seat", a?.packVotes?.vrBob === "asia" && a?.packVotes?.vrAlice === "europe");
+  check(
+    "full participation rolls instantly",
+    typeof a?.chosenPackId === "string" &&
+      latest(bob.log)?.chosenPackId === a.chosenPackId,
+  );
+}
+
+// Reset and test the expiry path: start the rolled pack, then abandon it via
+// unanimous vote-to-lobby — that lands on a clean picker ballot. One
+// nomination in a crowd where nobody else votes follows; only the relay's
+// own alarm may resolve it.
+const rolled = latest(alice.log)?.chosenPackId;
+alice.ws.send(JSON.stringify({ t: "start", packId: rolled, order: ["f1", "f2"] }));
+await sleep(600);
+alice.ws.send(JSON.stringify({ t: "vote-lobby" }));
+bob.ws.send(JSON.stringify({ t: "vote-lobby" }));
+await sleep(800);
+check(
+  "started-and-abandoned round leaves a clean picker",
+  latest(alice.log)?.phase === "lobby" && latest(alice.log)?.chosenPackId === undefined,
+);
+
+alice.ws.send(JSON.stringify({ t: "pack-vote", packId: "europe" }));
+await sleep(800);
+check(
+  "a crowd nomination opens the window",
+  typeof latest(alice.log)?.packVoteDeadline === "number",
+);
 
 bob.ws.send(JSON.stringify({ t: "pack-vote-resolve" }));
 await sleep(800);
@@ -58,8 +106,6 @@ check(
   "rolled choice lands on the other seat too",
   latest(bob.log)?.chosenPackId === latest(alice.log)?.chosenPackId,
 );
-// NOTE: the rolled winner pins this room's ballot until its DO state is
-// cleared — wipe worker/.wrangler/state before re-verifying locally.
 
 // Unanimous vote-to-lobby is a no-op in the lobby phase; verify the message
 // is at least accepted without a rejection broadcast.
