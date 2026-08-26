@@ -10,12 +10,6 @@ import { PeerCursorLayer } from "./peerCursors";
 // invisible fat-stroke halo so micro-regions stay clickable without zooming,
 // and count as "tiny" for auto-framing helpers.
 const HIT_MIN_UNITS = 26;
-/** Cap on how much a too-small region may be blown up when redrawn. */
-const TINY_MAX_SCALE = 4;
-// Portrait screens: how much of the letterbox bands converts into zoom, and
-// the hardest initial crop allowed (pan reaches the rest).
-const PORTRAIT_FILL_STRENGTH = 0.7;
-const PORTRAIT_FILL_MAX = 1.8;
 const MAX_ZOOM = 12;
 const WHEEL_SENSITIVITY = 0.0016;
 const LINE_DELTA_PX = 33;
@@ -61,8 +55,6 @@ export class MapView {
   private readonly halos: SVGPathElement[] = [];
   private readonly helpers = new Map<string, { group: SVGGElement; circle: SVGCircleElement }>();
   private readonly badgeGroups = new Map<string, SVGGElement>();
-  /** Regions drawn enlarged about their center because they were too small to see. */
-  private readonly enlarged = new Set<string>();
   /** Found-finder identity the badge layer was last built from. */
   private badgeSignature = "";
   private readonly peerLayer = new PeerCursorLayer(() => this.k);
@@ -156,7 +148,6 @@ export class MapView {
     this.viewMarginY = my;
     this.svg.setAttribute("viewBox", `${-mx} ${-my} ${this.width + 2 * mx} ${this.height + 2 * my}`);
     this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-    this.tweenView(this.initialCamera(), 0);
 
     // Pre-projected coordinates: the file already lives in the pack's canvas
     // (0,0..width,height), so render with a plain identity transform. Refitting
@@ -184,32 +175,17 @@ export class MapView {
       // Dot packs zoom via a per-dot counter-scale on a wrapper, so CSS flash
       // animations on the path itself never fight the zoom transform.
       let wrap: SVGGElement | null = null;
-      const bounds = path.bounds(geometry);
-      const minDim = Math.min(bounds[1][0] - bounds[0][0], bounds[1][1] - bounds[0][1]);
       if (this.dotPack) {
         wrap = createElement<SVGGElement>("g");
         wrap.append(region);
         regionLayer.append(wrap);
-      } else if (minDim < HIT_MIN_UNITS) {
-        // A micro-island is drawn ENLARGED about its own center — a genuinely
-        // bigger region, hoverable and clickable as itself, not an assist
-        // marker beside it. The stroke divides by the same factor so the
-        // outline reads identical to every other region's.
-        const scale = Math.min(TINY_MAX_SCALE, HIT_MIN_UNITS / minDim);
-        const cx = (bounds[0][0] + bounds[1][0]) / 2;
-        const cy = (bounds[0][1] + bounds[1][1]) / 2;
-        wrap = createElement<SVGGElement>("g");
-        wrap.setAttribute(
-          "transform",
-          `translate(${cx} ${cy}) scale(${scale.toFixed(3)}) translate(${-cx} ${-cy})`,
-        );
-        region.setAttribute("stroke-width", String((0.7 / scale).toFixed(3)));
-        wrap.append(region);
-        regionLayer.append(wrap);
-        this.enlarged.add(id);
+      } else {
+        regionLayer.append(region);
       }
 
       let hit: SVGPathElement | null = null;
+      const bounds = path.bounds(geometry);
+      const minDim = Math.min(bounds[1][0] - bounds[0][0], bounds[1][1] - bounds[0][1]);
       if (minDim < HIT_MIN_UNITS) {
         hit = createElement<SVGPathElement>("path");
         hit.setAttribute("d", d);
@@ -489,29 +465,7 @@ export class MapView {
 
   resetView(): void {
     this.userZoomed = false;
-    this.tweenView(this.initialCamera(), 0);
-  }
-
-  /**
-   * The resting camera. A landscape viewport shows the whole canvas at k=1;
-   * a portrait one would letterbox that canvas into a thin ribbon, so the
-   * initial zoom spends the wasted bands on size instead — bounded, centered
-   * on the map, and pannable (clampPan keeps the edges reachable).
-   */
-  private initialCamera(): { k: number; tx: number; ty: number } {
-    const rect = this.svg.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
-      return { k: 1, tx: 0, ty: 0 };
-    }
-    const containW = rect.width / this.viewWidth();
-    const containH = rect.height / this.viewHeight();
-    let fill = 1;
-    if (containH > containW) {
-      fill = Math.min(1 + (containH / containW - 1) * PORTRAIT_FILL_STRENGTH, PORTRAIT_FILL_MAX);
-    }
-    const cx = this.width / 2;
-    const cy = this.height / 2;
-    return { k: fill, tx: cx * (1 - fill), ty: cy * (1 - fill) };
+    this.tweenView({ k: 1, tx: 0, ty: 0 }, 0);
   }
 
   flashCorrect(id: string): void {
@@ -546,11 +500,6 @@ export class MapView {
     for (const helper of pack.helpers ?? []) {
       const centroid = this.centroidById.get(helper.id);
       if (!centroid) {
-        continue;
-      }
-      if (this.enlarged.has(helper.id)) {
-        // The region itself is drawn big enough to see and click now; a
-        // floating circle beside it would just be noise.
         continue;
       }
       const group = createElement<SVGGElement>("g");
@@ -1061,7 +1010,6 @@ export class MapView {
     this.geoById.clear();
     this.dotPivots.clear();
     this.lastDotK = 1;
-    this.enlarged.clear();
     this.centroidById.clear();
     this.halos.length = 0;
     this.helpers.clear();
