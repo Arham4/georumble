@@ -125,14 +125,6 @@ body {
   transition: fill 120ms ease;
 }
 
-/* Minimum-size face for too-small-to-click regions. Shares every .region
-   state rule above; only the disc-specific bits live here. */
-.region-proxy {
-  pointer-events: auto;
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
 .region.hover {
   fill: var(--map-hover);
 }
