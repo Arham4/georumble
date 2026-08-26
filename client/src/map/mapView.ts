@@ -10,6 +10,8 @@ import { PeerCursorLayer } from "./peerCursors";
 // invisible fat-stroke halo so micro-regions stay clickable without zooming,
 // and count as "tiny" for auto-framing helpers.
 const HIT_MIN_UNITS = 26;
+/** Face radius for too-small-to-click regions; diameter stays under the hit floor. */
+const PROXY_RADIUS_UNITS = HIT_MIN_UNITS * 0.42;
 const MAX_ZOOM = 12;
 const WHEEL_SENSITIVITY = 0.0016;
 const LINE_DELTA_PX = 33;
@@ -30,6 +32,12 @@ type RegionParts = {
   hit: SVGPathElement | null;
   /** Dot packs counter-scale this wrapper on zoom; null for country packs. */
   wrap: SVGGElement | null;
+  /**
+   * Minimum-size stand-in disc for regions too small to see or click at fit
+   * zoom (Caribbean islands, Pacific atolls). Carries the same `region`
+   * classes as the path; null for normal-sized regions.
+   */
+  proxy: SVGCircleElement | null;
 };
 
 type RegionGeo = {
@@ -47,6 +55,10 @@ export class MapView {
   private readonly geoById = new Map<string, RegionGeo>();
   /** Bounds-center pivot per region, cached so zoom frames skip the math. */
   private readonly dotPivots = new Map<string, [number, number]>();
+  /** Counter-scale wrappers for tiny-region proxy discs, by region id. */
+  private readonly proxyWraps = new Map<string, SVGGElement>();
+  /** Zoom level the proxy counter-scale was last applied at. */
+  private lastProxyK = 1;
   /** Zoom level the dot counter-scale was last applied at. */
   private lastDotK = 1;
   private readonly effectTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -159,6 +171,7 @@ export class MapView {
     const hitLayer = createElement("g");
     const regionLayer = createElement("g");
     this.dotPack = pack.dotPack === true;
+    const proxyWraps: SVGGElement[] = [];
     for (const geometry of collection.features) {
       const id = String(geometry.id ?? "");
       if (!this.namesById.has(id)) {
@@ -196,8 +209,34 @@ export class MapView {
         this.halos.push(hit);
         hitLayer.append(hit);
       }
-      this.regions.set(id, { path: region, hit, wrap });
+      let proxy: SVGCircleElement | null = null;
+      if (!this.dotPack && minDim < HIT_MIN_UNITS) {
+        // A speck on the map is a lost round: give the region a minimum-size
+        // face. Pack authors' offshore anchors win over the (often crowded)
+        // bounds center, and the disc counter-scales so it holds its on-screen
+        // size while zooming — same trick dot packs use.
+        const anchor =
+          pack.helpers?.find((helper) => helper.id === id)?.anchor ?? null;
+        const cx = anchor ? anchor.x : (bounds[0][0] + bounds[1][0]) / 2;
+        const cy = anchor ? anchor.y : (bounds[0][1] + bounds[1][1]) / 2;
+        const proxyWrap = createElement<SVGGElement>("g");
+        proxy = createElement<SVGCircleElement>("circle");
+        proxy.setAttribute("cx", String(cx));
+        proxy.setAttribute("cy", String(cy));
+        proxy.setAttribute("r", String(PROXY_RADIUS_UNITS));
+        proxy.setAttribute("data-region-id", id);
+        proxy.classList.add("region", "region-proxy");
+        proxyWrap.append(proxy);
+        proxyWraps.push(proxyWrap);
+        this.proxyWraps.set(id, proxyWrap);
+      }
+      this.regions.set(id, { path: region, hit, wrap, proxy });
       this.geoById.set(id, { bounds, minDim });
+    }
+    // Discs go in above every region path so a neighbor's outline drawn later
+    // in the loop can never bury one.
+    for (const proxyWrap of proxyWraps) {
+      regionLayer.append(proxyWrap);
     }
     const cursors = createElement<SVGGElement>("g");
     cursors.classList.add("cursor-layer");
@@ -262,11 +301,15 @@ export class MapView {
     for (const [id, parts] of this.regions) {
       const isFound = next.has(id);
       if (isFound !== this.foundIds.has(id)) {
-        parts.path.classList.toggle("found", isFound);
+        for (const visual of this.visuals(parts)) {
+          visual.classList.toggle("found", isFound);
+        }
       }
       const tier = heatTier(missesByRegion[id] ?? 0);
       for (const cls of ["heat-clean", "heat-warm", "heat-hard"]) {
-        parts.path.classList.toggle(cls, isFound && cls === tier);
+        for (const visual of this.visuals(parts)) {
+          visual.classList.toggle(cls, isFound && cls === tier);
+        }
       }
     }
     for (const [id, helper] of this.helpers) {
@@ -502,6 +545,11 @@ export class MapView {
       if (!centroid) {
         continue;
       }
+      if (this.proxyWraps.has(helper.id)) {
+        // The proxy disc already gives this region a visible, clickable face
+        // at the same anchor — a second floating circle just adds noise.
+        continue;
+      }
       const group = createElement<SVGGElement>("g");
       group.classList.add("helper");
       group.setAttribute("data-region-id", helper.id);
@@ -631,8 +679,15 @@ export class MapView {
     parts.path.classList.remove(className);
     parts.path.getBoundingClientRect();
     parts.path.classList.add(className);
+    const proxy = parts.proxy;
+    if (proxy) {
+      proxy.classList.remove(className);
+      void proxy.getBoundingClientRect();
+      proxy.classList.add(className);
+    }
     const timer = setTimeout(() => {
       parts.path.classList.remove(className);
+      proxy?.classList.remove(className);
       this.effectTimers.delete(key);
     }, durationMs);
     this.effectTimers.set(key, timer);
@@ -640,10 +695,10 @@ export class MapView {
 
   private syncHint(): void {
     for (const [id, parts] of this.regions) {
-      parts.path.classList.toggle(
-        "hint",
-        this.hintOn && id === this.targetId && !this.foundIds.has(id),
-      );
+      const on = this.hintOn && id === this.targetId && !this.foundIds.has(id);
+      for (const visual of this.visuals(parts)) {
+        visual.classList.toggle("hint", on);
+      }
     }
   }
 
@@ -653,12 +708,21 @@ export class MapView {
       return;
     }
     if (this.hoveredId !== null) {
-      this.regions.get(this.hoveredId)?.path.classList.remove("hover");
+      for (const visual of this.visuals(this.regions.get(this.hoveredId))) {
+        visual.classList.remove("hover");
+      }
     }
     this.hoveredId = next;
     if (next !== null) {
-      this.regions.get(next)?.path.classList.add("hover");
+      for (const visual of this.visuals(this.regions.get(next))) {
+        visual.classList.add("hover");
+      }
     }
+  }
+
+  /** Every node that carries a region's visual state: the path plus its proxy disc. */
+  private visuals(parts: RegionParts | undefined): (SVGPathElement | SVGCircleElement)[] {
+    return parts ? (parts.proxy ? [parts.path, parts.proxy] : [parts.path]) : [];
   }
 
   private onPointerDown = (event: PointerEvent): void => {
@@ -917,6 +981,7 @@ export class MapView {
     this.rescaleHelperCircles(scale);
     this.debugDot?.setAttribute("r", String(4 / this.k));
     this.applyDotScale();
+    this.applyProxyScale();
     this.refreshHover("camera");
   }
 
@@ -935,35 +1000,71 @@ export class MapView {
     }
     this.lastDotK = this.k;
     for (const [id, parts] of this.regions) {
-      let pivot = this.dotPivots.get(id);
+      const pivot = this.pivotFor(id);
       if (!pivot) {
-        const geo = this.geoById.get(id);
-        if (!geo) {
-          continue;
-        }
-        pivot = [(geo.bounds[0][0] + geo.bounds[1][0]) / 2, (geo.bounds[0][1] + geo.bounds[1][1]) / 2];
-        this.dotPivots.set(id, pivot);
+        continue;
       }
-      const [cx, cy] = pivot;
-      const transform =
-        this.k === 1
-          ? null
-          : `translate(${cx} ${cy}) scale(${(1 / this.k).toFixed(4)}) translate(${-cx} ${-cy})`;
+      const transform = this.counterScaleTransform(pivot);
       const nodes: (SVGGElement | SVGPathElement | null | undefined)[] = [
         parts.wrap,
         parts.hit,
         this.badgeGroups.get(id),
       ];
       for (const node of nodes) {
-        if (!node) {
-          continue;
-        }
-        if (transform === null) {
-          node.removeAttribute("transform");
-        } else {
-          node.setAttribute("transform", transform);
-        }
+        this.applyTransformAttr(node, transform);
       }
+    }
+  }
+
+  /**
+   * Proxy discs hold their on-screen size while the camera zooms: the real
+   * path grows toward the disc's job as you zoom in, and the disc never
+   * balloons over the neighbors it was named for.
+   */
+  private applyProxyScale(force = false): void {
+    if (this.proxyWraps.size === 0 || (!force && this.k === this.lastProxyK)) {
+      return;
+    }
+    this.lastProxyK = this.k;
+    for (const [id, wrap] of this.proxyWraps) {
+      const pivot = this.pivotFor(id);
+      if (!pivot) {
+        continue;
+      }
+      this.applyTransformAttr(wrap, this.counterScaleTransform(pivot));
+    }
+  }
+
+  private pivotFor(id: string): [number, number] | null {
+    let pivot = this.dotPivots.get(id);
+    if (!pivot) {
+      const geo = this.geoById.get(id);
+      if (!geo) {
+        return null;
+      }
+      pivot = [(geo.bounds[0][0] + geo.bounds[1][0]) / 2, (geo.bounds[0][1] + geo.bounds[1][1]) / 2];
+      this.dotPivots.set(id, pivot);
+    }
+    return pivot;
+  }
+
+  private counterScaleTransform([cx, cy]: [number, number]): string | null {
+    return this.k === 1
+      ? null
+      : `translate(${cx} ${cy}) scale(${(1 / this.k).toFixed(4)}) translate(${-cx} ${-cy})`;
+  }
+
+  private applyTransformAttr(
+    node: SVGGElement | SVGPathElement | null | undefined,
+    transform: string | null,
+  ): void {
+    if (!node) {
+      return;
+    }
+    if (transform === null) {
+      node.removeAttribute("transform");
+    } else {
+      node.setAttribute("transform", transform);
     }
   }
 
@@ -1010,6 +1111,8 @@ export class MapView {
     this.geoById.clear();
     this.dotPivots.clear();
     this.lastDotK = 1;
+    this.proxyWraps.clear();
+    this.lastProxyK = 1;
     this.centroidById.clear();
     this.halos.length = 0;
     this.helpers.clear();
