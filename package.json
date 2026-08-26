@@ -9,6 +9,7 @@
     "packs:validate": "node scripts/validate-mappack.mjs assets/mappacks/*.mappack.json",
     "verify:room": "node scripts/verify-room.mjs",
     "deploy": "npm --prefix client run build && npx --prefix worker wrangler deploy --config worker/wrangler.jsonc && node scripts/post-patch-notes.mjs",
-    "packs:build": "node scripts/run-packs-build.mjs"
+    "packs:build": "node scripts/run-packs-build.mjs",
+    "verify:mapview": "node scripts/verify-mapview.mjs"
   }
 }

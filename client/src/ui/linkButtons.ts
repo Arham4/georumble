@@ -1,6 +1,6 @@
 /** Community invite and source repo, shown on the boot and lobby screens. */
 export const DISCORD_INVITE_URL = "https://discord.gg/wGQfD6aacx";
-export const GITHUB_URL = "https://github.com/Arham4/georumble";
+export const GITHUB_URL = "https://github.com/Losers-Lab/georumble";
 
 // GitHub's official mark-github octicon (16x16 path data).
 const GITHUB_MARK =
