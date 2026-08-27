@@ -1,4 +1,4 @@
-# Map-Quiz Genre Mechanics — Design Synthesis for GeoRumble
+# Map-Quiz Genre Mechanics — Design Synthesis for GeoRush
 
 Date: 2026-08-22
 Status: research deliverable; proposals only — no code changed.
@@ -8,7 +8,7 @@ Status: research deliverable; proposals only — no code changed.
 This document synthesizes the well-known public mechanics of the "identify the region on a map"
 quiz genre (found in many independent products: clickable-map quiz sites, classroom labeling tools,
 and mobile geography trainers). It is written in our own words as an original game-design synthesis.
-GeoRumble may reference the genre descriptively in marketing copy only — never in title, logo, or
+GeoRush may reference the genre descriptively in marketing copy only — never in title, logo, or
 branding — and we do not copy any third party's maps, color schemes, wording, or assets. Everything
 below describes mechanics we implement ourselves against our own map data and visual identity.
 
@@ -79,7 +79,7 @@ Content is organized as a catalog of quizzes ("packs" in our terms) along two ax
   the main difficulty dial and the main curriculum-scaffolding tool: start small, grow as mastery
   shows.
 
-Implication for GeoRumble: model a pack as `(area, featureClass, featureIds[])` with derived
+Implication for GeoRush: model a pack as `(area, featureClass, featureIds[])` with derived
 variants (full/starter/custom subsets) so one map asset serves many difficulties.
 
 ## 5. Session shape

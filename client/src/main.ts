@@ -15,8 +15,8 @@ import { createPlayScreen } from "./ui/playScreen";
 import { createVictoryScreen } from "./ui/victoryScreen";
 
 const CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID as string | undefined;
-const NAME_STORAGE_KEY = "georumble:name";
-const ID_STORAGE_KEY = "georumble:userId";
+const NAME_STORAGE_KEY = "georush:name";
+const ID_STORAGE_KEY = "georush:userId";
 
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_ATTEMPTS = 6;
@@ -135,7 +135,7 @@ async function resolveIdentity(): Promise<Identity> {
     // that means every player lands in a guest solo room, so say why loudly.
     if (embedded) {
       console.warn(
-        "[georumble] discord sign-in skipped: VITE_DISCORD_CLIENT_ID is not baked into this build",
+        "[georush] discord sign-in skipped: VITE_DISCORD_CLIENT_ID is not baked into this build",
       );
       return { ...fallback, signInFailed: "client id missing from build" };
     }
@@ -156,6 +156,7 @@ async function resolveIdentity(): Promise<Identity> {
     const { code } = await sdk.commands.authorize({
       client_id: CLIENT_ID,
       scope: ["identify", "guilds.members.read"],
+      prompt: "none",
     });
     const tokenResponse = await fetch("/api/token", {
       method: "POST",
@@ -172,7 +173,7 @@ async function resolveIdentity(): Promise<Identity> {
     // sanctioned command, since the activity iframe eats target=_blank.
     setExternalLinkOpener((url) => {
       void sdk.commands.openExternalLink({ url }).catch((error: unknown) => {
-        console.warn("[georumble] openExternalLink failed", error);
+        console.warn("[georush] openExternalLink failed", error);
       });
     });
     let name = auth.user.global_name ?? auth.user.username;
@@ -207,13 +208,13 @@ async function resolveIdentity(): Promise<Identity> {
   } catch (error) {
     // The reason rides into the lobby notice: inside the Discord webview the
     // console is unreachable, and "guest" without a why is undiagnosable.
-    console.warn("[georumble] discord sign-in failed", error);
+    console.warn("[georush] discord sign-in failed", error);
     return { ...fallback, signInFailed: describeError(error).slice(0, 140) };
   }
 }
 
 async function boot(): Promise<void> {
-  console.log(`[georumble] build ${__BUILD_ID__}`);
+  console.log(`[georush] build ${__BUILD_ID__}`);
   const app = document.querySelector<HTMLDivElement>("#app");
   if (!app) {
     throw new Error("#app mount point missing");
@@ -632,5 +633,5 @@ async function boot(): Promise<void> {
 }
 
 boot().catch((error: unknown) => {
-  document.body.textContent = `GeoRumble failed to start: ${String(error)}`;
+  document.body.textContent = `GeoRush failed to start: ${String(error)}`;
 });

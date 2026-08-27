@@ -1,4 +1,4 @@
-# GeoRumble architecture
+# GeoRush architecture
 
 One Discord Activity + browser game: a static client, a Worker, and two
 Durable Object classes. This doc is the free-tier scaling model — what each

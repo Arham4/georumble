@@ -4,7 +4,7 @@ import { createCarryWheel } from "./carryWheel";
 import { launchConfetti } from "./confetti";
 import { sfx } from "../audio/sfx";
 
-const BEST_PREFIX = "georumble:best:";
+const BEST_PREFIX = "georush:best:";
 
 function loadBest(packId: string): number | null {
   try {

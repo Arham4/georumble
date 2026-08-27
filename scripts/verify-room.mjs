@@ -5,11 +5,11 @@
 // vote-to-lobby, and the open-room / Discord-instance namespace split.
 //
 // Usage: node scripts/verify-room.mjs [wsBase]
-//   wsBase default: wss://georumble.losers-lab.workers.dev/api/room
+//   wsBase default: wss://georush.losers-lab.workers.dev/api/room
 //   Local dev:      ws://localhost:8787/api/room  (wrangler dev --var OPEN_ROOMS:true)
 //
 // Exits 0 only when every assertion holds.
-const BASE = process.argv[2] ?? "wss://georumble.losers-lab.workers.dev/api/room";
+const BASE = process.argv[2] ?? "wss://georush.losers-lab.workers.dev/api/room";
 const ROOM = `${BASE}/open:VER234`;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

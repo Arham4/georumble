@@ -158,4 +158,4 @@ Enforced by `scripts/validate-mappack.mjs`:
   the same `packId`. Outlying territory (far-east Russia, Canaries, French Guiana) extends
   past the canvas and clips at the render edge.
 - Only public-domain map data may be committed here. All artwork in `assets/brand/` is
-  original to GeoRumble.
+  original to GeoRush.

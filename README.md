@@ -1,4 +1,4 @@
-# GeoRumble
+# GeoRush
 
 Collaborative Seterra-style geography quiz for Discord voice channels — everyone in the call
 hunts the same region at once, with live cursors, a per-player scoreboard, and Seterra-style

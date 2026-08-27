@@ -1,6 +1,6 @@
 /** Community invite and source repo, shown on the boot and lobby screens. */
 export const DISCORD_INVITE_URL = "https://discord.gg/wGQfD6aacx";
-export const GITHUB_URL = "https://github.com/Losers-Lab/georumble";
+export const GITHUB_URL = "https://github.com/Losers-Lab/georush";
 
 // GitHub's official mark-github octicon (16x16 path data).
 const GITHUB_MARK =
@@ -53,7 +53,7 @@ export function createDiscordInviteLink(): HTMLAnchorElement {
 export function createGithubLink(): HTMLAnchorElement {
   const link = externalLink(GITHUB_URL);
   link.classList.add("github-corner");
-  link.title = "GeoRumble on GitHub";
+  link.title = "GeoRush on GitHub";
   link.setAttribute("aria-label", "Source on GitHub");
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 16 16");

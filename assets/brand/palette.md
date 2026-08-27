@@ -1,4 +1,4 @@
-# GeoRumble Palette
+# GeoRush Palette
 
 Dark-mode-first, tuned against Discord's dark background `#23272A`. All ratios are WCAG
 contrast ratios computed with the relative-luminance formula; "AA-normal" is ≥ 4.5:1,

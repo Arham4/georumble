@@ -111,7 +111,7 @@ const auth = await discordSdk.commands.authenticate({ access_token });
 `expires_in` is seconds; the example shows 604800 (7 days). Refresh with `grant_type=refresh_token` + `refresh_token`. Revoke via `https://discord.com/api/oauth2/token/revoke`.
 - <https://docs.discord.com/developers/topics/oauth2>
 
-**Scopes relevant to GeoRumble** (descriptions quoted from the OAuth2 scope table; scope list cross-checked against SDK v2.5.0's `OAuthScopes` union):
+**Scopes relevant to GeoRush** (descriptions quoted from the OAuth2 scope table; scope list cross-checked against SDK v2.5.0's `OAuthScopes` union):
 - `identify` — "allows /users/@me without email". Needed to identify the local player. Required by `userSettingsGetLocale` and `CURRENT_USER_UPDATE` event.
 - `applications.commands` — "allows your app to add commands to a guild - included by default with the bot scope". Requested by the official Activity tutorial.
 - `guilds` — "allows /users/@me/guilds …"; also the scope required by `getChannel` for guild channels.
@@ -150,7 +150,7 @@ Constructor options (SDK v2.5.0): `{ disableConsoleLogOverride: boolean }` — s
 **Properties available immediately after construction** (before `ready()`): `clientId`, `instanceId`, `customId`, `referrerId`, `platform` (`'web' | 'ios' | 'android'`), `guildId`, `channelId`, `locationId`, `sdkVersion`, `mobileAppVersion`, `configuration`, `commands`.
 - SDK v2.5.0 `Discord.d.ts` / `interface.d.ts`
 
-**Key commands** (full table in the reference; the ones GeoRumble needs):
+**Key commands** (full table in the reference; the ones GeoRush needs):
 
 | Command | Args → Response | Scopes | Notes |
 |---|---|---|---|
@@ -168,7 +168,7 @@ Constructor options (SDK v2.5.0): `{ disableConsoleLogOverride: boolean }` — s
 - <https://docs.discord.com/developers/developer-tools/embedded-app-sdk>
 - SDK v2.5.0 `Discord.d.ts`
 
-**Enumerating other players (the important one for GeoRumble).**
+**Enumerating other players (the important one for GeoRush).**
 
 The current, documented API is `getInstanceConnectedParticipants()`:
 
@@ -221,7 +221,7 @@ Limits of this API, as documented:
 
 - <https://docs.discord.com/developers/developer-tools/embedded-app-sdk>
 
-**SPA requirement:** "This SDK is intended for use by a single-page application." Non-SPA frameworks must be nested inside the Activity's top-level SPA. GeoRumble's Vite client qualifies.
+**SPA requirement:** "This SDK is intended for use by a single-page application." Non-SPA frameworks must be nested inside the Activity's top-level SPA. GeoRush's Vite client qualifies.
 - <https://docs.discord.com/developers/activities/how-activities-work>
 
 **Server-side verification (anti-spoofing).** Anything the client sends (user ids, channel, participants) can be mocked. To verify an instance server-side:
@@ -250,7 +250,7 @@ A valid instance returns `{application_id, instance_id, launch_id, location: {ki
 - **Cookies** (if you use session cookies): domain must match `{clientId}.discordsays.com` and you must "explicitly set `SameSite=None Partitioned`" — browsers refuse stricter cookies inside third-party iframes.
   - <https://docs.discord.com/developers/activities/development-guides/networking>
 
-For GeoRumble this means the Vite client opens a `wss://` connection back through the proxied origin (URL-mapped prefix → the Cloudflare Worker), and the Worker/DO fan out state. No direct client↔Worker bypass is possible from inside the iframe.
+For GeoRush this means the Vite client opens a `wss://` connection back through the proxied origin (URL-mapped prefix → the Cloudflare Worker), and the Worker/DO fan out state. No direct client↔Worker bypass is possible from inside the iframe.
 
 ---
 
@@ -315,7 +315,7 @@ Then set URL Mapping `/` → `funky-jogging-bunny.trycloudflare.com` and save. "
 - <https://docs.discord.com/developers/activities/building-an-activity>
 - <https://docs.discord.com/developers/activities/development-guides/local-development>
 
-This matches GeoRumble's Docker setup with a cloudflared sidecar: map the Worker/Vite port through the tunnel, point the portal mapping at the `*.trycloudflare.com` host.
+This matches GeoRush's Docker setup with a cloudflared sidecar: map the Worker/Vite port through the tunnel, point the portal mapping at the `*.trycloudflare.com` host.
 
 **Launching in dev:** enable Developer Mode (User Settings → Advanced), join a voice channel, click the rocket button — owned/team apps appear in the **Developer Activity Shelf** (web/desktop; mobile has its own Developer Mode toggle). Alternative: "Application URL Override" loads a dev server directly, bypassing the proxy (then full URLs are needed and HTTPS is required on web/desktop; "HTTPS is not required for mobile").
 - <https://docs.discord.com/developers/activities/development-guides/local-development>
@@ -341,11 +341,11 @@ From the official rate-limits page (HTTP API; there is **no Activities-specific 
 - Production-readiness adds: respect `retry_after` (example in the Activity starter repo), and new SDK commands may be missing on old clients → catch error code `INVALID_COMMAND`.
 - <https://docs.discord.com/developers/activities/development-guides/production-readiness>
 
-For GeoRumble: game traffic should flow over the WebSocket to the Durable Object, not through Discord's HTTP API; Discord API calls (token exchange, activity-instance verification, `users/@me`) are low-volume and well inside the 50 req/s global limit.
+For GeoRush: game traffic should flow over the WebSocket to the Durable Object, not through Discord's HTTP API; Discord API calls (token exchange, activity-instance verification, `users/@me`) are low-volume and well inside the 50 req/s global limit.
 
 ---
 
-## 8. GeoRumble-relevant synthesis
+## 8. GeoRush-relevant synthesis
 
 - Client = Vite SPA; SDK init → `ready()` → `authorize({scope: ['identify','applications.commands','guilds'], prompt: 'none'})` → POST code to Worker `/api/token` → `authenticate({access_token})`.
 - Roster = `getInstanceConnectedParticipants()` on load + `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE` subscription; `discordSdk.channelId` / `instanceId` identify the room server-side (verify via the Activity Instance API with a bot token).

@@ -127,10 +127,10 @@ async function main() {
 
   const head = await git("rev-parse", "--short", "HEAD");
   const payload = {
-    username: "GeoRumble",
+    username: "GeoRush",
     embeds: [
       {
-        title: `GeoRumble update — ${subjects.length} change${subjects.length === 1 ? "" : "s"}`,
+        title: `GeoRush update — ${subjects.length} change${subjects.length === 1 ? "" : "s"}`,
         description: descriptionFrom(subjects),
         color: 0x5865f2,
         footer: { text: `deployed just now · ${head}` },

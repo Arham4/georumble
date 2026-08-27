@@ -1,6 +1,6 @@
 # Discord store art
 
-Original GeoRumble artwork for the Developer Portal's **Activities → Art Assets** and
+Original GeoRush artwork for the Developer Portal's **Activities → Art Assets** and
 **Settings → General Information**. The `*.html` files are the masters — edit and re-render
 with a headless browser at the exact viewport size (see each file's `width`/`height`).
 

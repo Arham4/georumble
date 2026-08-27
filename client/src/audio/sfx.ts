@@ -2,7 +2,7 @@
 // background music — just interaction confirmation. The context is lazy
 // (created on the first gesture-driven call, per autoplay policy) and the
 // mute state persists per device.
-const MUTED_KEY = "georumble:sfx-muted";
+const MUTED_KEY = "georush:sfx-muted";
 
 let ctx: AudioContext | null = null;
 let muted = false;

@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "georumble",
+  "name": "georush",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-01",
   "vars": {
