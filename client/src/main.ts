@@ -156,7 +156,6 @@ async function resolveIdentity(): Promise<Identity> {
     const { code } = await sdk.commands.authorize({
       client_id: CLIENT_ID,
       scope: ["identify", "guilds.members.read"],
-      prompt: "none",
     });
     const tokenResponse = await fetch("/api/token", {
       method: "POST",
