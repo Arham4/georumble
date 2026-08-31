@@ -346,6 +346,7 @@ export class GameRoom extends DurableObject<Env> {
         event: "player_leave",
         roomId: this.roomId,
         playerId,
+        name: departed.name,
         secondsPlayed: Math.round((Date.now() - departed.joinedAt) / 1000),
       }));
     }
@@ -646,12 +647,21 @@ export class GameRoom extends DurableObject<Env> {
     // Math.randoms — and survives a refresh mid-victory via the snapshot.
     room.wheelSeed = crypto.getRandomValues(new Uint32Array(1))[0];
     await this.persist();
+    const lastId = room.found[room.found.length - 1] ?? null;
+    const winnerId = lastId !== null ? room.foundBy[lastId] ?? null : null;
+    const winner = winnerId !== null ? room.players.find((p) => p.id === winnerId) : undefined;
     console.log(JSON.stringify({
       event: "round_complete",
       roomId: this.roomId,
       packId: room.packId,
       seconds: stampedSeconds,
       guesses,
+      winner: winner?.name ?? winnerId,
+      players: room.players.map((p) => ({
+        name: p.name,
+        correct: room.tallies[p.id]?.correct ?? 0,
+        misses: room.tallies[p.id]?.misses ?? 0,
+      })),
     }));
     this.broadcast({
       t: "win",
