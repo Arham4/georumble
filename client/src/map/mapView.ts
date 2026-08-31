@@ -562,9 +562,12 @@ export class MapView {
    * Seterra-style helpers: for regions too small to click fairly, a translucent
    * circle floats in open space beside them — the pack bakes each anchor
    * (typically offshore) — with a leader line to the real region, so specks
-   * like DC or Malta are clickable at any zoom without covering the map. The
-   * group carries data-region-id, so the regular hover/click pipeline just
-   * works; the line is display-only.
+   * like DC or Malta are clickable at any zoom without covering the map.
+   * Every pack-listed region gets its circle, even ones drawn enlarged: the
+   * leader ends on the centroid, which is the enlargement pivot, so it still
+   * touches the middle of what the player sees. The group carries
+   * data-region-id, so the regular hover/click pipeline just works; the line
+   * is display-only.
    */
   private buildHelperLayer(pack: MapPack): SVGGElement {
     this.helpers.clear();
@@ -573,11 +576,6 @@ export class MapView {
     for (const helper of pack.helpers ?? []) {
       const centroid = this.centroidById.get(helper.id);
       if (!centroid) {
-        continue;
-      }
-      if (this.enlarged.has(helper.id)) {
-        // The region itself is drawn big enough to see and click now; a
-        // floating circle beside it would just be noise.
         continue;
       }
       const group = createElement<SVGGElement>("g");

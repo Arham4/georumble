@@ -108,12 +108,20 @@ async function main() {
         await page.waitForTimeout(1500);
         const probe = await page.evaluate(() => ({
           regions: document.querySelectorAll("path.region").length,
+          helpers: document.querySelectorAll("g.helper").length,
           transform: document.querySelector("svg.map-svg > g")?.getAttribute("transform") ?? "",
         }));
         check(
           `${label}: every feature rendered`,
           probe.regions === pack.features.length,
           `${probe.regions}/${pack.features.length} region nodes`,
+        );
+        // Enlarged-region drawing must never swallow a pack-declared helper:
+        // each anchor gets exactly one circle in the DOM.
+        check(
+          `${label}: helper circles rendered`,
+          probe.helpers === (pack.helpers?.length ?? 0),
+          `${probe.helpers}/${pack.helpers?.length ?? 0} helper nodes`,
         );
         const scale = Number(/scale\(([\d.]+)\)/.exec(probe.transform)?.[1] ?? "1");
         check(`${label}: camera scale sane`, scale >= 1 && scale <= 2, `k=${scale}`);
