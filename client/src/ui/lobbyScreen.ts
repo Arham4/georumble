@@ -53,8 +53,8 @@ export function createLobbyScreen(container: HTMLElement, deps: LobbyDeps): Scre
   const heading = el("div", "lobby-head");
   const wordmark = el("h1", "wordmark");
   const geoPart = el("span", undefined, "Geo");
-  const rumblePart = el("span", "rumble", "Rumble");
-  wordmark.append(geoPart, rumblePart);
+  const rushPart = el("span", "rush", "Rush");
+  wordmark.append(geoPart, rushPart);
   const chip = el("span", "chip");
   heading.append(wordmark, chip);
   // Browser rooms live or die by the code being readable in the room, not
